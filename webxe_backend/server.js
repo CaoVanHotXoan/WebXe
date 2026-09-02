@@ -11,6 +11,9 @@ const {
   getAllTablesDataObject,
   getTableData,
   allowedTables,
+  createTableData,
+  updateTableData,
+  deleteTableData,
 } = require('./controllers/dataController');
 
 dotenv.config();
@@ -250,6 +253,9 @@ app.get('/api/data', async (req, res) => {
 });
 
 app.get('/api/data/:table', getTableData);
+app.post('/api/data/:table', createTableData);
+app.put('/api/data/:table', updateTableData);
+app.delete('/api/data/:table', deleteTableData);
 app.use('/api/auth', authRoutes);
 
 connectDB();

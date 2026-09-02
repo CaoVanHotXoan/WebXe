@@ -51,7 +51,47 @@
 .navList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
+}
+
+.navGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.groupToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.groupChevron {
+  font-size: 17px;
+  line-height: 1;
+  transform: rotate(0deg);
+  transition: transform 0.2s ease;
+}
+
+.groupChevronOpen {
+  transform: rotate(180deg);
+}
+
+.groupItems {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .navItem {
@@ -98,6 +138,49 @@
   letter-spacing: 0.02em;
 }
 
+.detailButton,
+.closeButton {
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.detailButton:hover,
+.closeButton:hover {
+  background: #dbeafe;
+}
+
+.detailSection {
+  margin-top: 22px;
+  padding: 18px 20px 20px;
+  background: rgba(239, 246, 255, 0.72);
+  border: 1px solid #bfdbfe;
+  border-radius: 18px;
+}
+
+.detailLabel {
+  margin: 0 0 5px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.detailSection .tableHeaderRow {
+  align-items: flex-start;
+}
+
+.detailSection .tableHeaderRow h3 {
+  margin: 0;
+}
+
 .contentPanel {
   flex: 1;
   padding: 26px 28px 40px;
@@ -127,6 +210,338 @@
   margin: 0;
   font-size: clamp(28px, 2vw, 42px);
   line-height: 1.2;
+}
+
+.topbarActions,
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.primaryButton {
+  border: 0;
+  border-radius: 8px;
+  background: #0f766e;
+  color: #fff;
+  padding: 9px 13px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryButton:hover {
+  background: #115e59;
+}
+
+.primaryButton:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.editButton,
+.deleteButton {
+  border: 1px solid;
+  border-radius: 7px;
+  padding: 6px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.editButton {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.deleteButton {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.formSection {
+  padding: 20px;
+  margin-bottom: 20px;
+  background: #fff;
+  border: 1px solid #99f6e4;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.formSection h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.formField input {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  font-weight: 400;
+}
+
+.formField input:focus {
+  outline: 2px solid #99f6e4;
+  border-color: #0f766e;
+}
+
+.tableImage {
+  display: block;
+  width: 72px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.formImagePreview {
+  width: 120px;
+  height: 80px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+}
+
+.errorMessage {
+  padding: 11px 14px;
+  margin: 0 0 18px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.deleteModal {
+  max-width: 460px;
+  text-align: center;
+}
+
+.deleteIcon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 14px;
+  place-items: center;
+  border: 4px solid #fff;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #fb7185, #ef4444);
+  color: #fff;
+  font-size: 30px;
+  font-weight: 900;
+  box-shadow: 0 5px 0 #be123c, 0 9px 18px rgba(244, 63, 94, 0.25);
+}
+
+.deleteModal .detailLabel {
+  margin-bottom: 6px;
+}
+
+.deleteModal h2 {
+  margin: 0;
+  font-size: 23px;
+}
+
+.deleteMessage {
+  margin: 12px 0 22px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.cancelButton {
+  @apply rounded-2xl border-b-[5px] border-slate-500 bg-gradient-to-b from-slate-300 to-gray-400 px-4 py-2 font-black text-slate-800 shadow-md transition active:translate-y-1 active:shadow-none hover:bg-slate-200;
+}
+
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 20px;
+}
+
+.productCard {
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+}
+
+.productImageArea {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 190px;
+  padding: 18px;
+  background: #f8fafc;
+}
+
+.productImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.imagePlaceholder {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.productCardBody {
+  padding: 16px;
+}
+
+.productCode {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.productCardBody h2 {
+  min-height: 48px;
+  margin: 7px 0 9px;
+  color: #0f172a;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.productPrice {
+  color: #0f766e;
+  font-size: 17px;
+}
+
+.productMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 13px 0;
+  color: #475569;
+  font-size: 13px;
+}
+
+.productActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.modalBackdrop {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.modal {
+  width: min(720px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 22px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.3);
+}
+
+.modal .tableHeaderRow {
+  margin-bottom: 4px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 24px;
+}
+
+.vehicleDetailContent {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.8fr) 1.2fr;
+  gap: 22px;
+}
+
+.vehicleDetailImage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.vehicleDetailImage img {
+  width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+}
+
+.vehicleDetailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 12px;
+}
+
+.vehicleDetailItem {
+  min-width: 0;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.vehicleDetailItem span {
+  display: block;
+  margin-bottom: 5px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.vehicleDetailItem strong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #0f172a;
+  font-size: 13px;
 }
 
 .badge {
@@ -269,4 +684,226 @@
   .navList {
     grid-template-columns: 1fr;
   }
+
+  .topbarActions,
+  .rowActions {
+    flex-wrap: wrap;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .vehicleDetailContent {
+    grid-template-columns: 1fr;
+  }
+
+  .vehicleDetailImage {
+    min-height: 170px;
+  }
+}
+
+/* Tailwind-powered volumetric cartoon theme */
+.dashboardPage {
+  @apply min-h-screen overflow-hidden font-rounded text-sky-950;
+  background: radial-gradient(circle at 8% 4%, #ffffff 0 8%, transparent 28%), linear-gradient(135deg, #38bdf8 0%, #dff6ff 58%, #fff 100%);
+}
+
+.sidebar {
+  @apply border-r-4 border-white/80 bg-sky-800/90 p-5 text-white shadow-soft-3d backdrop-blur;
+  width: 292px;
+}
+
+.sidebarHeader {
+  @apply mb-6 rounded-3xl border-4 border-white/80 bg-sky-700/75 p-4 shadow-lg;
+}
+
+.logoCircle {
+  @apply rounded-2xl border-b-4 border-sky-900 bg-gradient-to-b from-cyan-300 to-sky-500 shadow-md;
+}
+
+.brandLabel {
+  @apply font-black tracking-wide;
+}
+
+.navList {
+  @apply gap-5;
+}
+
+.groupToggle {
+  @apply rounded-2xl px-3 py-2 font-black tracking-wider text-sky-100 transition hover:bg-white/15;
+}
+
+.navItem {
+  @apply rounded-2xl border-2 border-white/15 bg-white/10 px-3 py-2.5 shadow-sm transition hover:-translate-y-0.5 hover:bg-white/20;
+}
+
+.navItem.active {
+  @apply border-white/80 bg-gradient-to-b from-cyan-400 to-sky-500 shadow-push-cyan;
+}
+
+.navIndex {
+  @apply rounded-xl border-b-2 border-sky-900/30 bg-white/25 font-black;
+}
+
+.contentPanel {
+  @apply p-5 sm:p-8;
+}
+
+.topbar {
+  @apply mb-6 rounded-3xl border-4 border-white/80 bg-white/80 p-5 shadow-soft-3d backdrop-blur;
+}
+
+.topbarLabel,
+.detailLabel {
+  @apply font-black tracking-[0.16em] text-sky-600;
+}
+
+.topbar h1 {
+  @apply font-black text-sky-950;
+}
+
+.badge {
+  @apply rounded-full border-2 border-sky-200 bg-cyan-100 px-4 py-2 font-black text-sky-700;
+}
+
+.primaryButton,
+.detailButton,
+.editButton,
+.deleteButton,
+.closeButton {
+  @apply transform rounded-2xl border-0 px-4 py-2 font-black transition active:translate-y-1 active:shadow-none disabled:cursor-wait disabled:opacity-60;
+}
+
+.primaryButton {
+  @apply border-b-[5px] border-emerald-700 bg-gradient-to-b from-emerald-400 to-green-500 text-white shadow-push-green hover:brightness-105 hover:text-white;
+}
+
+.detailButton {
+  @apply border-b-[5px] border-cyan-700 bg-gradient-to-b from-cyan-400 to-sky-500 text-white shadow-push-cyan hover:brightness-105 hover:text-white;
+}
+
+.editButton {
+  @apply border-b-[5px] border-amber-700 bg-gradient-to-b from-amber-300 to-yellow-500 text-amber-950 shadow-push-amber hover:brightness-105 hover:text-amber-950;
+}
+
+.deleteButton,
+.closeButton {
+  @apply border-b-[5px] border-rose-700 bg-gradient-to-b from-rose-400 to-red-500 text-white shadow-push-rose hover:brightness-105 hover:text-white;
+}
+
+.primaryButton:hover,
+.detailButton:hover,
+.deleteButton:hover,
+.closeButton:hover {
+  filter: saturate(1.15) brightness(0.92);
+}
+
+.editButton:hover {
+  border-color: #b45309;
+  background: #f59e0b;
+  color: #451a03;
+}
+
+.infoCard,
+.tableSection,
+.dataWrap,
+.formSection,
+.detailSection,
+.productCard {
+  @apply rounded-3xl border-4 border-white/80 bg-white/90 shadow-soft-3d;
+}
+
+.infoCard,
+.tableSection {
+  @apply p-5;
+}
+
+.infoCard h2,
+.tableHeaderRow h3,
+.formSection h2,
+.modal h2 {
+  @apply font-black text-sky-950;
+}
+
+.chip {
+  @apply rounded-full border-2 border-cyan-200 bg-cyan-50 px-3 py-2 font-black text-sky-700 shadow-inner;
+}
+
+.productGrid {
+  @apply gap-6;
+}
+
+.productCard {
+  @apply overflow-hidden transition hover:-translate-y-1 hover:shadow-lg;
+}
+
+.productImageArea {
+  @apply border-b-4 border-sky-100 bg-gradient-to-b from-sky-50 to-white;
+}
+
+.productCardBody {
+  @apply p-5;
+}
+
+.productCode {
+  @apply font-black text-cyan-600;
+}
+
+.productCardBody h2 {
+  @apply font-black text-sky-950;
+}
+
+.productPrice {
+  @apply font-black text-emerald-600;
+}
+
+.modalBackdrop {
+  @apply bg-sky-950/50 backdrop-blur-sm;
+}
+
+.modal {
+  @apply animate-pop-in rounded-3xl border-4 border-white bg-white p-6 shadow-2xl;
+}
+
+.formField {
+  @apply font-black text-sky-700;
+}
+
+.formField input {
+  @apply rounded-2xl border-2 border-sky-200 bg-sky-50/50 px-3 shadow-inner outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100;
+}
+
+.vehicleDetailImage,
+.vehicleDetailItem {
+  @apply rounded-2xl border-2 border-sky-100 bg-sky-50;
+}
+
+.errorMessage {
+  @apply rounded-2xl border-2 border-rose-200 bg-rose-50 font-bold text-rose-700;
+}
+
+.detailButton {
+  background: linear-gradient(180deg, #22d3ee 0%, #0284c7 100%);
+  color: #fff;
+}
+
+.detailButton:hover {
+  background: #0369a1;
+  color: #fff;
+  filter: none;
+}
+
+.closeButton {
+  border-bottom: 5px solid #475569;
+  background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
+  color: #172033;
+  box-shadow: 0 5px 0 #475569, 0 10px 18px rgba(71, 85, 105, 0.2);
+}
+
+.closeButton:hover {
+  border-bottom-color: #334155;
+  background: #475569;
+  color: #fff;
+  filter: none;
 }
