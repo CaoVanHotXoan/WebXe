@@ -493,6 +493,15 @@
   font-size: 24px;
 }
 
+.detailModal {
+  width: min(980px, 100%);
+}
+
+.detailModal .dataWrap {
+  max-height: 55vh;
+  overflow: auto;
+}
+
 .vehicleDetailContent {
   display: grid;
   grid-template-columns: minmax(190px, 0.8fr) 1.2fr;

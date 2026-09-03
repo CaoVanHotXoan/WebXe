@@ -124,13 +124,37 @@ const identityColumns: Record<string, string[]> = {
   Xe: ["MaXe"], GioHang: ["MaGioHang"], DonHang: ["MaDonHang"],
 };
 
+const hiddenDisplayColumns: Record<string, string[]> = {
+  DonHang: ["MaDonHang", "MaNguoiDung"],
+};
+
+const tableLabels: Record<string, string> = {
+  VaiTro: "Vai trò", NguoiDung: "Người dùng", HangXe: "Hãng xe", LoaiXe: "Loại xe",
+  Xe: "Xe", GioHang: "Giỏ hàng", ChiTietGioHang: "Chi tiết giỏ hàng",
+  DonHang: "Đơn hàng", ChiTietDonHang: "Chi tiết đơn hàng",
+};
+
+const columnLabels: Record<string, string> = {
+  MaVaiTro: "Mã vai trò", TenVaiTro: "Tên vai trò", MaNguoiDung: "Mã người dùng",
+  MaHang: "Mã hãng xe", TenHang: "Tên hãng xe", MaLoai: "Mã loại xe", TenLoai: "Tên loại xe",
+  MaXe: "Mã xe", TenXe: "Tên xe", Gia: "Giá", NamSanXuat: "Năm sản xuất", MauSac: "Màu sắc",
+  SoLuong: "Số lượng", HinhAnh: "Hình ảnh", Logo: "Logo", MaGioHang: "Mã giỏ hàng",
+  NgayTao: "Ngày tạo", MaDonHang: "Mã đơn hàng", HoTenNguoiNhan: "Họ tên người nhận",
+  SoDienThoai: "Số điện thoại", DiaChi: "Địa chỉ", TongTien: "Tổng tiền",
+  PhuongThucThanhToan: "Phương thức thanh toán", TrangThai: "Trạng thái", NgayDat: "Ngày đặt",
+  DonGia: "Đơn giá", ThanhTien: "Thành tiền", TenDangNhap: "Tên đăng nhập", MatKhau: "Mật khẩu",
+  HoTen: "Họ tên", Email: "Email", MoTa: "Mô tả",
+};
+
+const getColumnLabel = (column: string) => columnLabels[column] ?? column;
+
 const imageColumns = new Set(["HinhAnh", "Logo"]);
 
-const renderCellValue = (column: string, value: string | number | null) => {
+const renderCellValue = (column: string, value: string | number | null, relatedName?: string) => {
   if (imageColumns.has(column) && value) {
     return <img className={styles.tableImage} src={String(value)} alt={column} />;
   }
-  return String(value ?? "-");
+  return relatedName ?? String(value ?? "-");
 };
 
 export default function Home() {
@@ -178,9 +202,27 @@ export default function Home() {
   const detailKey = detailKeyByParent[selectedId];
   const formTable = tableData.find((table) => table.id === formTableId) ?? selectedTable;
   const isCardView = ["Xe", "HangXe", "NguoiDung"].includes(selectedTable.id);
+  const showColumnOverview = !["DonHang", "GioHang", "LoaiXe", "VaiTro"].includes(selectedTable.id);
+  const displayColumns = selectedTable.columns.filter(
+    (column) => !(hiddenDisplayColumns[selectedTable.id] ?? []).includes(column)
+  );
   const formColumns = formTable.columns.filter((column) =>
     formMode === "edit" || !(identityColumns[formTable.id] ?? []).includes(column)
   ).filter((column) => column !== "ThanhTien");
+
+  const findName = (tableId: string, key: string, value: string | number | null) => {
+    const record = tableData.find((table) => table.id === tableId)?.records.find((item) => item[key] === value);
+    const name = record?.TenXe ?? record?.TenHang ?? record?.TenLoai ?? record?.HoTen ?? record?.TenVaiTro;
+    return name == null ? undefined : String(name);
+  };
+
+  const getRelatedDisplayValue = (tableId: string, column: string, value: string | number | null) => {
+    if (tableId === "Xe" && column === "MaHang") return findName("HangXe", "MaHang", value);
+    if (tableId === "Xe" && column === "MaLoai") return findName("LoaiXe", "MaLoai", value);
+    if (tableId === "GioHang" && column === "MaNguoiDung") return findName("NguoiDung", "MaNguoiDung", value);
+    if ((tableId === "ChiTietGioHang" || tableId === "ChiTietDonHang") && column === "MaXe") return findName("Xe", "MaXe", value);
+    return undefined;
+  };
 
   const selectTable = (tableId: string) => {
     setSelectedId(tableId);
@@ -299,7 +341,7 @@ export default function Home() {
                             onClick={() => selectTable(table.id)}
                           >
                             <span className={styles.navIndex}>{table.id.slice(0, 2)}</span>
-                            <span className={styles.navText}>{table.name}</span>
+                            <span className={styles.navText}>{tableLabels[table.id] ?? table.name}</span>
                           </button>
                         );
                       })}
@@ -315,7 +357,7 @@ export default function Home() {
           <div className={styles.topbar}>
             <div>
               <p className={styles.topbarLabel}>Bảng dữ liệu</p>
-              <h1>{selectedTable.name}</h1>
+              <h1>{tableLabels[selectedTable.id] ?? selectedTable.name}</h1>
             </div>
             <div className={styles.topbarActions}>
               <span className={styles.badge}>{selectedTable.records.length} records</span>
@@ -337,7 +379,7 @@ export default function Home() {
               <div className={styles.formGrid}>
                 {formColumns.map((column) => (
                   <label key={column} className={styles.formField}>
-                    <span>{column}</span>
+                    <span>{getColumnLabel(column)}</span>
                     <input
                       type={column.includes("Ngay") ? "datetime-local" : column === "MatKhau" ? "password" : "text"}
                       value={formValues[column] == null ? "" : String(formValues[column])}
@@ -362,15 +404,15 @@ export default function Home() {
             <p>{selectedTable.description}</p>
           </div>
 
-          {!isCardView && <div className={styles.tableSection}>
+          {!isCardView && showColumnOverview && <div className={styles.tableSection}>
             <div className={styles.tableHeaderRow}>
               <h3>Các cột</h3>
-              <span>{selectedTable.columns.length} columns</span>
+              <span>{displayColumns.length} columns</span>
             </div>
 
             <div className={styles.chipRow}>
-              {selectedTable.columns.map((column) => (
-                <span key={column} className={styles.chip}>{column}</span>
+              {displayColumns.map((column) => (
+                <span key={column} className={styles.chip}>{getColumnLabel(column)}</span>
               ))}
             </div>
           </div>}
@@ -411,19 +453,19 @@ export default function Home() {
             <table className={styles.dataTable}>
               <thead>
                 <tr>
-                  {selectedTable.columns.map((column) => (
-                    <th key={column}>{column}</th>
+                  {displayColumns.map((column) => (
+                    <th key={column}>{getColumnLabel(column)}</th>
                   ))}
-                  {detailTable && <th>Thao tác</th>}
-                  <th>CRUD</th>
+                  {detailTable && <th>Chức năng</th>}
+                  <th>Chức năng</th>
                 </tr>
               </thead>
               <tbody>
                 {selectedTable.records.map((row, rowIndex) => (
                   <tr key={`${selectedTable.id}-${rowIndex}`}>
-                    {selectedTable.columns.map((column) => (
+                    {displayColumns.map((column) => (
                       <td key={`${selectedTable.id}-${column}-${rowIndex}`}>
-                        {renderCellValue(column, row[column])}
+                        {renderCellValue(column, row[column], getRelatedDisplayValue(selectedTable.id, column, row[column]))}
                       </td>
                     ))}
                     {detailTable && (
@@ -449,43 +491,49 @@ export default function Home() {
           )}
 
           {detailTable && selectedDetailId !== null && (
-            <section className={styles.detailSection}>
-              <div className={styles.tableHeaderRow}>
+            <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setSelectedDetailId(null);
+            }}>
+              <section className={`${styles.modal} ${styles.detailModal}`} role="dialog" aria-modal="true" aria-labelledby="detail-title">
+                <div className={styles.modalHeader}>
                 <div>
-                  <p className={styles.detailLabel}>Chi tiết {selectedTable.name}</p>
-                  <h3>{detailTable.name}</h3>
+                  <p className={styles.detailLabel}>Chi tiết {tableLabels[selectedTable.id] ?? selectedTable.name} #{selectedDetailId}</p>
+                  <h2 id="detail-title">{tableLabels[detailTable.id] ?? detailTable.name}</h2>
                 </div>
                 <div className={styles.topbarActions}>
                   <button type="button" className={styles.primaryButton} onClick={() => openCreate(detailTable.id)}>+ Thêm</button>
                   <button type="button" className={styles.closeButton} onClick={() => setSelectedDetailId(null)}>Đóng</button>
                 </div>
-              </div>
-              <div className={styles.dataWrap}>
-                <table className={styles.dataTable}>
-                  <thead>
-                    <tr>
-                      {detailTable.columns.map((column) => <th key={column}>{column}</th>)}
-                      <th>CRUD</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detailTable.records
-                      .filter((row) => row[detailKey] === selectedDetailId)
-                      .map((row, rowIndex) => (
-                        <tr key={`${detailTable.id}-${rowIndex}`}>
-                          {detailTable.columns.map((column) => (
-                            <td key={`${detailTable.id}-${column}-${rowIndex}`}>{renderCellValue(column, row[column])}</td>
-                          ))}
-                          <td className={styles.rowActions}>
-                            <button type="button" className={styles.editButton} onClick={() => openEdit(row, detailTable.id)}>Sửa</button>
-                            <button type="button" className={styles.deleteButton} onClick={() => requestDelete(row, detailTable.id)}>Xóa</button>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
+                </div>
+                <div className={styles.dataWrap}>
+                  <table className={styles.dataTable}>
+                    <thead>
+                      <tr>
+                        {detailTable.columns.map((column) => <th key={column}>{getColumnLabel(column)}</th>)}
+                        <th>Chức năng</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detailTable.records
+                        .filter((row) => row[detailKey] === selectedDetailId)
+                        .map((row, rowIndex) => (
+                          <tr key={`${detailTable.id}-${rowIndex}`}>
+                            {detailTable.columns.map((column) => (
+                              <td key={`${detailTable.id}-${column}-${rowIndex}`}>
+                                {renderCellValue(column, row[column], getRelatedDisplayValue(detailTable.id, column, row[column]))}
+                              </td>
+                            ))}
+                            <td className={styles.rowActions}>
+                              <button type="button" className={styles.editButton} onClick={() => openEdit(row, detailTable.id)}>Sửa</button>
+                              <button type="button" className={styles.deleteButton} onClick={() => requestDelete(row, detailTable.id)}>Xóa</button>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
           )}
 
           {detailRecord && (
@@ -495,8 +543,8 @@ export default function Home() {
               <section className={`${styles.modal} ${styles.vehicleModal}`} role="dialog" aria-modal="true" aria-labelledby="vehicle-title">
                 <div className={styles.modalHeader}>
                   <div>
-                    <p className={styles.detailLabel}>Thông tin {selectedTable.name}</p>
-                    <h2 id="vehicle-title">{String(detailRecord.TenXe || detailRecord.TenHang || detailRecord.HoTen || detailRecord.TenDangNhap || `Chi tiết ${selectedTable.name}`)}</h2>
+                    <p className={styles.detailLabel}>Thông tin {tableLabels[selectedTable.id] ?? selectedTable.name}</p>
+                    <h2 id="vehicle-title">{String(detailRecord.TenXe || detailRecord.TenHang || detailRecord.HoTen || detailRecord.TenDangNhap || `Chi tiết ${tableLabels[selectedTable.id] ?? selectedTable.name}`)}</h2>
                   </div>
                   <button type="button" className={styles.closeButton} onClick={() => setDetailRecord(null)}>Đóng</button>
                 </div>
@@ -507,8 +555,8 @@ export default function Home() {
                   <div className={styles.vehicleDetailGrid}>
                     {selectedTable.columns.map((column) => (
                       <div key={column} className={styles.vehicleDetailItem}>
-                        <span>{column}</span>
-                        <strong>{renderCellValue(column, detailRecord[column])}</strong>
+                        <span>{getColumnLabel(column)}</span>
+                        <strong>{renderCellValue(column, detailRecord[column], getRelatedDisplayValue(selectedTable.id, column, detailRecord[column]))}</strong>
                       </div>
                     ))}
                   </div>
