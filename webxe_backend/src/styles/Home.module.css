@@ -715,12 +715,15 @@
 /* Tailwind-powered volumetric cartoon theme */
 .dashboardPage {
   @apply min-h-screen overflow-hidden font-rounded text-sky-950;
+  height: 100vh;
   background: radial-gradient(circle at 8% 4%, #ffffff 0 8%, transparent 28%), linear-gradient(135deg, #38bdf8 0%, #dff6ff 58%, #fff 100%);
 }
 
 .sidebar {
   @apply border-r-4 border-white/80 bg-sky-800/90 p-5 text-white shadow-soft-3d backdrop-blur;
   width: 292px;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .sidebarHeader {
@@ -757,6 +760,8 @@
 
 .contentPanel {
   @apply p-5 sm:p-8;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .topbar {
@@ -915,4 +920,17 @@
   background: #475569;
   color: #fff;
   filter: none;
+}
+
+@media (max-width: 900px) {
+  .dashboardPage {
+    height: auto;
+    overflow: visible;
+  }
+
+  .sidebar,
+  .contentPanel {
+    height: auto;
+    overflow: visible;
+  }
 }
