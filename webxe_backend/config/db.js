@@ -15,12 +15,17 @@ const dbConfig = {
 };
 
 async function connectDB() {
+  if (sql.connected) {
+    return sql;
+  }
+
   try {
     await sql.connect(dbConfig);
     console.log('✅ Kết nối SQL Server thành công');
+    return sql;
   } catch (error) {
     console.error('❌ Kết nối SQL Server thất bại:', error.message);
-    process.exit(1);
+    throw error;
   }
 }
 
