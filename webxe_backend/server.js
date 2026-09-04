@@ -30,31 +30,14 @@ app.use(cors({
 }));
 app.use(express.json());
 
-const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: process.env.SWAGGER_TITLE || 'WebXe API',
-      version: process.env.SWAGGER_VERSION || '1.0.0',
-      description: process.env.SWAGGER_DESCRIPTION || 'API quản lý xe',
-    },
-    servers: [
-      {
-        url: `http://localhost:${PORT}`,
-      },
-    ],
-  },
-  apis: ['./routes/*.js'],
-};
-
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
+const { swaggerSpec, swaggerUiOptions } = require('./config/swagger');
 
 app.get('/api-docs.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.json(swaggerSpec);
 });
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
 app.get('/api/data/json', getAllTablesData);
 

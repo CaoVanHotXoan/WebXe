@@ -109,6 +109,24 @@ const menuGroups = [
   { id: "system", label: "Quản lý Hệ thống", tableIds: ["NguoiDung", "VaiTro"] },
 ];
 
+const tableIcons: Record<string, string> = {
+  Xe: "🚗",
+  HangXe: "🏢",
+  LoaiXe: "🚘",
+  DonHang: "📦",
+  GioHang: "🛒",
+  ChiTietGioHang: "🛍️",
+  ChiTietDonHang: "🧾",
+  NguoiDung: "👤",
+  VaiTro: "🔑",
+};
+
+const menuGroupIcons: Record<string, string> = {
+  products: "🏎️",
+  sales: "💳",
+  system: "⚙️",
+};
+
 const detailTableByParent: Record<string, string> = {
   GioHang: "ChiTietGioHang",
   DonHang: "ChiTietDonHang",
@@ -146,6 +164,37 @@ const columnLabels: Record<string, string> = {
   HoTen: "Họ tên", Email: "Email", MoTa: "Mô tả",
 };
 
+const foreignKeyConfig: Record<
+  string,
+  { refTable: string; valueKey: string; getLabel: (row: Record<string, any>) => string }
+> = {
+  MaHang: {
+    refTable: "HangXe",
+    valueKey: "MaHang",
+    getLabel: (row) => String(row.TenHang || row.MaHang || ""),
+  },
+  MaLoai: {
+    refTable: "LoaiXe",
+    valueKey: "MaLoai",
+    getLabel: (row) => String(row.TenLoai || row.MaLoai || ""),
+  },
+  MaVaiTro: {
+    refTable: "VaiTro",
+    valueKey: "MaVaiTro",
+    getLabel: (row) => String(row.TenVaiTro || row.MaVaiTro || ""),
+  },
+  MaNguoiDung: {
+    refTable: "NguoiDung",
+    valueKey: "MaNguoiDung",
+    getLabel: (row) => String(row.HoTen || row.TenDangNhap || row.MaNguoiDung || ""),
+  },
+  MaXe: {
+    refTable: "Xe",
+    valueKey: "MaXe",
+    getLabel: (row) => String(row.TenXe || row.MaXe || ""),
+  },
+};
+
 const getColumnLabel = (column: string) => columnLabels[column] ?? column;
 
 const imageColumns = new Set(["HinhAnh", "Logo"]);
@@ -159,6 +208,7 @@ const renderCellValue = (column: string, value: string | number | null, relatedN
 
 export default function Home() {
   const [selectedId, setSelectedId] = useState<string>(tables[0].id);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     products: true,
     sales: true,
@@ -227,6 +277,7 @@ export default function Home() {
   const selectTable = (tableId: string) => {
     setSelectedId(tableId);
     setSelectedDetailId(null);
+    setIsMobileMenuOpen(false);
   };
 
   const openCreate = (tableId = selectedTable.id) => {
@@ -307,14 +358,26 @@ export default function Home() {
       <div className={styles.dashboardPage}>
         <aside className={styles.sidebar}>
           <div className={styles.sidebarHeader}>
-            <div className={styles.logoCircle}>W</div>
-            <div>
-              <p className={styles.brandLabel}>WebXe</p>
-              <span className={styles.brandSub}>Database Dashboard</span>
+            <div className={styles.brandRow}>
+              <div className={styles.logoCircle}>🏎️</div>
+              <div>
+                <p className={styles.brandLabel}>WebXe</p>
+                <span className={styles.brandSub}>Database Dashboard</span>
+              </div>
             </div>
+            <button
+              type="button"
+              className={styles.mobileMenuToggle}
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              aria-expanded={isMobileMenuOpen}
+              aria-label="Toggle mobile menu"
+            >
+              <span className={styles.toggleIcon}>{isMobileMenuOpen ? "✕" : "☰"}</span>
+              <span className={styles.toggleText}>Danh mục</span>
+            </button>
           </div>
 
-          <nav className={styles.navList}>
+          <nav className={`${styles.navList} ${isMobileMenuOpen ? styles.mobileNavOpen : ""}`}>
             {menuGroups.map((group) => {
               const isExpanded = expandedGroups[group.id];
               return (
@@ -325,8 +388,8 @@ export default function Home() {
                     aria-expanded={isExpanded}
                     onClick={() => setExpandedGroups((current) => ({ ...current, [group.id]: !current[group.id] }))}
                   >
-                    <span>{group.label}</span>
-                    <span className={`${styles.groupChevron} ${isExpanded ? styles.groupChevronOpen : ""}`}>⌄</span>
+                    <span>{menuGroupIcons[group.id] ?? "📁"} {group.label}</span>
+                    <span className={`${styles.groupChevron} ${isExpanded ? styles.groupChevronOpen : ""}`}>🔽</span>
                   </button>
                   {isExpanded && (
                     <div className={styles.groupItems}>
@@ -340,7 +403,7 @@ export default function Home() {
                             className={`${styles.navItem} ${selectedId === table.id ? styles.active : ""}`}
                             onClick={() => selectTable(table.id)}
                           >
-                            <span className={styles.navIndex}>{table.id.slice(0, 2)}</span>
+                            <span className={styles.navIndex}>{tableIcons[table.id] ?? "🚗"}</span>
                             <span className={styles.navText}>{tableLabels[table.id] ?? table.name}</span>
                           </button>
                         );
@@ -360,7 +423,6 @@ export default function Home() {
               <h1>{tableLabels[selectedTable.id] ?? selectedTable.name}</h1>
             </div>
             <div className={styles.topbarActions}>
-              <span className={styles.badge}>{selectedTable.records.length} records</span>
               <button type="button" className={styles.primaryButton} onClick={() => openCreate()}>+ Thêm mới</button>
             </div>
           </div>
@@ -377,20 +439,53 @@ export default function Home() {
                 <button type="button" className={styles.closeButton} onClick={closeForm}>Đóng</button>
               </div>
               <div className={styles.formGrid}>
-                {formColumns.map((column) => (
-                  <label key={column} className={styles.formField}>
-                    <span>{getColumnLabel(column)}</span>
-                    <input
-                      type={column.includes("Ngay") ? "datetime-local" : column === "MatKhau" ? "password" : "text"}
-                      value={formValues[column] == null ? "" : String(formValues[column])}
-                      disabled={formMode === "edit" && (identityColumns[formTable.id] ?? []).includes(column)}
-                      onChange={(event) => setFormValues((current) => ({ ...current, [column]: event.target.value }))}
-                    />
-                    {imageColumns.has(column) && formValues[column] && (
-                      <img className={styles.formImagePreview} src={String(formValues[column])} alt={`Xem trước ${column}`} />
-                    )}
-                  </label>
-                ))}
+                {formColumns.map((column) => {
+                  const fkConfig = foreignKeyConfig[column];
+                  const isForeignKey = fkConfig && fkConfig.refTable !== formTable.id;
+                  const refRecords = isForeignKey
+                    ? tableData.find((t) => t.id === fkConfig.refTable)?.records ?? []
+                    : [];
+
+                  return (
+                    <label key={column} className={styles.formField}>
+                      <span>{getColumnLabel(column)}</span>
+                      {isForeignKey ? (
+                        <select
+                          value={formValues[column] == null ? "" : String(formValues[column])}
+                          disabled={formMode === "edit" && (identityColumns[formTable.id] ?? []).includes(column)}
+                          onChange={(event) => {
+                            const val = event.target.value;
+                            setFormValues((current) => ({
+                              ...current,
+                              [column]: val === "" ? "" : isNaN(Number(val)) ? val : Number(val),
+                            }));
+                          }}
+                        >
+                          <option value="">-- Chọn {getColumnLabel(column).toLowerCase()} --</option>
+                          {refRecords.map((refRow, idx) => {
+                            const val = refRow[fkConfig.valueKey];
+                            const label = fkConfig.getLabel(refRow);
+                            return (
+                              <option key={`${val}-${idx}`} value={String(val)}>
+                                {label} (Mã: {String(val)})
+                              </option>
+                            );
+                          })}
+                        </select>
+                      ) : (
+                        <input
+                          type={column.includes("Ngay") ? "datetime-local" : column === "MatKhau" ? "password" : "text"}
+                          value={formValues[column] == null ? "" : String(formValues[column])}
+                          disabled={formMode === "edit" && (identityColumns[formTable.id] ?? []).includes(column)}
+                          onChange={(event) => setFormValues((current) => ({ ...current, [column]: event.target.value }))}
+                        />
+                      )}
+                      {imageColumns.has(column) && formValues[column] && (
+                        <img className={styles.formImagePreview} src={String(formValues[column])} alt={`Xem trước ${column}`} />
+                      )}
+                    </label>
+                  );
+                })}
               </div>
               <button type="button" className={styles.primaryButton} disabled={saving} onClick={saveRecord}>
                 {saving ? "Đang lưu..." : "Lưu thay đổi"}
@@ -399,10 +494,6 @@ export default function Home() {
             </div>
           )}
 
-          <div className={styles.infoCard}>
-            <h2>Mô tả</h2>
-            <p>{selectedTable.description}</p>
-          </div>
 
           {!isCardView && showColumnOverview && <div className={styles.tableSection}>
             <div className={styles.tableHeaderRow}>
