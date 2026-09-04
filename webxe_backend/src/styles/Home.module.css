@@ -18,10 +18,46 @@
 .sidebarHeader {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 14px;
   padding: 8px 8px 20px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.25);
   margin-bottom: 20px;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mobileMenuToggle {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.mobileMenuToggle:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.toggleIcon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.toggleText {
+  font-size: 13px;
 }
 
 .logoCircle {
@@ -78,14 +114,15 @@
 }
 
 .groupChevron {
-  font-size: 17px;
+  font-size: 14px;
   line-height: 1;
+  display: inline-block;
   transform: rotate(0deg);
-  transition: transform 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .groupChevronOpen {
-  transform: rotate(180deg);
+  transform: rotate(-180deg);
 }
 
 .groupItems {
@@ -128,7 +165,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -291,7 +328,8 @@
   font-weight: 700;
 }
 
-.formField input {
+.formField input,
+.formField select {
   width: 100%;
   min-height: 38px;
   padding: 8px 10px;
@@ -303,7 +341,8 @@
   font-weight: 400;
 }
 
-.formField input:focus {
+.formField input:focus,
+.formField select:focus {
   outline: 2px solid #99f6e4;
   border-color: #0f766e;
 }
@@ -663,52 +702,182 @@
   background: #f8fbff;
 }
 
-@media (max-width: 900px) {
+/* Responsive Layout Media Queries */
+@media (min-width: 1400px) {
+  .productGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1399px) {
+  .productGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1023px) {
   .dashboardPage {
     flex-direction: column;
+    height: auto;
+    overflow: visible;
   }
 
   .sidebar {
     width: 100%;
+    height: auto;
+    max-height: none;
+    overflow: visible;
     border-right: none;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    padding: 16px;
+    margin-bottom: 0;
+  }
+
+  .sidebarHeader {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  .mobileMenuToggle {
+    display: inline-flex;
   }
 
   .navList {
-    display: grid;
+    display: none;
+    opacity: 0;
+    transition: all 0.25s ease;
+  }
+
+  .navList.mobileNavOpen {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    opacity: 1;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .contentPanel {
+    height: auto;
+    overflow: visible;
+    padding: 20px 16px 40px;
+  }
+
+  .productGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 600px) {
-  .contentPanel {
-    padding: 18px 14px 30px;
+@media (max-width: 767px) {
+  .navList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .topbar {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 16px;
   }
 
-  .navList {
-    grid-template-columns: 1fr;
+  .topbarActions {
+    width: 100%;
+    justify-content: flex-start;
   }
 
-  .topbarActions,
-  .rowActions {
-    flex-wrap: wrap;
+  .primaryButton {
+    width: 100%;
+    justify-content: center;
   }
 
-  .formGrid {
-    grid-template-columns: 1fr;
+  .productGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .modal {
+    width: 95%;
+    max-height: 90vh;
+    padding: 18px;
   }
 
   .vehicleDetailContent {
     grid-template-columns: 1fr;
   }
 
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 639px) {
+  .contentPanel {
+    padding: 16px 12px 32px;
+  }
+
+  .navList {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .productGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .productMeta {
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+  }
+
+  .productActions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .productActions button {
+    flex: 1;
+    min-width: 90px;
+    text-align: center;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .vehicleDetailGrid {
+    grid-template-columns: 1fr;
+  }
+
   .vehicleDetailImage {
     min-height: 170px;
+  }
+
+  .dataWrap {
+    border-radius: 12px;
+    margin-top: 12px;
+  }
+
+  .dataTable th,
+  .dataTable td {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .modalActions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .modalActions button {
+    width: 100%;
+  }
+
+  .closeButton {
+    width: 100%;
+    margin-top: 8px;
   }
 }
 
@@ -884,7 +1053,8 @@
   @apply font-black text-sky-700;
 }
 
-.formField input {
+.formField input,
+.formField select {
   @apply rounded-2xl border-2 border-sky-200 bg-sky-50/50 px-3 shadow-inner outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100;
 }
 
@@ -922,7 +1092,7 @@
   filter: none;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1023px) {
   .dashboardPage {
     height: auto;
     overflow: visible;
