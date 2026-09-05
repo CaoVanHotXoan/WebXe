@@ -7,9 +7,9 @@ export type Vehicle = {
   price: number;
   priceLabel: string;
   image: string;
-  type: VehicleType;
-  fuel: FuelType;
-  brand: string;
+  type?: VehicleType;
+  fuel?: FuelType;
+  brand?: string;
 };
 
 // Dữ liệu bán xe dùng chung cho trang chủ và trang mua bán.

@@ -40,8 +40,9 @@ app.get('/api-docs.json', (req, res) => {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
 app.get('/api/data/json', getAllTablesData);
+app.get('/api/data', getAllTablesData);
 
-app.get('/api/data', async (req, res) => {
+app.get('/api/data/view', async (req, res) => {
   try {
     const data = await getAllTablesDataObject();
     const tableBlocks = allowedTables.map((tableName) => {
@@ -230,7 +231,7 @@ app.get('/api/data', async (req, res) => {
       </html>
     `);
   } catch (error) {
-    console.error('Lỗi render /api/data:', error);
+    console.error('Lỗi render /api/data/view:', error);
     res.status(500).json({ message: 'Không thể render dữ liệu API', error: error.message });
   }
 });
