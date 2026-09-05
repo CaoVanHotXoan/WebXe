@@ -1,135 +1,95 @@
-import Head from "next/head";
-import { useEffect, useMemo, useState } from "react";
-import styles from "@/styles/Home.module.css";
+import React from 'react';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import styles from '@/pages/TrangChu/trangchu.module.css';
+import { useAutoSlider } from '@/TS/sliderLogic';
+import { vehicles } from '@/TS/vehicleData';
+import { newsItems } from '@/TS/newsData';
+import Link from 'next/link';
 
-type Product = {
-  MaXe: number;
-  TenXe: string;
-  Gia: number;
-  HinhAnh?: string;
-  MauSac?: string;
-  NamSanXuat?: number;
-  MoTa?: string;
-  SoLuong?: number;
-};
-
-type ApiResponse = {
-  Xe?: Product[];
-};
-
-const fallbackImages = [
-  "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
-  "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=900&q=80",
-  "https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?auto=format&fit=crop&w=900&q=80",
-  "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=900&q=80",
+// Sample data for banners, news, and cars
+const bannerData = [
+  { id: 1, image: 'https://images.unsplash.com/photo-1503376712344-652d0f440f5a?auto=format&fit=crop&w=1920&q=80', title: 'SIÊU DEAL CUỐI TUẦN', desc: 'Giảm giá lên đến 20% cho các dòng xe' },
+  { id: 2, image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1920&q=80', title: 'MERCEDES AMG G63', desc: 'Trải nghiệm đỉnh cao cùng ông vua địa hình.' },
+  { id: 3, image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1920&q=80', title: 'KHÁM PHÁ DÒNG XE MỚI', desc: 'Dòng xe máy tiết kiệm xăng nhất năm 2026.' }
 ];
 
-const formatPrice = (value: number) =>
-  new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
-  }).format(value);
+// Dùng chung dữ liệu với trang danh sách và trang chi tiết tin tức.
+const newsData = newsItems.slice(0, 5).map(({ id, title, image }) => ({ id, title, image }));
 
-export default function Home() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+const carsData = vehicles.map(({ id, title, image, priceLabel: price }) => ({ id, title, image, price }));
 
-  useEffect(() => {
-    fetch("http://localhost:3002/api/data/json")
-      .then((res) => res.json())
-      .then((data: ApiResponse) => {
-        const xe = Array.isArray(data?.Xe) ? data.Xe : [];
-        setProducts(xe);
-      })
-      .catch(() => {
-        setProducts([]);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+type ContentItem = { id: number; title: string; image: string; price?: string };
 
-  const catalog = useMemo(() => {
-    if (!products.length) return [];
-    return products.slice(0, 8).map((product, index) => ({
-      ...product,
-      image:
-        product.HinhAnh || fallbackImages[index % fallbackImages.length],
-      discount: index % 3 === 0 ? 15 : index % 3 === 1 ? 9 : 10,
-    }));
-  }, [products]);
+// Small content slider component (reusable)
+function ContentSlider({ items, hasPrice }: { items: ContentItem[]; hasPrice?: boolean }){
+  const [startIndex, setStartIndex] = React.useState(0);
+  const maxVisible = 3;
+
+  const handleNext = () => setStartIndex(prev => (prev < items.length - maxVisible ? prev + 1 : 0));
+  const handlePrev = () => setStartIndex(prev => (prev > 0 ? prev - 1 : Math.max(0, items.length - maxVisible)));
 
   return (
-    <>
-      <Head>
-        <title>WebXe | Laptop MSI</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </Head>
-
-      <div className={styles.pageShell}>
-        <header className={styles.topBar}>
-          <h1 className={styles.heading}>
-            LAPTOP MSI CHÍNH HÃNG
-            <span> ({products.length || 0} sản phẩm)</span>
-          </h1>
-
-          <div className={styles.filterGroup}>
-            <div className={styles.filterSelect}>
-              <span>Phân khúc giá</span>
-              <span className={styles.selectArrow}>⌄</span>
-            </div>
-            <div className={styles.filterSelect}>
-              <span>Thương hiệu</span>
-              <span className={styles.selectArrow}>⌄</span>
-            </div>
-            <div className={styles.filterSelect}>
-              <span>Sắp xếp theo</span>
-              <span className={styles.selectArrow}>⌄</span>
-            </div>
-            <button type="button" className={styles.viewButton} aria-label="Toggle view">
-              ☰
-            </button>
-          </div>
-        </header>
-
-        <main className={styles.productArea}>
-          {loading ? (
-            <div className={styles.loading}>Đang tải sản phẩm...</div>
-          ) : catalog.length === 0 ? (
-            <div className={styles.empty}>Không có sản phẩm nào.</div>
-          ) : (
-            <div className={styles.productGrid}>
-              {catalog.map((product, index) => (
-                <article
-                  key={product.MaXe}
-                  className={`${styles.productCard} ${index === 3 ? styles.highlightCard : ""}`}
-                >
-                  <div className={styles.cardTop}>
-                    <span className={styles.discountTag}>Giảm {product.discount}%</span>
-                    <div className={styles.badgeWrap}>
-                      <span className={styles.productBrand}>MTB.HVN</span>
-                    </div>
-                  </div>
-
-                  <div className={styles.imageWrap}>
-                    <img src={product.image} alt={product.TenXe} className={styles.productImage} />
-                  </div>
-
-                  <div className={styles.cardBody}>
-                    <div className={styles.productName}>{product.TenXe}</div>
-                    <div className={styles.metaLine}>
-                      <span>CPU</span>
-                      <span>SSD</span>
-                    </div>
-                    <div className={styles.priceRow}>
-                      <strong>{formatPrice(product.Gia)}</strong>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </main>
+    <div className={styles['news-slider']}>
+      <button className={`${styles['slider-arrow']} ${styles['left']}`} onClick={handlePrev} aria-label="prev">◀</button>
+      <div className={styles['news-track']} style={{ transform: `translateX(calc(-${startIndex * (100/3)}%))` }}>
+        {items.map((it, idx)=>{
+          const isActive = idx >= startIndex && idx < startIndex + maxVisible;
+          return (
+            <Link key={it.id} href={hasPrice ? `/ChiTietXe/ChiTietXe?id=${it.id}` : `/TinTuc/ChiTietTin?id=${it.id}`} className={`${styles['news-card']} ${isActive?styles.active:''}`}>
+              <div className={styles['news-img-container']}><img src={it.image} className={styles['news-img']} alt={it.title} /></div>
+              <div className={styles['news-content']}>
+                <h3 className={styles['news-text']}>{it.title}</h3>
+                {hasPrice && <span className={styles['news-price']}>{it.price}</span>}
+              </div>
+            </Link>
+          );
+        })}
       </div>
-    </>
+      <button className={`${styles['slider-arrow']} ${styles['right']}`} onClick={handleNext} aria-label="next">▶</button>
+    </div>
+  );
+}
+
+export default function TrangChu(){
+  const { currentIndex, nextSlide, prevSlide } = useAutoSlider(bannerData.length, 5000);
+
+  return (
+    <div className={styles['main-page']}>
+      <Header />
+
+      {/* Banner */}
+      <section className={styles['banner-wrapper']}>
+        <button className={`${styles['arrow-btn']} ${styles['left']}`} onClick={prevSlide}>◀</button>
+        <div className={styles['banner-track']} style={{ transform: `translateX(-${currentIndex * 100}%)` }}>
+          {bannerData.map(b => (
+            <div key={b.id} className={styles['banner-slide']}>
+              <img src={b.image} className={styles['banner-img']} alt={b.title} />
+              <div className={styles['banner-overlay']}>
+                <h1 className={styles['banner-title']}><span>{b.title.split(' ')[0]}</span> {b.title.substring(b.title.indexOf(' ')+1)}</h1>
+                <p className={styles['banner-desc']}>{b.desc}</p>
+                <button className={styles['banner-btn']}>XEM CHI TIẾT</button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button className={`${styles['arrow-btn']} ${styles['right']}`} onClick={nextSlide}>▶</button>
+      </section>
+
+      {/* Content zone */}
+      <main className={styles['content-zone']}>
+        <section>
+          <h2 className={styles['section-title']}>Tin Tức Nổi Bật</h2>
+          <ContentSlider items={newsData} />
+        </section>
+
+        <section>
+          <h2 className={styles['section-title']}>Tin Bán Xe</h2>
+          <ContentSlider items={carsData} hasPrice />
+        </section>
+      </main>
+
+      <Footer />
+    </div>
   );
 }

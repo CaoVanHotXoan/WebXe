@@ -1,0 +1,54 @@
+.page { --red: #ef233c; background: #080808; }
+.main { width: min(1180px, calc(100% - 32px)); margin: auto; padding: 72px 0 96px; }
+.hero { border-bottom: 1px solid #292929; padding-bottom: 42px; }
+.eyebrow, .kicker { color: var(--red); font-size: 11px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
+.title { margin-top: 14px; font-size: clamp(42px, 7vw, 82px); font-weight: 800; letter-spacing: -.06em; line-height: .95; }
+.subtitle { color: #a4a4a4; margin-top: 22px; max-width: 520px; }
+.categories { display: flex; gap: 10px; overflow-x: auto; padding: 26px 0; scrollbar-width: none; }
+.categories::-webkit-scrollbar { display: none; }
+.categoryButton { flex: 0 0 auto; border: 1px solid #383838; border-radius: 999px; background: transparent; color: #aaa; cursor: pointer; padding: 11px 18px; transition: .2s; }
+.categoryButton:hover, .activeCategory { border-color: var(--red); background: var(--red); color: #fff; }
+.layout { display: grid; grid-template-columns: minmax(0, 7fr) minmax(280px, 3fr); gap: 42px; }
+.heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.heading h2 { margin-top: 7px; font-size: 24px; font-weight: 700; }
+.heading > span { color: #777; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+.articleList { display: grid; gap: 14px; }
+.article { display: grid; grid-template-columns: 190px 1fr; gap: 22px; border-top: 1px solid #2a2a2a; padding: 18px 0; }
+.article > img { width: 190px; height: 132px; object-fit: cover; }
+.article h3 { margin: 6px 0 8px; font-size: 21px; line-height: 1.18; transition: color .2s; }
+.article:hover h3, .readMore:hover, .popularItem:hover span, .videoItem:hover { color: var(--red); }
+.description { color: #999; font-size: 13px; line-height: 1.55; }
+.readMore { display: inline-flex; gap: 8px; margin-top: 12px; color: #eee; font-size: 12px; font-weight: 700; }
+.loadMore { display: block; margin: 30px auto 0; border: 1px solid var(--red); background: var(--red); color: white; cursor: pointer; padding: 12px 30px; font-weight: 700; transition: .2s; }
+.loadMore:hover { background: transparent; color: var(--red); }
+.sidebar {
+  display: grid;
+  align-self: start;
+  gap: 10px;
+  position: sticky;
+  top: 16px;
+  z-index: 10;
+}
+.panel {
+  height: 430px;
+  min-height: 430px;
+  border: 1px solid #292929;
+  background: #101010;
+  padding: 20px;
+  overflow: hidden;
+}
+.panel .heading { border-bottom: 1px solid #292929; padding-bottom: 15px; }
+.panel .heading h2 { font-size: 18px; }
+.popularList, .videoList { display: grid; gap: 14px; height: 350px; overflow-y: auto; padding-right: 8px; scrollbar-color: #ef233c #242424; scrollbar-width: thin; }
+.popularList::-webkit-scrollbar, .videoList::-webkit-scrollbar { width: 6px; }
+.popularList::-webkit-scrollbar-track, .videoList::-webkit-scrollbar-track { background: #242424; }
+.popularList::-webkit-scrollbar-thumb, .videoList::-webkit-scrollbar-thumb { background: var(--red); border-radius: 999px; }
+.popularItem { display: grid; grid-template-columns: 24px 64px 1fr; align-items: center; gap: 10px; }
+.popularItem b { color: var(--red); font-size: 12px; }
+.popularItem img { width: 64px; height: 47px; object-fit: cover; }
+.popularItem span { color: #ddd; font-size: 12px; line-height: 1.35; transition: color .2s; }
+.videoItem { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 12px; color: #ddd; font-size: 13px; line-height: 1.35; transition: color .2s; }
+.videoThumb { display: grid; height: 68px; place-items: center; background: linear-gradient(135deg, #51111a, #171717); }
+.videoThumb span { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid white; border-radius: 50%; font-size: 11px; }
+@media (max-width: 800px) { .main { padding-top: 45px; } .layout { grid-template-columns: 1fr; } .sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); position: static; } .panel { height: 430px; } }
+@media (max-width: 560px) { .main { width: calc(100% - 24px); } .article { grid-template-columns: 105px 1fr; gap: 14px; } .article > img { width: 105px; height: 105px; } .article h3 { font-size: 16px; } .description { display: none; } .sidebar { grid-template-columns: 1fr; } }

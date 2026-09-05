@@ -1,0 +1,218 @@
+/* Container chính */
+.main-page {
+  background-color: #050505;
+  color: #fff;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+/* ==================== BANNER ==================== */
+.banner-wrapper {
+  position: relative;
+  width: 100%;
+  height: 80vh;
+  overflow: hidden;
+}
+
+/* Slider Track chứa các Slide */
+.banner-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.banner-slide {
+  min-width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* Ảnh Banner */
+.banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Gradient overlay và nội dung Text */
+.banner-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 15%;
+}
+
+.banner-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  color: #fff;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  text-transform: uppercase;
+}
+.banner-title span {
+  color: #ef4444; /* Chữ màu đỏ */
+}
+.banner-desc {
+  font-size: 1.25rem;
+  max-width: 500px;
+  margin-bottom: 2rem;
+  color: #ddd;
+}
+.banner-btn {
+  background-color: #ef4444;
+  color: white;
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  width: max-content;
+}
+.banner-btn:hover {
+  background-color: #dc2626;
+}
+
+/* Nút mũi tên trái phải ở Banner */
+.arrow-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 10;
+}
+.arrow-btn:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+.arrow-btn.left { left: 2rem; }
+.arrow-btn.right { right: 2rem; }
+
+
+/* ==================== CONTENT ZONE ==================== */
+.content-zone {
+  width: 70%;
+  margin: 4rem auto;
+}
+
+.section-title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+  border-left: 5px solid #ef4444;
+  padding-left: 1rem;
+}
+
+/* Slider Component (Tin tức & Tin bán xe) */
+.news-slider {
+  position: relative;
+  overflow: hidden;
+  padding: 1rem 0;
+  margin-bottom: 5rem;
+}
+
+.news-track {
+  display: flex;
+  gap: 2rem;
+  transition: transform 0.5s ease-in-out;
+  padding: 0 4rem; /* Để hở 2 bên */
+}
+
+.news-card {
+  min-width: calc(33.333% - 1.333rem); /* Hiển thị max 3 ảnh ở giữa */
+  background-color: #111;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.3s, opacity 0.3s;
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+  opacity: 0.5; /* Mặc định mờ */
+  transform: scale(0.9);
+}
+
+.news-card.active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.news-card:hover .news-img {
+  transform: scale(1.05);
+}
+
+.news-card:hover .news-text {
+  color: #ef4444; /* Hover chữ đỏ */
+}
+
+.news-img-container {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.news-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s;
+}
+
+.news-content {
+  padding: 1.5rem;
+}
+
+.news-text {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  transition: color 0.3s;
+}
+
+.news-price {
+  color: #ef4444;
+  font-weight: 700;
+  margin-top: 0.5rem;
+  display: block;
+}
+
+/* Nút mũi tên Slider nhỏ */
+.slider-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 5;
+  transition: background 0.3s;
+}
+.slider-arrow:hover {
+  background: #ef4444;
+}
+.slider-arrow.left { left: 0; }
+.slider-arrow.right { right: 0; }
