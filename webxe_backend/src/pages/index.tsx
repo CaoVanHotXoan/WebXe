@@ -2,12 +2,16 @@ import Head from "next/head";
 import { useEffect, useMemo, useState } from "react";
 import styles from "@/styles/Home.module.css";
 
+type CellValue = string | number | boolean | null;
+type VehicleImage = { url: string; isMain: boolean };
+type VehicleImageMap = Record<string, VehicleImage[]>;
+
 type TableItem = {
   id: string;
   name: string;
   description: string;
   columns: string[];
-  records: Array<Record<string, string | number | null>>;
+  records: Array<Record<string, CellValue>>;
 };
 
 const tables: TableItem[] = [
@@ -60,6 +64,13 @@ const tables: TableItem[] = [
       { MaXe: 1, MaHang: 1, MaLoai: 1, TenXe: "Toyota Vios", Gia: 620000000, NamSanXuat: 2024, MauSac: "Trắng", SoLuong: 10 },
       { MaXe: 2, MaHang: 2, MaLoai: 2, TenXe: "Honda CR-V", Gia: 980000000, NamSanXuat: 2023, MauSac: "Đen", SoLuong: 6 },
     ],
+  },
+  {
+    id: "HinhAnhXe",
+    name: "HinhAnhXe",
+    description: "Ảnh xe được quản lý bên trong mục Xe.",
+    columns: ["MaHinhAnh", "MaXe", "DuongDanAnh", "LaAnhChinh"],
+    records: [],
   },
   {
     id: "GioHang",
@@ -139,7 +150,7 @@ const detailKeyByParent: Record<string, string> = {
 
 const identityColumns: Record<string, string[]> = {
   VaiTro: ["MaVaiTro"], NguoiDung: ["MaNguoiDung"], HangXe: ["MaHang"], LoaiXe: ["MaLoai"],
-  Xe: ["MaXe"], GioHang: ["MaGioHang"], DonHang: ["MaDonHang"],
+  Xe: ["MaXe"], HinhAnhXe: ["MaHinhAnh"], GioHang: ["MaGioHang"], DonHang: ["MaDonHang"],
 };
 
 const hiddenDisplayColumns: Record<string, string[]> = {
@@ -156,7 +167,7 @@ const columnLabels: Record<string, string> = {
   MaVaiTro: "Mã vai trò", TenVaiTro: "Tên vai trò", MaNguoiDung: "Mã người dùng",
   MaHang: "Mã hãng xe", TenHang: "Tên hãng xe", MaLoai: "Mã loại xe", TenLoai: "Tên loại xe",
   MaXe: "Mã xe", TenXe: "Tên xe", Gia: "Giá", NamSanXuat: "Năm sản xuất", MauSac: "Màu sắc",
-  SoLuong: "Số lượng", HinhAnh: "Hình ảnh", Logo: "Logo", MaGioHang: "Mã giỏ hàng",
+  SoLuong: "Số lượng", HinhAnh: "Hình ảnh", Logo: "Logo", MaHinhAnh: "Mã hình ảnh", DuongDanAnh: "Đường dẫn ảnh", LaAnhChinh: "Ảnh chính", MaGioHang: "Mã giỏ hàng",
   NgayTao: "Ngày tạo", MaDonHang: "Mã đơn hàng", HoTenNguoiNhan: "Họ tên người nhận",
   SoDienThoai: "Số điện thoại", DiaChi: "Địa chỉ", TongTien: "Tổng tiền",
   PhuongThucThanhToan: "Phương thức thanh toán", TrangThai: "Trạng thái", NgayDat: "Ngày đặt",
@@ -199,11 +210,11 @@ const getColumnLabel = (column: string) => columnLabels[column] ?? column;
 
 const imageColumns = new Set(["HinhAnh", "Logo"]);
 
-const renderCellValue = (column: string, value: string | number | null, relatedName?: string) => {
+const renderCellValue = (column: string, value: CellValue, relatedName?: string) => {
   if (imageColumns.has(column) && value) {
     return <img className={styles.tableImage} src={String(value)} alt={column} />;
   }
-  return relatedName ?? String(value ?? "-");
+  return relatedName ?? (typeof value === "boolean" ? (value ? "Có" : "Không") : String(value ?? "-"));
 };
 
 export default function Home() {
@@ -214,23 +225,27 @@ export default function Home() {
     sales: true,
     system: true,
   });
-  const [selectedDetailId, setSelectedDetailId] = useState<string | number | null>(null);
+  const [selectedDetailId, setSelectedDetailId] = useState<CellValue>(null);
   const [tableData, setTableData] = useState(tables);
   const [formMode, setFormMode] = useState<"create" | "edit" | null>(null);
   const [formTableId, setFormTableId] = useState<string | null>(null);
-  const [formValues, setFormValues] = useState<Record<string, string | number | null>>({});
+  const [formValues, setFormValues] = useState<Record<string, CellValue>>({});
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [detailRecord, setDetailRecord] = useState<Record<string, string | number | null> | null>(null);
+  const [detailRecord, setDetailRecord] = useState<Record<string, CellValue> | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageIsMain, setImageIsMain] = useState(false);
+  const [editingImageId, setEditingImageId] = useState<number | null>(null);
+  const [imageSaving, setImageSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{
-    row: Record<string, string | number | null>;
+    row: Record<string, CellValue>;
     tableId: string;
   } | null>(null);
 
   useEffect(() => {
     fetch("/api/data/json")
       .then((response) => response.json())
-      .then((data: Record<string, Array<Record<string, string | number | null>>>) => {
+      .then((data: Record<string, Array<Record<string, CellValue>>>) => {
         setTableData(tables.map((table) => ({
           ...table,
           records: Array.isArray(data[table.id]) ? data[table.id] : table.records,
@@ -259,14 +274,29 @@ export default function Home() {
   const formColumns = formTable.columns.filter((column) =>
     formMode === "edit" || !(identityColumns[formTable.id] ?? []).includes(column)
   ).filter((column) => column !== "ThanhTien");
+  const vehicleImages = useMemo(() => {
+    const images = tableData.find((table) => table.id === "HinhAnhXe")?.records ?? [];
+    return images.reduce<VehicleImageMap>((result, image) => {
+      if (!image.MaXe || !image.DuongDanAnh) return result;
+      const key = String(image.MaXe);
+      result[key] = [...(result[key] ?? []), {
+        url: String(image.DuongDanAnh),
+        isMain: image.LaAnhChinh === true || image.LaAnhChinh === 1 || image.LaAnhChinh === "1",
+      }];
+      return result;
+    }, {});
+  }, [tableData]);
+  const selectedVehicleImages = detailRecord?.MaXe
+    ? tableData.find((table) => table.id === "HinhAnhXe")?.records.filter((image) => image.MaXe === detailRecord.MaXe) ?? []
+    : [];
 
-  const findName = (tableId: string, key: string, value: string | number | null) => {
+  const findName = (tableId: string, key: string, value: CellValue) => {
     const record = tableData.find((table) => table.id === tableId)?.records.find((item) => item[key] === value);
     const name = record?.TenXe ?? record?.TenHang ?? record?.TenLoai ?? record?.HoTen ?? record?.TenVaiTro;
     return name == null ? undefined : String(name);
   };
 
-  const getRelatedDisplayValue = (tableId: string, column: string, value: string | number | null) => {
+  const getRelatedDisplayValue = (tableId: string, column: string, value: CellValue) => {
     if (tableId === "Xe" && column === "MaHang") return findName("HangXe", "MaHang", value);
     if (tableId === "Xe" && column === "MaLoai") return findName("LoaiXe", "MaLoai", value);
     if (tableId === "GioHang" && column === "MaNguoiDung") return findName("NguoiDung", "MaNguoiDung", value);
@@ -287,11 +317,77 @@ export default function Home() {
     setFormValues({});
   };
 
-  const openEdit = (row: Record<string, string | number | null>, tableId = selectedTable.id) => {
+  const openEdit = (row: Record<string, CellValue>, tableId = selectedTable.id) => {
     setFormMode("edit");
     setFormTableId(tableId);
     setErrorMessage("");
     setFormValues({ ...row });
+  };
+
+  const openVehicleDetail = (row: Record<string, CellValue>) => {
+    setDetailRecord(row);
+    setImageUrl("");
+    setImageIsMain(false);
+    setEditingImageId(null);
+  };
+
+  const resetImageForm = () => {
+    setImageUrl("");
+    setImageIsMain(false);
+    setEditingImageId(null);
+  };
+
+  const refreshTableData = async () => {
+    const refreshed = await fetch("/api/data/json").then((result) => result.json());
+    setTableData(tables.map((table) => ({
+      ...table,
+      records: Array.isArray(refreshed[table.id]) ? refreshed[table.id] : table.records,
+      columns: Array.isArray(refreshed[table.id]) && refreshed[table.id].length > 0 ? Object.keys(refreshed[table.id][0]) : table.columns,
+    })));
+  };
+
+  const saveVehicleImage = async () => {
+    if (!detailRecord?.MaXe || !imageUrl.trim()) return;
+    setImageSaving(true);
+    setErrorMessage("");
+    try {
+      const response = await fetch("/api/data/HinhAnhXe", {
+        method: editingImageId === null ? "POST" : "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...(editingImageId === null ? {} : { MaHinhAnh: editingImageId }),
+          MaXe: detailRecord.MaXe,
+          DuongDanAnh: imageUrl.trim(),
+          LaAnhChinh: imageIsMain,
+        }),
+      });
+      if (!response.ok) throw new Error("Không thể lưu hình ảnh xe");
+      await refreshTableData();
+      resetImageForm();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Không thể lưu hình ảnh xe.");
+    } finally {
+      setImageSaving(false);
+    }
+  };
+
+  const deleteVehicleImage = async (imageId: number) => {
+    setImageSaving(true);
+    setErrorMessage("");
+    try {
+      const response = await fetch("/api/data/HinhAnhXe", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ MaHinhAnh: imageId }),
+      });
+      if (!response.ok) throw new Error("Không thể xóa hình ảnh xe");
+      await refreshTableData();
+      if (editingImageId === imageId) resetImageForm();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Không thể xóa hình ảnh xe.");
+    } finally {
+      setImageSaving(false);
+    }
   };
 
   const closeForm = () => {
@@ -323,7 +419,7 @@ export default function Home() {
     }
   };
 
-  const requestDelete = (row: Record<string, string | number | null>, tableId = selectedTable.id) => {
+  const requestDelete = (row: Record<string, CellValue>, tableId = selectedTable.id) => {
     setPendingDelete({ row, tableId });
   };
 
@@ -474,10 +570,11 @@ export default function Home() {
                         </select>
                       ) : (
                         <input
-                          type={column.includes("Ngay") ? "datetime-local" : column === "MatKhau" ? "password" : "text"}
+                          type={column.includes("Ngay") ? "datetime-local" : column === "MatKhau" ? "password" : column === "LaAnhChinh" ? "checkbox" : "text"}
+                          checked={column === "LaAnhChinh" ? Boolean(formValues[column]) : undefined}
                           value={formValues[column] == null ? "" : String(formValues[column])}
                           disabled={formMode === "edit" && (identityColumns[formTable.id] ?? []).includes(column)}
-                          onChange={(event) => setFormValues((current) => ({ ...current, [column]: event.target.value }))}
+                          onChange={(event) => setFormValues((current) => ({ ...current, [column]: column === "LaAnhChinh" ? event.target.checked : event.target.value }))}
                         />
                       )}
                       {imageColumns.has(column) && formValues[column] && (
@@ -512,13 +609,23 @@ export default function Home() {
             <div className={styles.productGrid}>
               {selectedTable.records.map((row, rowIndex) => (
                 <article key={`${selectedTable.id}-${rowIndex}`} className={styles.productCard}>
-                  <div className={styles.productImageArea}>
-                    {(row.HinhAnh || row.Logo) ? (
-                      <img className={styles.productImage} src={String(row.HinhAnh || row.Logo)} alt={String(row.TenXe || row.TenHang || row.HoTen || selectedTable.name)} />
+                  {(() => {
+                    const images = selectedTable.id === "Xe" ? vehicleImages[String(row.MaXe)] ?? [] : [];
+                    const mainImage = images.find((image) => image.isMain)?.url ?? images[0]?.url ?? row.Logo;
+                    const secondaryImages = images.filter((image) => image.url !== mainImage);
+                    return <div className={styles.productImageArea}>
+                    {mainImage ? (
+                      <div className={styles.productImageLayout}>
+                        <img className={styles.productImage} src={String(mainImage)} alt={String(row.TenXe || row.TenHang || row.HoTen || selectedTable.name)} />
+                        {secondaryImages.length > 0 && <div className={styles.productThumbnails}>
+                          {secondaryImages.map((image, imageIndex) => <img key={`${image.url}-${imageIndex}`} className={styles.productThumbnail} src={image.url} alt={`${String(row.TenXe || selectedTable.name)} ảnh phụ ${imageIndex + 1}`} />)}
+                        </div>}
+                      </div>
                     ) : (
                       <span className={styles.imagePlaceholder}>Chưa có ảnh</span>
                     )}
-                  </div>
+                    </div>;
+                  })()}
                   <div className={styles.productCardBody}>
                     <span className={styles.productCode}>Mã: {String(row.MaXe || row.MaHang || row.MaNguoiDung || "-")}</span>
                     <h2>{String(row.TenXe || row.TenHang || row.HoTen || row.TenDangNhap || `${selectedTable.name} chưa đặt tên`)}</h2>
@@ -530,7 +637,7 @@ export default function Home() {
                       <span>{selectedTable.id === "Xe" ? `${row.SoLuong ?? 0} xe` : selectedTable.id === "NguoiDung" ? String(row.TenDangNhap || "Chưa có tài khoản") : "Đang quản lý"}</span>
                     </div>
                     <div className={styles.productActions}>
-                      <button type="button" className={styles.detailButton} onClick={() => setDetailRecord(row)}>Xem chi tiết</button>
+                      <button type="button" className={styles.detailButton} onClick={() => openVehicleDetail(row)}>Xem chi tiết</button>
                       <button type="button" className={styles.editButton} onClick={() => openEdit(row)}>Sửa</button>
                       <button type="button" className={styles.deleteButton} onClick={() => requestDelete(row)}>Xóa</button>
                     </div>
@@ -641,7 +748,12 @@ export default function Home() {
                 </div>
                 <div className={styles.vehicleDetailContent}>
                   <div className={styles.vehicleDetailImage}>
-                    {(detailRecord.HinhAnh || detailRecord.Logo) ? <img src={String(detailRecord.HinhAnh || detailRecord.Logo)} alt={String(detailRecord.TenXe || detailRecord.TenHang || detailRecord.HoTen || selectedTable.name)} /> : <span className={styles.imagePlaceholder}>Chưa có ảnh</span>}
+                    {(() => {
+                      const mainImage = selectedVehicleImages.find((image) => image.LaAnhChinh === true || image.LaAnhChinh === 1 || image.LaAnhChinh === "1")?.DuongDanAnh
+                        ?? selectedVehicleImages[0]?.DuongDanAnh
+                        ?? detailRecord.Logo;
+                      return mainImage ? <img src={String(mainImage)} alt={String(detailRecord.TenXe || detailRecord.TenHang || detailRecord.HoTen || selectedTable.name)} /> : <span className={styles.imagePlaceholder}>Chưa có ảnh</span>;
+                    })()}
                   </div>
                   <div className={styles.vehicleDetailGrid}>
                     {selectedTable.columns.map((column) => (
@@ -652,6 +764,46 @@ export default function Home() {
                     ))}
                   </div>
                 </div>
+                {selectedTable.id === "Xe" && (
+                  <div className={styles.vehicleImagesPanel}>
+                    <div className={styles.tableHeaderRow}>
+                      <div>
+                        <p className={styles.detailLabel}>Thư viện ảnh</p>
+                        <h3>Ảnh của xe</h3>
+                      </div>
+                      <span>{selectedVehicleImages.length} ảnh</span>
+                    </div>
+                    <div className={styles.vehicleImageList}>
+                      {selectedVehicleImages.map((image, imageIndex) => (
+                        <div key={String(image.MaHinhAnh ?? imageIndex)} className={styles.vehicleImageItem}>
+                          <img src={String(image.DuongDanAnh)} alt={`Ảnh xe ${imageIndex + 1}`} />
+                          <div className={styles.vehicleImageItemInfo}>
+                            <span>{image.LaAnhChinh === true || image.LaAnhChinh === 1 || image.LaAnhChinh === "1" ? "Ảnh chính" : "Ảnh phụ"}</span>
+                            <div className={styles.rowActions}>
+                              <button type="button" className={styles.editButton} onClick={() => {
+                                setEditingImageId(Number(image.MaHinhAnh));
+                                setImageUrl(String(image.DuongDanAnh));
+                                setImageIsMain(image.LaAnhChinh === true || image.LaAnhChinh === 1 || image.LaAnhChinh === "1");
+                              }}>Sửa</button>
+                              <button type="button" className={styles.deleteButton} disabled={imageSaving} onClick={() => deleteVehicleImage(Number(image.MaHinhAnh))}>Xóa</button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className={styles.vehicleImageForm}>
+                      <input value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} placeholder="Dán đường dẫn ảnh xe" aria-label="Đường dẫn ảnh xe" />
+                      <label className={styles.imageMainToggle}>
+                        <input type="checkbox" checked={imageIsMain} onChange={(event) => setImageIsMain(event.target.checked)} />
+                        Ảnh chính
+                      </label>
+                      <button type="button" className={styles.primaryButton} disabled={imageSaving || !imageUrl.trim()} onClick={saveVehicleImage}>
+                        {imageSaving ? "Đang lưu..." : editingImageId === null ? "Thêm ảnh" : "Lưu ảnh"}
+                      </button>
+                      {editingImageId !== null && <button type="button" className={styles.closeButton} onClick={resetImageForm}>Hủy sửa</button>}
+                    </div>
+                  </div>
+                )}
               </section>
             </div>
           )}

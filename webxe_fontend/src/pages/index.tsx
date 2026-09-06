@@ -6,6 +6,10 @@ import { useAutoSlider } from '@/TS/sliderLogic';
 import { vehicles } from '@/TS/vehicleData';
 import { newsItems } from '@/TS/newsData';
 import Link from 'next/link';
+import gsap from 'gsap';
+
+// Register GSAP plugins
+gsap.registerPlugin();
 
 // Sample data for banners, news, and cars
 const bannerData = [
@@ -13,6 +17,326 @@ const bannerData = [
   { id: 2, image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1920&q=80', title: 'MERCEDES AMG G63', desc: 'Trải nghiệm đỉnh cao cùng ông vua địa hình.' },
   { id: 3, image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1920&q=80', title: 'KHÁM PHÁ DÒNG XE MỚI', desc: 'Dòng xe máy tiết kiệm xăng nhất năm 2026.' }
 ];
+
+// Interactive Hero Banner Component with GSAP Morphing
+const InteractiveHeroBanner: React.FC<{ slides: typeof bannerData }> = ({ slides }) => {
+  const [activeIndex, setActiveIndex] = React.useState(0);
+  const [isAutoplay, setIsAutoplay] = React.useState(true);
+  const [progress, setProgress] = React.useState(0);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const thumbnailRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const progressIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const morphTimelineRef = React.useRef<gsap.core.Timeline | null>(null);
+
+  // Content morph-out animation
+  const morphOutContent = React.useCallback(() => {
+    if (!contentRef.current) return;
+    
+    return gsap.to(contentRef.current, {
+      opacity: 0,
+      y: -30,
+      duration: 0.4,
+      ease: 'power2.inOut',
+    });
+  }, []);
+
+  // Content morph-in animation
+  const morphInContent = React.useCallback(() => {
+    if (!contentRef.current) return;
+    
+    contentRef.current.style.opacity = '0';
+    contentRef.current.style.transform = 'translateY(-30px)';
+    
+    return gsap.to(contentRef.current, {
+      opacity: 1,
+      y: 0,
+      duration: 0.6,
+      ease: 'power2.out',
+      delay: 0.2,
+    });
+  }, []);
+
+  // Smooth background image transition
+  const morphBackgroundImage = React.useCallback((newIndex: number) => {
+    if (!containerRef.current) return Promise.resolve();
+
+    return new Promise((resolve) => {
+      // Create overlay for smooth image transition
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: absolute;
+        inset: 0;
+        background-image: url('${slides[newIndex].image}');
+        background-size: cover;
+        background-position: center;
+        opacity: 0;
+        z-index: 5;
+        pointer-events: none;
+      `;
+      containerRef.current?.appendChild(overlay);
+
+      // Animate overlay in
+      gsap.to(overlay, {
+        opacity: 1,
+        duration: 0.8,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          if (containerRef.current) {
+            containerRef.current.style.backgroundImage = `url('${slides[newIndex].image}')`;
+            overlay.remove();
+          }
+          resolve(null);
+        },
+      });
+    });
+  }, [slides]);
+
+  // Thumbnail morphing animation
+  const morphFromThumbnail = React.useCallback((index: number) => {
+    if (!thumbnailRefs.current[index] || !containerRef.current) return Promise.resolve();
+
+    return new Promise((resolve) => {
+      const thumbnail = thumbnailRefs.current[index];
+      if (!thumbnail) {
+        resolve(null);
+        return;
+      }
+
+      const thumbnailRect = thumbnail.getBoundingClientRect();
+      const containerRect = containerRef.current!.getBoundingClientRect();
+
+      // Create morph element
+      const morphElement = document.createElement('div');
+      morphElement.style.cssText = `
+        position: fixed;
+        top: ${thumbnailRect.top}px;
+        left: ${thumbnailRect.left}px;
+        width: ${thumbnailRect.width}px;
+        height: ${thumbnailRect.height}px;
+        background-image: url('${slides[index].image}');
+        background-size: cover;
+        background-position: center;
+        border-radius: 8px;
+        z-index: 25;
+        pointer-events: none;
+        will-change: transform, border-radius;
+      `;
+      document.body.appendChild(morphElement);
+
+      // Animate morph
+      gsap.to(morphElement, {
+        top: containerRect.top,
+        left: containerRect.left,
+        width: containerRect.width,
+        height: containerRect.height,
+        borderRadius: '0px',
+        duration: 0.7,
+        ease: 'power4.inOut',
+        onComplete: () => {
+          morphElement.remove();
+          resolve(null);
+        },
+      });
+    });
+  }, [slides]);
+
+  const handleSlideChange = React.useCallback(async (newIndex: number) => {
+    // Cancel ongoing animation
+    if (morphTimelineRef.current) {
+      morphTimelineRef.current.kill();
+    }
+
+    // Morph out content
+    await morphOutContent();
+
+    // Change background and morph
+    await morphBackgroundImage(newIndex);
+
+    // Morph in new content
+    await morphInContent();
+
+    setActiveIndex(newIndex);
+  }, [morphOutContent, morphBackgroundImage, morphInContent]);
+
+  const handleNext = React.useCallback(() => {
+    const newIndex = (activeIndex + 1) % slides.length;
+    handleSlideChange(newIndex);
+    setProgress(0);
+    setIsAutoplay(true);
+  }, [activeIndex, slides.length, handleSlideChange]);
+
+  const handlePrev = React.useCallback(() => {
+    const newIndex = (activeIndex - 1 + slides.length) % slides.length;
+    handleSlideChange(newIndex);
+    setProgress(0);
+    setIsAutoplay(true);
+  }, [activeIndex, slides.length, handleSlideChange]);
+
+  const handleThumbnailClick = React.useCallback((index: number) => {
+    if (index !== activeIndex) {
+      // Trigger morph from thumbnail
+      morphFromThumbnail(index).then(() => {
+        handleSlideChange(index);
+      });
+    }
+    setProgress(0);
+    setIsAutoplay(true);
+  }, [activeIndex, morphFromThumbnail, handleSlideChange]);
+
+  // Auto-play logic
+  React.useEffect(() => {
+    if (!isAutoplay) return;
+
+    const startTime = Date.now();
+    const duration = 5000;
+
+    progressIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      setProgress((elapsed % duration) / duration);
+    }, 16);
+
+    timerRef.current = setTimeout(() => {
+      handleNext();
+    }, duration);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    };
+  }, [activeIndex, isAutoplay, handleNext]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowRight') handleNext();
+    if (e.key === 'ArrowLeft') handlePrev();
+  };
+
+  return (
+    <div 
+      ref={containerRef}
+      className="relative w-full h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 overflow-hidden font-sans"
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      style={{
+        backgroundImage: `url('${slides[activeIndex].image}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        transition: 'background-image 0s ease-in-out',
+      }}
+    >
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50 z-10" />
+
+      {/* Main content - animated text */}
+      <div 
+        ref={contentRef}
+        className="absolute inset-0 flex flex-col items-center justify-center z-20 text-center"
+      >
+        <div className="space-y-6 max-w-4xl px-4 animate-fadeIn">
+          <div className="inline-block">
+            <span className="text-sm font-semibold tracking-widest text-emerald-400 uppercase">
+              ✨ Featured Offer
+            </span>
+          </div>
+          <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight tracking-tight">
+            {slides[activeIndex].title}
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-200 font-light">
+            {slides[activeIndex].desc}
+          </p>
+          <button className="mt-8 px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-full hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 hover:scale-105">
+            Explore Now
+          </button>
+        </div>
+      </div>
+
+      {/* Thumbnail cards - bottom right */}
+      <div className="absolute bottom-8 right-8 z-30 flex gap-3 md:gap-4">
+        {slides.map((slide, idx) => (
+          <button
+            ref={(el) => {
+              thumbnailRefs.current[idx] = el;
+            }}
+            key={idx}
+            onClick={() => handleThumbnailClick(idx)}
+            className={`
+              relative w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden cursor-pointer
+              transition-all duration-300 transform hover:scale-110
+              ${idx === activeIndex ? 'ring-2 ring-emerald-400 scale-110' : 'opacity-60 hover:opacity-100'}
+              backdrop-blur-sm border border-white/20
+            `}
+            style={{
+              backgroundImage: `url('${slide.image}')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              willChange: 'transform',
+            }}
+          >
+            {idx === activeIndex && (
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end justify-center pb-1">
+                <span className="text-xs font-bold text-white">{idx + 1}/{slides.length}</span>
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Controls - bottom left glassmorphism buttons */}
+      <div className="absolute bottom-8 left-8 z-30 flex gap-4">
+        <button
+          onClick={handlePrev}
+          className="p-3 md:p-4 backdrop-blur-md bg-white/10 border border-white/20 text-white rounded-2xl hover:bg-white/20 transition-all duration-300 hover:scale-110"
+          aria-label="Previous"
+          title="Previous (← arrow)"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <button
+          onClick={() => setIsAutoplay(!isAutoplay)}
+          className="p-3 md:p-4 backdrop-blur-md bg-white/10 border border-white/20 text-white rounded-2xl hover:bg-white/20 transition-all duration-300 hover:scale-110"
+          aria-label="Toggle autoplay"
+          title="Toggle autoplay"
+        >
+          {isAutoplay ? (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          )}
+        </button>
+        <button
+          onClick={handleNext}
+          className="p-3 md:p-4 backdrop-blur-md bg-white/10 border border-white/20 text-white rounded-2xl hover:bg-white/20 transition-all duration-300 hover:scale-110"
+          aria-label="Next"
+          title="Next (→ arrow)"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Progress bar */}
+      <div className="absolute bottom-0 left-0 right-0 z-30 h-1 bg-white/10">
+        <div
+          className="h-full bg-gradient-to-r from-emerald-500 to-teal-600 transition-all duration-75"
+          style={{ width: `${(progress) * 100}%` }}
+        />
+      </div>
+
+      {/* Slide counter */}
+      <div className="absolute top-8 right-8 z-30 text-white/80 text-sm font-mono tracking-wider">
+        {String(activeIndex + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}
+      </div>
+    </div>
+  );
+};
 
 // Dùng chung dữ liệu với trang danh sách và trang chi tiết tin tức.
 const newsData = newsItems.slice(0, 5).map(({ id, title, image }) => ({ id, title, image }));
@@ -52,28 +376,13 @@ function ContentSlider({ items, hasPrice }: { items: ContentItem[]; hasPrice?: b
 }
 
 export default function TrangChu(){
-  const { currentIndex, nextSlide, prevSlide } = useAutoSlider(bannerData.length, 5000);
-
   return (
     <div className={styles['main-page']}>
       <Header />
 
-      {/* Banner */}
-      <section className={styles['banner-wrapper']}>
-        <button className={`${styles['arrow-btn']} ${styles['left']}`} onClick={prevSlide}>◀</button>
-        <div className={styles['banner-track']} style={{ transform: `translateX(-${currentIndex * 100}%)` }}>
-          {bannerData.map(b => (
-            <div key={b.id} className={styles['banner-slide']}>
-              <img src={b.image} className={styles['banner-img']} alt={b.title} />
-              <div className={styles['banner-overlay']}>
-                <h1 className={styles['banner-title']}><span>{b.title.split(' ')[0]}</span> {b.title.substring(b.title.indexOf(' ')+1)}</h1>
-                <p className={styles['banner-desc']}>{b.desc}</p>
-                <button className={styles['banner-btn']}>XEM CHI TIẾT</button>
-              </div>
-            </div>
-          ))}
-        </div>
-        <button className={`${styles['arrow-btn']} ${styles['right']}`} onClick={nextSlide}>▶</button>
+      {/* Interactive Hero Banner */}
+      <section>
+        <InteractiveHeroBanner slides={bannerData} />
       </section>
 
       {/* Content zone */}

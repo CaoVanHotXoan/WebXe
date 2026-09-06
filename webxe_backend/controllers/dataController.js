@@ -1,4 +1,4 @@
-const { sql } = require('../config/db');
+const { sql, connectDB } = require('../config/db');
 
 const allowedTables = [
   'VaiTro',
@@ -6,6 +6,7 @@ const allowedTables = [
   'HangXe',
   'LoaiXe',
   'Xe',
+  'HinhAnhXe',
   'GioHang',
   'ChiTietGioHang',
   'DonHang',
@@ -25,7 +26,12 @@ const tableDefinitions = {
   Xe: {
     procedure: 'Xe', primaryKeys: ['MaXe'], fields: {
       MaHang: sql.Int, MaLoai: sql.Int, TenXe: sql.NVarChar(150), Gia: sql.Decimal(18, 2),
-      HinhAnh: sql.NVarChar(500), NamSanXuat: sql.Int, MauSac: sql.NVarChar(100), MoTa: sql.NVarChar(sql.MAX), SoLuong: sql.Int,
+      NamSanXuat: sql.Int, MauSac: sql.NVarChar(100), MoTa: sql.NVarChar(sql.MAX), SoLuong: sql.Int,
+    },
+  },
+  HinhAnhXe: {
+    procedure: 'HinhAnhXe', primaryKeys: ['MaHinhAnh'], fields: {
+      MaXe: sql.Int, DuongDanAnh: sql.NVarChar(500), LaAnhChinh: sql.Bit,
     },
   },
   GioHang: { procedure: 'GioHang', primaryKeys: ['MaGioHang'], fields: { MaNguoiDung: sql.Int, NgayTao: sql.DateTime } },
@@ -41,9 +47,10 @@ const tableDefinitions = {
 
 async function getAllTablesDataObject() {
   const result = {};
+  const pool = await connectDB();
 
   for (const tableName of allowedTables) {
-    const request = new sql.Request();
+    const request = pool.request();
     const rows = await request.query(`SELECT * FROM [dbo].[${tableName}]`);
     result[tableName] = rows.recordset;
   }
@@ -75,7 +82,8 @@ async function getTableData(req, res) {
   }
 
   try {
-    const request = new sql.Request();
+    const pool = await connectDB();
+    const request = pool.request();
     const rows = await request.query(`SELECT * FROM [dbo].[${tableName}]`);
 
     return res.status(200).json({
@@ -112,7 +120,8 @@ async function executeCrud(req, res, action) {
       : definition.primaryKeys;
 
   try {
-    const request = new sql.Request();
+    const pool = await connectDB();
+    const request = pool.request();
     for (const field of fields) {
       const value = values[field] === undefined || values[field] === '' ? null : values[field];
       request.input(field, definition.fields[field] || sql.Int, value);

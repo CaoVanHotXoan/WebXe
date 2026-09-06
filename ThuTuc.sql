@@ -111,25 +111,25 @@ GO
 
 CREATE PROCEDURE sp_ThemXe
     @MaHang INT, @MaLoai INT, @TenXe NVARCHAR(150), @Gia DECIMAL(18,2),
-    @HinhAnh NVARCHAR(500) = NULL, @NamSanXuat INT = NULL,
+    @NamSanXuat INT = NULL,
     @MauSac NVARCHAR(100) = NULL, @MoTa NVARCHAR(MAX) = NULL, @SoLuong INT = 0
 AS
 BEGIN
     SET NOCOUNT ON;
-    INSERT INTO Xe (MaHang, MaLoai, TenXe, Gia, HinhAnh, NamSanXuat, MauSac, MoTa, SoLuong)
-    VALUES (@MaHang, @MaLoai, @TenXe, @Gia, @HinhAnh, @NamSanXuat, @MauSac, @MoTa, @SoLuong);
+    INSERT INTO Xe (MaHang, MaLoai, TenXe, Gia, NamSanXuat, MauSac, MoTa, SoLuong)
+    VALUES (@MaHang, @MaLoai, @TenXe, @Gia, @NamSanXuat, @MauSac, @MoTa, @SoLuong);
 END;
 GO
 
 CREATE PROCEDURE sp_SuaXe
     @MaXe INT, @MaHang INT, @MaLoai INT, @TenXe NVARCHAR(150), @Gia DECIMAL(18,2),
-    @HinhAnh NVARCHAR(500) = NULL, @NamSanXuat INT = NULL,
+    @NamSanXuat INT = NULL,
     @MauSac NVARCHAR(100) = NULL, @MoTa NVARCHAR(MAX) = NULL, @SoLuong INT = 0
 AS
 BEGIN
     SET NOCOUNT ON;
     UPDATE Xe SET MaHang = @MaHang, MaLoai = @MaLoai, TenXe = @TenXe, Gia = @Gia,
-        HinhAnh = @HinhAnh, NamSanXuat = @NamSanXuat, MauSac = @MauSac,
+        NamSanXuat = @NamSanXuat, MauSac = @MauSac,
         MoTa = @MoTa, SoLuong = @SoLuong WHERE MaXe = @MaXe;
 END;
 GO
@@ -139,6 +139,35 @@ AS
 BEGIN
     SET NOCOUNT ON;
     DELETE FROM Xe WHERE MaXe = @MaXe;
+END;
+GO
+
+CREATE PROCEDURE sp_ThemHinhAnhXe
+    @MaXe INT, @DuongDanAnh NVARCHAR(500), @LaAnhChinh BIT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO HinhAnhXe (MaXe, DuongDanAnh, LaAnhChinh)
+    VALUES (@MaXe, @DuongDanAnh, @LaAnhChinh);
+END;
+GO
+
+CREATE PROCEDURE sp_SuaHinhAnhXe
+    @MaHinhAnh INT, @MaXe INT, @DuongDanAnh NVARCHAR(500), @LaAnhChinh BIT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE HinhAnhXe
+    SET MaXe = @MaXe, DuongDanAnh = @DuongDanAnh, LaAnhChinh = @LaAnhChinh
+    WHERE MaHinhAnh = @MaHinhAnh;
+END;
+GO
+
+CREATE PROCEDURE sp_XoaHinhAnhXe @MaHinhAnh INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM HinhAnhXe WHERE MaHinhAnh = @MaHinhAnh;
 END;
 GO
 
