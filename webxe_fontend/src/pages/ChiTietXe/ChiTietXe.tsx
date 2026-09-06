@@ -1,13 +1,78 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { Vehicle, vehicles } from '@/TS/vehicleData';
 import { newsItems } from '@/TS/newsData';
 import styles from './chiTietXe.module.css';
 
 type SliderItem = { title: string; image: string; href: string };
+type ApiVehicle = {
+  MaXe: number;
+  MaHang?: number | null;
+  MaLoai?: number | null;
+  TenXe?: string | null;
+  Gia?: number | string | null;
+  NamSanXuat?: number | string | null;
+  MauSac?: string | null;
+  SoLuong?: number | string | null;
+  MoTa?: string | null;
+  LoaiNhienLieu?: string | null;
+  NhienLieu?: string | null;
+  Fuel?: string | null;
+};
+type ApiVehicleImage = { MaXe: number; DuongDanAnh?: string | null; LaAnhChinh?: boolean | number | null };
+type ApiBrand = { MaHang: number; TenHang?: string | null };
+type ApiType = { MaLoai: number; TenLoai?: string | null };
+type VehicleDataResponse = { Xe?: ApiVehicle[]; HinhAnhXe?: ApiVehicleImage[]; HangXe?: ApiBrand[]; LoaiXe?: ApiType[] };
+type DetailedVehicle = {
+  id: number;
+  title: string;
+  priceLabel: string;
+  image: string;
+  images: string[];
+  brand?: string;
+  type?: string;
+  fuel?: string;
+  year?: string;
+  color?: string;
+  quantity?: string;
+  description?: string;
+};
+
+function mapApiVehicles(data: VehicleDataResponse): DetailedVehicle[] {
+  const brands = new Map((data.HangXe ?? []).map((brand) => [brand.MaHang, brand.TenHang?.trim()]));
+  const types = new Map((data.LoaiXe ?? []).map((type) => [type.MaLoai, type.TenLoai?.trim()]));
+  const images = new Map<number, string[]>();
+
+  (data.HinhAnhXe ?? []).forEach((image) => {
+    const path = image.DuongDanAnh?.trim();
+    if (!path) return;
+    images.set(image.MaXe, [...(images.get(image.MaXe) ?? []), path]);
+  });
+
+  return (data.Xe ?? []).flatMap((vehicle) => {
+    const title = vehicle.TenXe?.trim();
+    const price = Number(vehicle.Gia);
+    if (!title || !Number.isFinite(price) || price <= 0) return [];
+    const vehicleImages = images.get(vehicle.MaXe) ?? [];
+    const fuel = vehicle.LoaiNhienLieu ?? vehicle.NhienLieu ?? vehicle.Fuel;
+    return [{
+      id: vehicle.MaXe,
+      title,
+      priceLabel: `${price.toLocaleString('vi-VN')} VNĐ`,
+      image: vehicleImages[0] ?? '',
+      images: vehicleImages,
+      brand: brands.get(vehicle.MaHang) || undefined,
+      type: types.get(vehicle.MaLoai) || undefined,
+      fuel: fuel?.trim() || undefined,
+      year: vehicle.NamSanXuat == null ? undefined : String(vehicle.NamSanXuat),
+      color: vehicle.MauSac?.trim() || undefined,
+      quantity: vehicle.SoLuong == null ? undefined : String(vehicle.SoLuong),
+      description: vehicle.MoTa?.trim() || undefined,
+    }];
+  });
+}
 
 function ContentSlider({ items }: { items: SliderItem[] }) {
   const [startIndex, setStartIndex] = useState(0);
@@ -27,25 +92,57 @@ function ContentSlider({ items }: { items: SliderItem[] }) {
   );
 }
 
-function getSpecs(vehicle: Vehicle) {
-  return vehicle.type === 'Ô tô'
-    ? [['Dung tích xi-lanh/Pin', vehicle.fuel === 'Điện' ? '82 kWh' : '2.0L'], ['Công suất tối đa', '245 HP'], ['Mô-men xoắn', '370 Nm'], ['Trọng lượng', '1.650 kg'], ['Dung tích bình xăng/Pin', vehicle.fuel === 'Điện' ? '82 kWh' : '60 L'], ['Hộp số', 'Tự động 8 cấp'], ['Hệ thống phanh', 'Đĩa ABS 4 bánh'], ['Mức tiêu hao nhiên liệu', vehicle.fuel === 'Điện' ? '16 kWh/100 km' : '7.5 L/100 km']]
-    : [['Dung tích xi-lanh/Pin', vehicle.fuel === 'Điện' ? '5.5 kWh' : '650 cc'], ['Công suất tối đa', '68 HP'], ['Mô-men xoắn', '63 Nm'], ['Trọng lượng', '215 kg'], ['Dung tích bình xăng/Pin', vehicle.fuel === 'Điện' ? '5.5 kWh' : '17 L'], ['Hộp số', '6 cấp'], ['Hệ thống phanh', 'ABS 2 kênh'], ['Mức tiêu hao nhiên liệu', vehicle.fuel === 'Điện' ? '4 kWh/100 km' : '4.8 L/100 km']];
-}
-
 export default function ChiTietXePage() {
   const router = useRouter();
+  const [vehicles, setVehicles] = useState<DetailedVehicle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [imageIndex, setImageIndex] = useState(0);
   const [showPhone, setShowPhone] = useState(false);
   const [showZaloQr, setShowZaloQr] = useState(false);
   const thumbnailsRef = useRef<HTMLDivElement>(null);
   const vehicleId = Number(router.query.id);
-  const vehicle = vehicles.find((item) => item.id === vehicleId) ?? vehicles[0];
-  const vehicleImages = Array.from({ length: 10 }, (_, index) => `${vehicle.image}&ixid=gallery-${index}`);
-  const specs = getSpecs(vehicle);
+  const vehicle = vehicles.find((item) => item.id === vehicleId);
+  const vehicleImages = vehicle?.images ?? [];
+  const currentImageIndex = Math.min(imageIndex, Math.max(vehicleImages.length - 1, 0));
+  const summary = vehicle ? [
+    ['Hãng xe', vehicle.brand],
+    ['Loại xe', vehicle.type],
+    ['Nhiên liệu', vehicle.fuel],
+    ['Năm sản xuất', vehicle.year],
+    ['Màu sắc', vehicle.color],
+    ['Số lượng', vehicle.quantity],
+  ].filter((item): item is [string, string] => Boolean(item[1])) : [];
   const popularVehicles = [...vehicles].sort((a, b) => b.price - a.price).slice(0, 10);
 
-  if (!router.isReady) return null;
+  useEffect(() => {
+    if (!router.isReady) return;
+    let active = true;
+
+    fetch('http://localhost:3002/api/data')
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Không thể tải dữ liệu xe');
+        const data = await response.json() as VehicleDataResponse;
+        if (!Array.isArray(data.Xe)) throw new Error('API không trả về danh sách xe');
+        return data;
+      })
+      .then((data) => {
+        if (active) setVehicles(mapApiVehicles(data));
+      })
+      .catch(() => {
+        if (active) setError('Không thể tải chi tiết xe. Hãy kiểm tra backend đang chạy ở cổng 3002.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [router.isReady]);
+
+  if (!router.isReady || loading) return <div className={`${styles.page} font-sans`}><Header /><main className={styles.main}><p>Đang tải thông tin xe...</p></main><Footer /></div>;
+  if (error || !vehicle) return <div className={`${styles.page} font-sans`}><Header /><main className={styles.main}><p>{error || 'Không tìm thấy xe.'}</p></main><Footer /></div>;
 
   return (
     <div className={`${styles.page} font-sans`}>
@@ -53,12 +150,12 @@ export default function ChiTietXePage() {
       <main className={styles.main}>
         <p className={styles.breadcrumb}><Link href="/MuaBanXe/MuaBanXe" className={styles.backLink}>Mua bán xe</Link> / Chi tiết xe</p>
         <section className={styles.hero}>
-          <div className={styles.imagePanel}>
+          {vehicleImages.length > 0 && <div className={styles.imagePanel}>
             <div className={styles.gallery}>
-              <img className={styles.mainImage} src={vehicleImages[imageIndex]} alt={`${vehicle.title} - ảnh ${imageIndex + 1}`} />
+              <img className={styles.mainImage} src={vehicleImages[currentImageIndex]} alt={`${vehicle.title} - ảnh ${currentImageIndex + 1}`} />
               <button type="button" className={`${styles.galleryArrow} ${styles.galleryLeft}`} onClick={() => setImageIndex((index) => (index > 0 ? index - 1 : vehicleImages.length - 1))} aria-label="Ảnh trước">‹</button>
               <button type="button" className={`${styles.galleryArrow} ${styles.galleryRight}`} onClick={() => setImageIndex((index) => (index < vehicleImages.length - 1 ? index + 1 : 0))} aria-label="Ảnh tiếp theo">›</button>
-              <div className={styles.imageCounter}>{imageIndex + 1} / {vehicleImages.length}</div>
+              <div className={styles.imageCounter}>{currentImageIndex + 1} / {vehicleImages.length}</div>
             </div>
             <div className={styles.thumbnailCarousel}>
               <button
@@ -73,14 +170,14 @@ export default function ChiTietXePage() {
                 {vehicleImages.map((image, index) => (
                   <button
                     type="button"
-                    className={`${styles.thumbnail} ${index === imageIndex ? styles.thumbnailActive : ''}`}
+                    className={`${styles.thumbnail} ${index === currentImageIndex ? styles.thumbnailActive : ''}`}
                     onClick={() => {
                       setImageIndex(index);
                       thumbnailsRef.current?.children[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                     }}
                     key={image}
                     aria-label={`Xem ảnh ${index + 1}`}
-                    aria-current={index === imageIndex ? 'true' : undefined}
+                    aria-current={index === currentImageIndex ? 'true' : undefined}
                   >
                     <img src={image} alt="" />
                   </button>
@@ -95,20 +192,19 @@ export default function ChiTietXePage() {
                 ›
               </button>
             </div>
-          </div>
+          </div>}
           <div className={styles.detailsPanel}>
             <p className={styles.eyebrow}>THÔNG TIN XE</p><h1 className={styles.title}>{vehicle.title}</h1><p className={styles.price}>{vehicle.priceLabel}</p>
-            <div className={styles.summary}><div className={styles.summaryRow}><span>Hãng xe</span><strong>{vehicle.brand}</strong></div><div className={styles.summaryRow}><span>Dòng xe</span><strong>{vehicle.type}</strong></div><div className={styles.summaryRow}><span>Kiểu dáng</span><strong>{vehicle.type === 'Ô tô' ? 'Sedan / SUV' : 'Thể thao'}</strong></div></div>
-            <h2 className={styles.specTitle}>THÔNG SỐ KỸ THUẬT</h2><div className={styles.specs}>{specs.map(([label, value]) => <div className={styles.spec} key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
+            {summary.length > 0 && <div className={styles.summary}>{summary.map(([label, value]) => <div className={styles.summaryRow} key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>}
             <div className={styles.actions}>
               {showPhone ? <a className={styles.actionPrimary} href="tel:0987654321">0987 654 321</a> : <button type="button" className={styles.actionPrimary} onClick={() => setShowPhone(true)}>Gọi cửa hàng</button>}
               <button type="button" className={styles.actionSecondary} onClick={() => setShowZaloQr(true)}>Nhắn cửa hàng</button>
             </div>
           </div>
         </section>
-        <section className={styles.description}><h2 className={styles.sectionTitle}>Mô tả xe</h2><p>{vehicle.title} là lựa chọn nổi bật trong phân khúc, kết hợp thiết kế hiện đại, khả năng vận hành mạnh mẽ và trang bị an toàn tiện nghi. Xe được kiểm tra kỹ trước khi đăng bán, hỗ trợ tư vấn và lái thử tại cửa hàng.</p></section>
-        <div className={styles.bottom}><section className={styles.newsSection}><h2 className={styles.sectionTitle}>TIN TỨC NỔI BẬT</h2><ContentSlider items={newsItems.slice(0, 10).map((item) => ({ title: item.title, image: item.image, href: `/TinTuc/ChiTietTin?id=${item.id}` }))} /><h2 className={styles.sectionTitle}>TIN BÁN XE</h2><ContentSlider items={vehicles.slice(0, 10).map((item) => ({ title: item.title, image: item.image, href: `/ChiTietXe/ChiTietXe?id=${item.id}` }))} /></section>
-          <aside className={styles.popularPanel}><h2 className={styles.sectionTitle}>TOP 10 XE BÁN CHẠY</h2><div className={styles.popularList}>{popularVehicles.map((item) => <Link href={`/ChiTietXe/ChiTietXe?id=${item.id}`} className={styles.popularItem} key={item.id}><img src={item.image} alt={item.title} /><div><h3>{item.title}</h3><p>{item.priceLabel}</p></div></Link>)}</div></aside>
+        {vehicle.description && <section className={styles.description}><h2 className={styles.sectionTitle}>Mô tả xe</h2><p>{vehicle.description}</p></section>}
+        <div className={styles.bottom}><section className={styles.newsSection}><h2 className={styles.sectionTitle}>TIN TỨC NỔI BẬT</h2><ContentSlider items={newsItems.slice(0, 10).map((item) => ({ title: item.title, image: item.image, href: `/TinTuc/ChiTietTin?id=${item.id}` }))} /><h2 className={styles.sectionTitle}>TIN BÁN XE</h2><ContentSlider items={popularVehicles.map((item) => ({ title: item.title, image: item.image, href: `/ChiTietXe/ChiTietXe?id=${item.id}` }))} /></section>
+          <aside className={styles.popularPanel}><h2 className={styles.sectionTitle}>TOP 10 XE BÁN CHẠY</h2><div className={styles.popularList}>{popularVehicles.map((item) => <Link href={`/ChiTietXe/ChiTietXe?id=${item.id}`} className={styles.popularItem} key={item.id}>{item.image && <img src={item.image} alt={item.title} />}<div><h3>{item.title}</h3><p>{item.priceLabel}</p></div></Link>)}</div></aside>
         </div>
       </main>
       {showZaloQr && (

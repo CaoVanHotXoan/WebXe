@@ -14,16 +14,19 @@ const dbConfig = {
   },
 };
 
+let connectionPool = null;
+
 async function connectDB() {
-  if (sql.connected) {
-    return sql;
+  if (connectionPool?.connected) {
+    return connectionPool;
   }
 
   try {
-    await sql.connect(dbConfig);
+    connectionPool = await sql.connect(dbConfig);
     console.log('✅ Kết nối SQL Server thành công');
-    return sql;
+    return connectionPool;
   } catch (error) {
+    connectionPool = null;
     console.error('❌ Kết nối SQL Server thất bại:', error.message);
     throw error;
   }

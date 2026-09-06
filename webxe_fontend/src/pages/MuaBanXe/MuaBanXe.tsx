@@ -18,10 +18,11 @@ function matchesPrice(price: number, option: string) {
   return range ? price >= range[0] && price < range[1] : false;
 }
 
-type ApiVehicle = { MaXe: number; MaHang: number; MaLoai: number; TenXe: string; Gia: number | string; HinhAnh?: string | null; LoaiNhienLieu?: string | null; NhienLieu?: string | null; Fuel?: string | null };
+type ApiVehicle = { MaXe: number; MaHang: number; MaLoai: number; TenXe?: string | null; Gia?: number | string | null; LoaiNhienLieu?: string | null; NhienLieu?: string | null; Fuel?: string | null };
+type ApiVehicleImage = { MaXe: number; DuongDanAnh?: string | null; LaAnhChinh?: boolean | number | null };
 type ApiBrand = { MaHang: number; TenHang: string };
 type ApiType = { MaLoai: number; TenLoai: string };
-type VehicleResponse = { Xe?: ApiVehicle[]; HangXe?: ApiBrand[]; LoaiXe?: ApiType[] };
+type VehicleResponse = { Xe?: ApiVehicle[]; HinhAnhXe?: ApiVehicleImage[]; HangXe?: ApiBrand[]; LoaiXe?: ApiType[] };
 
 function normalizeVehicleType(value: string): Vehicle['type'] {
   const type = value.toLowerCase();
@@ -44,20 +45,29 @@ function normalizeFuel(value?: string | null): NonNullable<Vehicle['fuel']> | un
 function mapApiVehicles(data: VehicleResponse): Vehicle[] {
   const brands = new Map((data.HangXe ?? []).map((brand) => [brand.MaHang, brand.TenHang]));
   const types = new Map((data.LoaiXe ?? []).map((type) => [type.MaLoai, type.TenLoai]));
+  const images = new Map<number, ApiVehicleImage[]>();
+  (data.HinhAnhXe ?? []).forEach((image) => {
+    if (!image.DuongDanAnh?.trim()) return;
+    images.set(image.MaXe, [...(images.get(image.MaXe) ?? []), image]);
+  });
 
-  return (data.Xe ?? []).map((vehicle) => {
-    const price = Number(vehicle.Gia) || 0;
+  return (data.Xe ?? []).flatMap((vehicle) => {
+    const title = vehicle.TenXe?.trim();
+    const price = Number(vehicle.Gia);
+    if (!title || !Number.isFinite(price) || price <= 0) return [];
     const fuel = vehicle.LoaiNhienLieu ?? vehicle.NhienLieu ?? vehicle.Fuel;
-    return {
+    const vehicleImages = images.get(vehicle.MaXe) ?? [];
+    const mainImage = vehicleImages.find((image) => image.LaAnhChinh === true || image.LaAnhChinh === 1)?.DuongDanAnh ?? vehicleImages[0]?.DuongDanAnh;
+    return [{
       id: vehicle.MaXe,
-      title: vehicle.TenXe,
+      title,
       price,
       priceLabel: `${price.toLocaleString('vi-VN')} VNĐ`,
-      image: vehicle.HinhAnh || '',
+      image: mainImage || '',
       type: normalizeVehicleType(types.get(vehicle.MaLoai) ?? ''),
       fuel: normalizeFuel(fuel),
       brand: brands.get(vehicle.MaHang),
-    };
+    }];
   });
 }
 
@@ -74,23 +84,28 @@ export default function MuaBanXePage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
+    setError('');
     fetch('http://localhost:3002/api/data')
       .then(async (response) => {
         if (!response.ok) throw new Error('Không thể tải dữ liệu xe');
-        return response.json() as Promise<VehicleResponse>;
+        const data = await response.json() as VehicleResponse;
+        if (!Array.isArray(data.Xe)) throw new Error('API không trả về danh sách xe');
+        return data;
       })
       .then((data) => setVehicles(mapApiVehicles(data)))
-      .catch(() => setError('Không thể tải danh sách xe. Vui lòng thử lại sau.'))
+      .catch(() => setError('Không thể tải danh sách xe. Hãy kiểm tra backend đang chạy ở cổng 3002 rồi thử lại.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [reloadKey]);
 
   const filterOptions = useMemo<Record<FilterKey, string[]>>(() => ({
     type: [...new Set(vehicles.map((vehicle) => vehicle.type).filter((type): type is NonNullable<Vehicle['type']> => Boolean(type)))],
     fuel: [...new Set(vehicles.map((vehicle) => vehicle.fuel).filter((fuel): fuel is NonNullable<Vehicle['fuel']> => Boolean(fuel)))],
     brand: [...new Set(vehicles.map((vehicle) => vehicle.brand).filter((brand): brand is string => Boolean(brand)))],
-    price: priceOptions,
+    price: priceOptions.filter((option) => vehicles.some((vehicle) => matchesPrice(vehicle.price, option))),
   }), [vehicles]);
   const filteredVehicles = useMemo(() => vehicles.filter((vehicle) => matchesFilters(vehicle, filters)), [filters, vehicles]);
   const popularVehicles = [...vehicles].sort((a, b) => b.price - a.price);
@@ -137,7 +152,7 @@ export default function MuaBanXePage() {
             <aside className={`${styles.panel} ${styles.popularPanel}`} aria-label="Xe bán chạy nhất">
               <h2 className={styles.popularTitle}>TOP 10 XE BÁN CHẠY NHẤT</h2>
               <div className={styles.popularList}>{popularVehicles.slice(0, 10).map((vehicle) => (
-                <Link href={`/ChiTietXe/ChiTietXe?id=${vehicle.id}`} className={styles.popularItem} key={vehicle.id}>
+                <Link href={`/ChiTietXe/ChiTietXe?id=${vehicle.id}`} className={`${styles.popularItem} ${!vehicle.image ? styles.popularItemNoImage : ''}`} key={vehicle.id}>
                               {vehicle.image && <img className={styles.popularImage} src={vehicle.image} alt={vehicle.title} />}
                   <div><h3 className={styles.popularName}>{vehicle.title}</h3><p className={styles.popularPrice}>{vehicle.priceLabel}</p></div>
                 </Link>
@@ -149,7 +164,7 @@ export default function MuaBanXePage() {
             <div className={styles.resultsHeader}>
               <h2>Xe đang bán</h2><span className={styles.count}>{filteredVehicles.length} sản phẩm</span>
             </div>
-            {loading ? <div className={`${styles.panel} ${styles.empty}`}>Đang tải danh sách xe...</div> : error ? <div className={`${styles.panel} ${styles.empty}`}>{error}</div> : filteredVehicles.length ? (
+            {loading ? <div className={`${styles.panel} ${styles.empty}`}>Đang tải danh sách xe...</div> : error ? <div className={`${styles.panel} ${styles.empty}`}>{error}<button type="button" className={styles.retryButton} onClick={() => setReloadKey((key) => key + 1)}>Thử lại</button></div> : filteredVehicles.length ? (
               <div className={`${styles.panel} ${styles.vehiclePanel}`}>
                 <div className={styles.vehicleList}>{filteredVehicles.map((vehicle) => <VehicleCard key={vehicle.id} vehicle={vehicle} />)}</div>
               </div>
@@ -165,7 +180,7 @@ export default function MuaBanXePage() {
 
 function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   return (
-    <Link href={`/ChiTietXe/ChiTietXe?id=${vehicle.id}`} className={styles.card}>
+    <Link href={`/ChiTietXe/ChiTietXe?id=${vehicle.id}`} className={`${styles.card} ${!vehicle.image ? styles.cardNoImage : ''}`}>
       {vehicle.image && <img className={styles.image} src={vehicle.image} alt={vehicle.title} />}
       <div className={styles.cardBody}>
         <h3 className={styles.cardTitle}>{vehicle.title}</h3>

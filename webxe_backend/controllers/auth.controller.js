@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { sql } = require('../config/db');
+const { sql, connectDB } = require('../config/db');
 require('dotenv').config();
 
 /*
@@ -32,7 +32,8 @@ async function login(req, res) {
   }
 
   try {
-    const request = new sql.Request();
+    const pool = await connectDB();
+    const request = pool.request();
 
     const result = await request
       .input('TenDangNhap', sql.VarChar(50), username)
