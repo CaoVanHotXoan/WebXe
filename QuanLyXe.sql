@@ -1,5 +1,4 @@
 /*
-
 Bảng:
 1. VaiTro
 2. NguoiDung
@@ -10,9 +9,6 @@ Bảng:
 7. ChiTietGioHang
 8. DonHang
 9. ChiTietDonHang
-
-
-
 /* =========================================================
    1. VAI TRÒ
    ========================================================= */
@@ -54,6 +50,12 @@ CREATE TABLE NguoiDung
 );
 GO
 
+-- =======
+ALTER TABLE NguoiDung
+ALTER COLUMN Email VARCHAR(100) NOT NULL;
+
+CREATE UNIQUE INDEX UX_NguoiDung_Email
+ON NguoiDung(Email);
 
 /* =========================================================
    3. HÃNG XE
@@ -248,4 +250,17 @@ GO
 
 ALTER TABLE [dbo].[HinhAnhXe] CHECK CONSTRAINT [FK__HinhAnhXe__MaXe]
 GO
+-- ===========================================
+CREATE TABLE MaXacNhan (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Email VARCHAR(100) NOT NULL,
+    MaOtpHash VARCHAR(255) NOT NULL,
+    MucDich VARCHAR(30) NOT NULL,
+    HetHan DATETIME2 NOT NULL,
+    DaSuDung BIT NOT NULL DEFAULT 0,
+    SoLanThu INT NOT NULL DEFAULT 0,
+    TaoLuc DATETIME2 NOT NULL DEFAULT SYSDATETIME()
+);
 
+CREATE INDEX IX_MaXacNhan_Email_MucDich
+ON MaXacNhan (Email, MucDich);

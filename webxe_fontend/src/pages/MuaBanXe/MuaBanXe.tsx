@@ -89,7 +89,7 @@ export default function MuaBanXePage() {
   useEffect(() => {
     setLoading(true);
     setError('');
-    fetch('http://localhost:3002/api/data')
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data`)
       .then(async (response) => {
         if (!response.ok) throw new Error('Không thể tải dữ liệu xe');
         const data = await response.json() as VehicleResponse;
