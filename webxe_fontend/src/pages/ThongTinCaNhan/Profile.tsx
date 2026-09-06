@@ -32,6 +32,8 @@ export default function ProfilePage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
+  const [passwordStep, setPasswordStep] = useState<'form' | 'otp'>('form');
+  const [passwordOtp, setPasswordOtp] = useState('');
 
   // Quay lại trang đã mở Profile, dùng trang chủ làm dự phòng khi không có lịch sử.
   const handleBack = () => {
@@ -108,13 +110,45 @@ export default function ProfilePage() {
       return;
     }
 
-    setPasswords({ current: '', next: '', confirm: '' });
-    showMessage('Đổi mật khẩu thành công.');
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showMessage('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      return;
+    }
+
+    const submitPasswordChange = async () => {
+      try {
+        const endpoint = passwordStep === 'form' ? '/password/change/request-otp' : '/password/change';
+        const body = passwordStep === 'form'
+          ? undefined
+          : JSON.stringify({ currentPassword: passwords.current, newPassword: passwords.next, otp: passwordOtp });
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth${endpoint}`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+          body,
+        });
+        const data = await response.json() as { message?: string };
+        if (!response.ok) throw new Error(data.message || 'Không thể xử lý yêu cầu.');
+        if (passwordStep === 'form') {
+          setPasswordStep('otp');
+          showMessage(data.message || 'Mã xác nhận đã được gửi đến Gmail.');
+        } else {
+          setPasswords({ current: '', next: '', confirm: '' });
+          setPasswordOtp('');
+          setPasswordStep('form');
+          showMessage(data.message || 'Đổi mật khẩu thành công.');
+        }
+      } catch (requestError) {
+        showMessage(requestError instanceof Error ? requestError.message : 'Không thể kết nối máy chủ.');
+      }
+    };
+    void submitPasswordChange();
   };
 
   // Xóa phiên đăng nhập rồi chuyển về trang Login.
   const handleLogout = () => {
     localStorage.removeItem('auth');
+    localStorage.removeItem('token');
     router.replace('/Login/Login');
   };
 
@@ -216,7 +250,8 @@ export default function ProfilePage() {
                   <PasswordField label="Mật khẩu hiện tại" value={passwords.current} onChange={(value) => setPasswords({ ...passwords, current: value })} />
                   <PasswordField label="Mật khẩu mới" value={passwords.next} onChange={(value) => setPasswords({ ...passwords, next: value })} />
                   <PasswordField label="Xác nhận mật khẩu mới" value={passwords.confirm} onChange={(value) => setPasswords({ ...passwords, confirm: value })} />
-                  <button className={styles.primaryButton} type="submit">Lưu mật khẩu</button>
+                  {passwordStep === 'otp' && <PasswordField label="Mã xác nhận Gmail" value={passwordOtp} onChange={setPasswordOtp} />}
+                  <button className={styles.primaryButton} type="submit">{passwordStep === 'otp' ? 'Xác nhận và lưu' : 'Gửi mã xác nhận'}</button>
                 </form>
               </div>
             )}

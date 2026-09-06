@@ -1,5 +1,13 @@
 const express = require('express');
-const { login } = require('../controllers/auth.controller');
+const {
+  login,
+  requestRegisterOtp,
+  register,
+  requestForgotPasswordOtp,
+  resetPassword,
+  requestChangePasswordOtp,
+  changePassword,
+} = require('../controllers/auth.controller');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
@@ -30,6 +38,12 @@ const router = express.Router();
  *         description: Sai tài khoản hoặc mật khẩu
  */
 router.post('/login', login);
+router.post('/register/request-otp', requestRegisterOtp);
+router.post('/register/verify', register);
+router.post('/password/forgot/request-otp', requestForgotPasswordOtp);
+router.post('/password/forgot/reset', resetPassword);
+router.post('/password/change/request-otp', authMiddleware, requestChangePasswordOtp);
+router.post('/password/change', authMiddleware, changePassword);
 
 router.get('/profile', authMiddleware, (req, res) => {
   res.json({
