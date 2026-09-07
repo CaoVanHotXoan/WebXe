@@ -6,6 +6,9 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const { connectDB } = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
+const { chat } = require('./controllers/chatController');
+const { createOrder } = require('./controllers/orderController');
+const { authMiddleware } = require('./middlewares/authMiddleware');
 const {
   getAllTablesData,
   getAllTablesDataObject,
@@ -41,6 +44,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOpti
 
 app.get('/api/data/json', getAllTablesData);
 app.get('/api/data', getAllTablesData);
+app.post('/api/chat', chat);
+app.post('/api/orders', authMiddleware, createOrder);
 
 app.get('/api/data/view', async (req, res) => {
   try {

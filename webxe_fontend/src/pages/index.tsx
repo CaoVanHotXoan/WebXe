@@ -1,6 +1,7 @@
 import React from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import ChatBot from '@/components/ChatBot';
 import styles from '@/pages/TrangChu/trangchu.module.css';
 import { useAutoSlider } from '@/TS/sliderLogic';
 import { vehicles } from '@/TS/vehicleData';
@@ -399,6 +400,7 @@ export default function TrangChu(){
       </main>
 
       <Footer />
+      <ChatBot vehicles={vehicles} />
     </div>
   );
 }

@@ -606,9 +606,9 @@ export default function Home() {
           </div>}
 
           {isCardView ? (
-            <div className={styles.productGrid}>
+            <div className={`${styles.productGrid} ${["HangXe", "NguoiDung"].includes(selectedTable.id) ? styles.compactProductGrid : ""}`}>
               {selectedTable.records.map((row, rowIndex) => (
-                <article key={`${selectedTable.id}-${rowIndex}`} className={styles.productCard}>
+                <article key={`${selectedTable.id}-${rowIndex}`} className={`${styles.productCard} ${["HangXe", "NguoiDung"].includes(selectedTable.id) ? styles.compactProductCard : ""}`}>
                   {(() => {
                     const images = selectedTable.id === "Xe" ? vehicleImages[String(row.MaXe)] ?? [] : [];
                     const mainImage = images.find((image) => image.isMain)?.url ?? images[0]?.url ?? row.Logo;
