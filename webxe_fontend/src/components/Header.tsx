@@ -7,6 +7,7 @@ import { vehicles } from '@/TS/vehicleData';
 export default function Header() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const suggestions = useMemo(() => {
     const normalizedTerm = searchTerm.trim().toLowerCase();
     if (!normalizedTerm) return [];
@@ -17,6 +18,19 @@ export default function Header() {
     <header className="header-container">
       {/* Header Top: Logo, Search, Icons, Profile */}
       <div className="header-top">
+        {/* Nút hamburger chỉ hiển thị trên mobile để mở menu dọc. */}
+        <button
+          type="button"
+          className="menu-toggle"
+          onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
+          aria-label={isMenuOpen ? 'Đóng menu' : 'Mở menu'}
+          aria-expanded={isMenuOpen}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+
         {/* Logo */}
         <Link href="/" className="logo-text" style={{ textDecoration: 'none' }}>
           TEAM BẤT ỔN
@@ -60,18 +74,22 @@ export default function Header() {
 
           {/* Các Icon phương tiện */}
           <div className="vehicle-icons">
-            <div className="vehicle-item">
-              <svg className="vehicle-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M5 8v-2a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+            {/* Mỗi icon truyền loại xe sang trang mua bán để lọc sẵn danh sách. */}
+            <Link href="/MuaBanXe/MuaBanXe?type=%C3%94%20t%C3%B4" className="vehicle-item" aria-label="Xem xe ô tô">
+              {/* Icon ô tô premium với mui xe, kính chia khoang, đèn LED và mâm xe. */}
+              <svg className="vehicle-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 32" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 21v-3.6a2.8 2.8 0 0 1 2.2-2.7l7.1-1.6 5.4-6.1A4.2 4.2 0 0 1 22 5.6h18.2a5.2 5.2 0 0 1 3.8 1.6l5.4 5.9 7 1.6a2.8 2.8 0 0 1 2.2 2.7V21H4Z"/><path d="m16 12.8 4.6-4.5a3 3 0 0 1 2-.8h16.2a3.7 3.7 0 0 1 2.7 1.1l4.4 4.2H16Z"/><path d="M31.8 7.5v5.3M11 16.2h5m32 0h5M21 17h22"/><path d="M6 20h7m38 0h7"/><circle cx="16" cy="21" r="4.5" fill="currentColor"/><circle cx="48" cy="21" r="4.5" fill="currentColor"/><circle cx="16" cy="21" r="1.7" fill="white" stroke="none"/><circle cx="48" cy="21" r="1.7" fill="white" stroke="none"/><path d="M8 16.5h3M53 16.5h3"/></svg>
               <span className="vehicle-name">Ô tô</span>
-            </div>
-            <div className="vehicle-item">
-              <svg className="vehicle-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="18" r="3"/><circle cx="19" cy="18" r="3"/><path d="M5 15h14"/><path d="M12 15V9a3 3 0 0 1 3-3h2"/><path d="M12 9H8a2 2 0 0 0-2 2v4"/></svg>
+            </Link>
+            <Link href="/MuaBanXe/MuaBanXe?type=Xe%20m%C3%A1y" className="vehicle-item" aria-label="Xem xe máy">
+              {/* Icon xe máy premium với khung sườn, bình xăng, động cơ và ống xả. */}
+              <svg className="vehicle-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 32" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="10" cy="22" r="5"/><circle cx="54" cy="22" r="5"/><circle cx="10" cy="22" r="1.5"/><circle cx="54" cy="22" r="1.5"/><path d="M10 22h12l7.2-11h10l14.8 11M22 22 15.5 11h10.2l7.5 11"/><path d="M29.2 11h-7.5l-3.2-4h10.4l4.2 4"/><path d="m39.2 11 3.2-5.5h5.2M42.4 5.5l3 3M31 11l-2.5 8h10.2l3.4-8"/><path d="M31.4 14.2h7.8M38.7 19H47l4.5 3M18 22h-5M55 22h5"/></svg>
               <span className="vehicle-name">Xe máy</span>
-            </div>
-            <div className="vehicle-item">
-              <svg className="vehicle-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 14h12"/><path d="M14 14l-2-6h-3l-2 6"/><path d="M10 8V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3"/></svg>
+            </Link>
+            <Link href="/MuaBanXe/MuaBanXe?type=Xe%20moto" className="vehicle-item" aria-label="Xem xe mô tô">
+              {/* Icon mô tô thể thao premium với dàn áo khí động học, phuộc và pô. */}
+              <svg className="vehicle-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 32" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="22" r="5"/><circle cx="55" cy="22" r="5"/><circle cx="9" cy="22" r="1.5"/><circle cx="55" cy="22" r="1.5"/><path d="M9 22h13l6.5-12h10l16.5 12M22 22l5-11h12l8 11"/><path d="M27 11h-8l-4 5.5M34.5 10l4.5-5h7l2.5 3.5M39 5l3 3"/><path d="m27 11 6.2-3 9.5 2.2-3.2 7.3H27"/><path d="M30 13.2h9M39.5 17.5l5 4.5M14 22h-7M58 22h4"/><path d="M48 18h7l4 2.2"/></svg>
               <span className="vehicle-name">Mô tô</span>
-            </div>
+            </Link>
           </div>
         </div>
 
@@ -94,25 +112,27 @@ export default function Header() {
       </div>
 
       {/* Thanh Menu dưới */}
-      <nav className="header-nav">
+      <nav className={`header-nav ${isMenuOpen ? 'header-nav-open' : ''}`}>
         <div className="nav-item">
-          <Link href="/" className="nav-link">Trang Chủ</Link>
+          <Link href="/" className="nav-link" onClick={() => setIsMenuOpen(false)}>Trang Chủ</Link>
         </div>
         <div className="nav-item">
-          <Link href="/MuaBanXe/MuaBanXe" className="nav-link">Mua Bán</Link>
+          {/* Liên kết Cửa hàng tới trang danh sách xe dùng chung cho desktop và mobile. */}
+          <Link href="/MuaBanXe/MuaBanXe" className="nav-link" onClick={() => setIsMenuOpen(false)}>CỬA HÀNG</Link>
         </div>
         <div className="nav-item">
-          <Link href="/TinTuc/TinTuc" className="nav-link">Tin tức</Link>
+          <Link href="/TinTuc/TinTuc" className="nav-link" onClick={() => setIsMenuOpen(false)}>Tin tức</Link>
         </div>
         <div className="nav-item">
-          <Link href="#" className="nav-link">Information</Link>
+          {/* Liên kết trực tiếp tới trang Information, đồng thời vẫn giữ menu About Us. */}
+          <Link href="/Information_AboutUs/AboutUs" className="nav-link" onClick={() => setIsMenuOpen(false)}>Information</Link>
           {/* Dropdown Ẩn */}
           <div className="dropdown-menu">
-            <Link href="/Information_AboutUs/AboutUs" className="dropdown-item">About Us</Link>
+            <Link href="/Information_AboutUs/AboutUs" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>About Us</Link>
           </div>
         </div>
         <div className="nav-item">
-          <Link href="/LienHe/LienHe" className="nav-link">Liên Hệ</Link>
+          <Link href="/LienHe/LienHe" className="nav-link" onClick={() => setIsMenuOpen(false)}>Liên Hệ</Link>
         </div>
       </nav>
     </header>

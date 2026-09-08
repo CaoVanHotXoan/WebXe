@@ -1,7 +1,14 @@
 import "@/styles/globals.css";
 import "@/styles/HeaderFooter.css";
 import type { AppProps } from "next/app";
+import HieuUng from "@/TS/HieuUng";
 
 export default function App({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />;
+  return (
+    <>
+      {/* Khởi tạo hiệu ứng tia lửa dùng chung cho mọi trang. */}
+      <HieuUng />
+      <Component {...pageProps} />
+    </>
+  );
 }

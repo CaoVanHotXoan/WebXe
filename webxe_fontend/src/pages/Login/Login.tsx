@@ -106,24 +106,38 @@ export default function LoginPage() {
 
   return (
     <div className={styles['login-container']}>
-      <div className={styles['glass-panel']}>
-        <h2 className={styles.title}>{mode === 'login' ? 'Đăng nhập' : mode === 'register' ? 'Đăng ký' : 'Khôi phục mật khẩu'}</h2>
-        {successMsg && <div className={styles['success-message']}>{successMsg}</div>}
-        <form onSubmit={submit}>
-          {mode === 'register' && step === 'form' && <>
-            <div className={styles['input-group']}><input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Họ và tên" className={styles['input-field']} /></div>
-            <div className={styles['input-group']}><input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Tên đăng nhập" className={styles['input-field']} /></div>
-          </>}
-          <div className={styles['input-group']}><input value={account} onChange={(event) => setAccount(event.target.value)} placeholder={mode === 'login' ? 'Email hoặc tên đăng nhập' : 'Gmail'} className={styles['input-field']} disabled={step === 'otp'} /></div>
-          {step === 'otp' && <div className={styles['input-group']}><input value={otp} onChange={(event) => setOtp(event.target.value)} placeholder="Mã xác nhận 6 chữ số" className={styles['input-field']} inputMode="numeric" maxLength={6} /></div>}
-          {(mode === 'login' || step === 'form') && <div className={styles['input-group']}><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={mode === 'forgot_password' ? 'Mật khẩu mới' : 'Mật khẩu'} className={styles['input-field']} /></div>}
-          {mode === 'register' && step === 'form' && <div className={styles['input-group']}><input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Xác nhận mật khẩu" className={styles['input-field']} /></div>}
-          {error && <div className={styles['error-text']}>{error}</div>}
-          {mode === 'login' && <div style={{ textAlign: 'right', marginTop: '0.5rem', marginBottom: '1rem' }}><button type="button" onClick={() => switchMode('forgot_password')} className={styles['forgot-password-link']}>Quên mật khẩu?</button></div>}
-          <button type="submit" className={styles['action-btn']} disabled={loading}>{loading ? 'Đang xử lý...' : step === 'otp' ? 'Xác nhận mã' : mode === 'login' ? 'Đăng nhập' : 'Gửi mã xác nhận'}</button>
-        </form>
-        <div className={styles['switch-mode-text']}>
-          {mode === 'login' ? <>Chưa có tài khoản? <button type="button" onClick={() => switchMode('register')} className={styles['switch-mode-btn']}>Đăng ký</button></> : <button type="button" onClick={() => switchMode('login')} className={styles['switch-mode-btn']}>Quay lại đăng nhập</button>}
+      {/* Khung chung mô phỏng bố cục ảnh mẫu: minh họa bên trái, form bên phải. */}
+      <div className={styles['login-layout']}>
+        {/* Minh họa ô tô màu đen không can thiệp vào chức năng form. */}
+        <div className={styles['car-illustration']} aria-hidden="true">
+          {/* Ảnh người dùng cung cấp phủ toàn bộ cột trái của khung đăng nhập. */}
+          <img className={styles['login-car-image']} src="/images/login-car.png" alt="" />
+          {/* Lớp che logo gốc ở góc dưới bên phải mà không che phần xe. */}
+          <span className={styles['logo-cover']} />
+          <p className={styles['car-caption']}>DRIVE YOUR DREAM</p>
+        </div>
+
+        <div className={styles['form-side']}>
+          <div className={styles['glass-panel']}>
+            <h2 className={styles.title}>{mode === 'login' ? 'Đăng nhập' : mode === 'register' ? 'Đăng ký' : 'Khôi phục mật khẩu'}</h2>
+            {successMsg && <div className={styles['success-message']}>{successMsg}</div>}
+            <form onSubmit={submit}>
+              {mode === 'register' && step === 'form' && <>
+                <div className={styles['input-group']}><input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Họ và tên" className={styles['input-field']} /></div>
+                <div className={styles['input-group']}><input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Tên đăng nhập" className={styles['input-field']} /></div>
+              </>}
+              <div className={styles['input-group']}><input value={account} onChange={(event) => setAccount(event.target.value)} placeholder={mode === 'login' ? 'Email hoặc tên đăng nhập' : 'Gmail'} className={styles['input-field']} disabled={step === 'otp'} /></div>
+              {step === 'otp' && <div className={styles['input-group']}><input value={otp} onChange={(event) => setOtp(event.target.value)} placeholder="Mã xác nhận 6 chữ số" className={styles['input-field']} inputMode="numeric" maxLength={6} /></div>}
+              {(mode === 'login' || step === 'form') && <div className={styles['input-group']}><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={mode === 'forgot_password' ? 'Mật khẩu mới' : 'Mật khẩu'} className={styles['input-field']} /></div>}
+              {mode === 'register' && step === 'form' && <div className={styles['input-group']}><input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Xác nhận mật khẩu" className={styles['input-field']} /></div>}
+              {error && <div className={styles['error-text']}>{error}</div>}
+              {mode === 'login' && <div style={{ textAlign: 'right', marginTop: '0.5rem', marginBottom: '1rem' }}><button type="button" onClick={() => switchMode('forgot_password')} className={styles['forgot-password-link']}>Quên mật khẩu?</button></div>}
+              <button type="submit" className={styles['action-btn']} disabled={loading}>{loading ? 'Đang xử lý...' : step === 'otp' ? 'Xác nhận mã' : mode === 'login' ? 'Đăng nhập' : 'Gửi mã xác nhận'}</button>
+            </form>
+            <div className={styles['switch-mode-text']}>
+              {mode === 'login' ? <>Chưa có tài khoản? <button type="button" onClick={() => switchMode('register')} className={styles['switch-mode-btn']}>Đăng ký</button></> : <button type="button" onClick={() => switchMode('login')} className={styles['switch-mode-btn']}>Quay lại đăng nhập</button>}
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,7 +1,8 @@
 /* Container chính */
 .main-page {
-  background-color: #050505;
-  color: #fff;
+  /* Nền sáng theo phong cách showroom trong ảnh tham chiếu. */
+  background: linear-gradient(rgba(255, 255, 255, .16), rgba(241, 245, 249, .3)), url('/images/showroom-background.png') center / cover fixed;
+  color: #1f2937;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
 }
@@ -76,6 +77,12 @@
 }
 .banner-btn:hover {
   background-color: #dc2626;
+}
+
+/* Kích thước banner chính được tách riêng để không chiếm toàn bộ màn hình nhỏ. */
+.hero-banner {
+  height: min(80vh, 820px);
+  min-height: 560px;
 }
 
 /* Nút mũi tên trái phải ở Banner */
@@ -216,3 +223,72 @@
 }
 .slider-arrow.left { left: 0; }
 .slider-arrow.right { right: 0; }
+
+/* Tablet: giảm chiều cao banner và nới nội dung theo chiều rộng màn hình. */
+@media (max-width: 1024px) {
+  .banner-wrapper { height: 68vh; min-height: 520px; }
+  .banner-overlay { padding-left: 9%; padding-right: 9%; }
+  .banner-title { font-size: clamp(2.4rem, 6vw, 3.5rem); }
+  .content-zone { width: 86%; }
+
+  /* Tablet: giữ banner gọn hơn chiều cao màn hình và giảm khoảng cách nội dung. */
+  .hero-banner {
+    height: clamp(420px, 60vh, 620px);
+    min-height: 420px;
+  }
+  .hero-content-inner { gap: 1rem; }
+  .hero-title { font-size: clamp(2.5rem, 7vw, 4.5rem); }
+  .hero-desc { font-size: clamp(1rem, 2.5vw, 1.35rem); }
+  .hero-action { margin-top: 1rem; padding: .7rem 1.75rem; }
+  .hero-thumbnails { right: 1.5rem; bottom: 1.5rem; }
+  .hero-controls { left: 1.5rem; bottom: 1.5rem; }
+  .hero-counter { top: 1.5rem; right: 1.5rem; }
+}
+
+/* Mobile: xếp nội dung banner và card thành một cột dễ đọc. */
+@media (max-width: 440px) {
+  .banner-wrapper { height: 68vh; min-height: 460px; }
+  .banner-overlay { padding: 0 1.25rem; align-items: center; text-align: center; }
+  .banner-title { font-size: clamp(1.8rem, 10vw, 2.6rem); }
+  .banner-desc { font-size: 1rem; }
+  .banner-btn { padding: .8rem 1.5rem; font-size: .95rem; }
+  .arrow-btn { width: 38px; height: 38px; }
+  .arrow-btn.left { left: .6rem; }
+  .arrow-btn.right { right: .6rem; }
+  .content-zone { width: calc(100% - 2rem); margin: 2.5rem auto; }
+  .section-title { font-size: 1.35rem; }
+  .news-track { gap: .75rem; padding: 0 2.5rem; }
+  .news-card { min-width: 100%; }
+  .news-content { padding: 1rem; }
+
+  /* Mobile: banner thấp, nội dung co lại và không che khuất thumbnail. */
+  .hero-banner {
+    height: clamp(360px, 54vh, 480px);
+    min-height: 360px;
+  }
+  .hero-content {
+    padding: 0 1rem 3.5rem;
+  }
+  .hero-content-inner { gap: .75rem; }
+  .hero-title { font-size: clamp(1.75rem, 9vw, 2.5rem); }
+  .hero-desc { font-size: .95rem; line-height: 1.4; }
+  .hero-action {
+    margin-top: .5rem;
+    padding: .6rem 1.25rem;
+    font-size: .9rem;
+  }
+  .hero-thumbnails {
+    right: .75rem;
+    bottom: .75rem;
+    gap: .4rem;
+  }
+  .hero-thumbnails button { width: 2.75rem; height: 2.75rem; }
+  .hero-controls {
+    left: .75rem;
+    bottom: .75rem;
+    gap: .4rem;
+  }
+  .hero-controls button { padding: .55rem; border-radius: .75rem; }
+  .hero-controls svg { width: 1rem; height: 1rem; }
+  .hero-counter { top: .75rem; right: .75rem; font-size: .75rem; }
+}

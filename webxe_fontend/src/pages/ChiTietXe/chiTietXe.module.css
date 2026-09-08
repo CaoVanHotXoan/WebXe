@@ -1,4 +1,9 @@
-.page { min-height: 100vh; background: #050505; color: #fff; }
+/* Ảnh showroom làm nền cho trang chi tiết xe mà không thay đổi nội dung chức năng. */
+.page { min-height: 100vh; background: linear-gradient(rgba(255, 255, 255, .2), rgba(241, 245, 249, .42)), url('/images/showroom-background.png') center / cover fixed; color: #1f2937; }
+.imagePanel, .detailsPanel, .description, .newsSection, .popularPanel { background: rgba(255, 255, 255, .9); border-color: rgba(31, 41, 55, .14); }
+.backLink, .actionSecondary, .summaryRow, .specs, .description p { color: #4b5563; }
+.summary, .newsLink, .popularItem { border-color: #d1d5db; }
+.summaryRow strong, .spec strong, .newsLink { color: #1f2937; }
 .main { width: min(1400px, 92%); margin: 0 auto; padding: 3rem 0 5rem; }
 .breadcrumb { margin-bottom: 1.5rem; color: #999; font-size: .85rem; }
 .backLink, .actionSecondary { color: #ddd; transition: color .2s; }
@@ -74,3 +79,26 @@
 .notFound { padding: 6rem 1rem; text-align: center; }
 @media (max-width: 850px) { .hero, .bottom { grid-template-columns: 1fr; } .mainImage { height: 430px; } }
 @media (max-width: 550px) { .main { width: 94%; padding-top: 2rem; } .specs { grid-template-columns: 1fr; } .sliderTrack .newsLink { flex-basis: 100%; } .actions { flex-direction: column; } .mainImage { height: 300px; } .galleryArrow { width: 40px; height: 40px; } .thumbnail { flex-basis: 82px; height: 58px; } .thumbnailCarousel { gap: .35rem; } .thumbnailArrow { width: 30px; height: 30px; font-size: 1.35rem; } }
+
+/* Tablet: giảm kích thước ảnh để hai cột chi tiết không bị chật. */
+@media (max-width: 1024px) and (min-width: 851px) {
+  .main { width: 94%; padding-top: 2.5rem; }
+  .hero { grid-template-columns: 56% 44%; gap: 1rem; }
+  .mainImage { height: 430px; }
+  .detailsPanel { padding: 1.35rem; }
+  .bottom { grid-template-columns: 65% 35%; gap: 1rem; }
+}
+
+/* Mobile nhỏ: tối ưu nút, ảnh và thông tin xe theo chiều dọc. */
+@media (max-width: 440px) {
+  .main { width: calc(100% - 1.5rem); padding: 1.5rem 0 3rem; }
+  .imagePanel, .detailsPanel, .description, .newsSection, .popularPanel { border-radius: 8px; }
+  .mainImage { height: 245px; }
+  .detailsPanel { padding: 1rem; }
+  .title { font-size: 1.65rem; }
+  .price { font-size: 1.2rem; }
+  .summaryRow { font-size: .82rem; }
+  .actionPrimary, .actionSecondary { padding: .75rem; }
+  .description { padding: 1rem; }
+  .popularPanel { height: 360px; max-height: 360px; padding: 1rem; }
+}

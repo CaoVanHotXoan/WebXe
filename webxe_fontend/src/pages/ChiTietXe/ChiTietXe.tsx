@@ -28,6 +28,7 @@ type VehicleDataResponse = { Xe?: ApiVehicle[]; HinhAnhXe?: ApiVehicleImage[]; H
 type DetailedVehicle = {
   id: number;
   title: string;
+  price: number;
   priceLabel: string;
   image: string;
   images: string[];
@@ -60,11 +61,12 @@ function mapApiVehicles(data: VehicleDataResponse): DetailedVehicle[] {
     return [{
       id: vehicle.MaXe,
       title,
+      price,
       priceLabel: `${price.toLocaleString('vi-VN')} VNĐ`,
       image: vehicleImages[0] ?? '',
       images: vehicleImages,
-      brand: brands.get(vehicle.MaHang) || undefined,
-      type: types.get(vehicle.MaLoai) || undefined,
+      brand: vehicle.MaHang == null ? undefined : brands.get(vehicle.MaHang) || undefined,
+      type: vehicle.MaLoai == null ? undefined : types.get(vehicle.MaLoai) || undefined,
       fuel: fuel?.trim() || undefined,
       year: vehicle.NamSanXuat == null ? undefined : String(vehicle.NamSanXuat),
       color: vehicle.MauSac?.trim() || undefined,

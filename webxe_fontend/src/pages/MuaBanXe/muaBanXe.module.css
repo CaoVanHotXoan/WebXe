@@ -1,4 +1,9 @@
-.page { min-height: 100vh; background: #050505; color: #fff; }
+/* Ảnh showroom làm nền cho trang Cửa hàng, các panel phía trên vẫn giữ nguyên. */
+.page { min-height: 100vh; background: linear-gradient(rgba(255, 255, 255, .2), rgba(241, 245, 249, .42)), url('/images/showroom-background.png') center / cover fixed; color: #1f2937; }
+.panel, .card { background: rgba(255, 255, 255, .9); border-color: rgba(31, 41, 55, .14); }
+.filterButton, .cardTitle { color: #1f2937; }
+.subtitle, .option, .count, .meta, .empty { color: #4b5563; }
+.meta span { border-color: #d1d5db; }
 .main { width: min(1400px, 92%); margin: 0 auto; padding: 3rem 0 5rem; }
 .intro { margin-bottom: 2rem; }
 .eyebrow { color: #ef4444; font-size: .72rem; font-weight: 800; letter-spacing: .2em; }
@@ -49,3 +54,26 @@
 .popularPrice { margin-top: .3rem; color: #ef4444; font-size: .76rem; }
 @media (max-width: 1050px) { .layout { grid-template-columns: 28% 1fr; } .popularPanel { max-height: 280px; } .popularList { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 700px) { .main { width: 94%; padding-top: 2rem; } .layout { grid-template-columns: 1fr; } .popularList { grid-template-columns: 1fr; } .card { grid-template-columns: 1fr; } .image { height: 210px; } }
+
+/* Tablet: giữ sidebar gọn và cho khu vực kết quả đủ không gian hiển thị. */
+@media (max-width: 1024px) and (min-width: 701px) {
+  .main { width: 94%; padding-top: 2.5rem; }
+  .layout { grid-template-columns: minmax(220px, 28%) 1fr; gap: 1rem; }
+  .card { grid-template-columns: minmax(145px, 36%) 1fr; }
+  .popularList { grid-template-columns: 1fr; }
+}
+
+/* Mobile: ưu tiên bộ lọc, ảnh và tiêu đề không bị ép ngang. */
+@media (max-width: 440px) {
+  .main { width: calc(100% - 1.5rem); padding: 1.5rem 0 3rem; }
+  .intro { margin-bottom: 1.25rem; }
+  .title { font-size: 2rem; }
+  .subtitle { font-size: .88rem; }
+  .filterPanel { padding: .85rem; }
+  .resultsHeader { align-items: center; gap: .5rem; }
+  .resultsHeader h2 { font-size: 1.05rem; }
+  .count { font-size: .72rem; }
+  .card { grid-template-columns: 1fr; }
+  .image { height: 180px; }
+  .cardBody { padding: .8rem; }
+}
