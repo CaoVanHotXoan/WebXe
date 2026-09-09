@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Vehicle } from '@/TS/vehicleData';
@@ -79,12 +80,28 @@ function matchesFilters(vehicle: Vehicle, filters: FilterState) {
 }
 
 export default function MuaBanXePage() {
+  const router = useRouter();
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [filters, setFilters] = useState<FilterState>({ type: [], fuel: [], brand: [], price: [] });
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+
+  // Đồng bộ loại xe trên URL với bộ lọc để các icon trên Header mở đúng danh sách.
+  useEffect(() => {
+    if (!router.isReady) return;
+
+    const queryType = router.query.type;
+    const selectedType = Array.isArray(queryType) ? queryType[0] : queryType;
+    const validTypes: NonNullable<Vehicle['type']>[] = ['Ô tô', 'Xe máy', 'Xe moto'];
+    const typeFilter = selectedType && validTypes.includes(selectedType as NonNullable<Vehicle['type']>)
+      ? [selectedType as NonNullable<Vehicle['type']>]
+      : [];
+
+    setFilters((current) => ({ ...current, type: typeFilter }));
+    setOpenFilter(typeFilter.length ? 'type' : null);
+  }, [router.isReady, router.query.type]);
 
   useEffect(() => {
     setLoading(true);

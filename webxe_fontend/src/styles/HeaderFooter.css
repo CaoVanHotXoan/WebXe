@@ -16,6 +16,23 @@
   padding: 1rem 5%;
 }
 
+/* Nút hamburger được ẩn trên desktop và bật bằng media query mobile. */
+.menu-toggle {
+  display: none;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+
+.menu-toggle span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  margin: 5px 0;
+  background: currentColor;
+}
+
 /* Logo */
 .logo-text {
   font-size: 1.5rem;
@@ -113,14 +130,22 @@
   align-items: center;
   cursor: pointer;
   transition: color 0.3s;
+  color: inherit;
+  text-decoration: none;
 }
 .vehicle-item:hover {
   color: #ef4444;
 }
 .vehicle-icon {
-  width: 24px;
-  height: 24px;
+  /* Giữ đúng tỷ lệ ngang của các hình xe mới. */
+  width: 42px;
+  height: 26px;
   margin-bottom: 0.25rem;
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+.vehicle-item:hover .vehicle-icon {
+  filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.45));
+  transform: translateY(-2px) scale(1.05);
 }
 .vehicle-name {
   font-size: 0.75rem;
@@ -249,4 +274,135 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: 1.5rem;
   font-size: 0.85rem;
+}
+
+/* Header trong suốt với chữ và icon màu trắng nổi bật trên mọi giao diện. */
+.header-container {
+  background: transparent;
+  color: #ffffff;
+  border-bottom-color: rgba(255, 255, 255, 0.15);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.logo-text, .nav-link, .profile-icon, .search-btn, .menu-toggle, .vehicle-item { color: #ffffff; }
+.header-nav { border-top-color: rgba(255, 255, 255, 0.15); }
+.search-input { color: #ffffff; }
+.search-suggestions { background: #111; border-color: #292929; }
+.search-suggestion { color: #ffffff; border-bottom-color: #292929; }
+.search-empty { color: #999; }
+.dropdown-menu { background: #111; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5); }
+.dropdown-item { color: rgba(255, 255, 255, 0.85); }
+.footer-container { background-color: #050505; color: #aaa; border-top-color: rgba(255, 255, 255, .1); }
+.footer-logo, .footer-title { color: #fff; }
+.footer-links a { color: #aaa; }
+
+/* Tablet: thu gọn khoảng cách Header/Footer để không tràn chiều ngang. */
+@media (max-width: 1024px) {
+  .header-top {
+    gap: 1.25rem;
+    padding: .85rem 3%;
+  }
+
+  .header-middle {
+    gap: 1.5rem;
+  }
+
+  .vehicle-icons {
+    gap: 1rem;
+  }
+
+  .header-nav {
+    gap: 1.75rem;
+  }
+
+  .footer-container {
+    padding: 3rem 3% 1.5rem;
+  }
+}
+
+/* Mobile: hamburger ở góc trái, menu dọc và ẩn toàn bộ icon phương tiện. */
+@media (max-width: 440px) {
+  .header-top {
+    position: relative;
+    justify-content: space-between;
+    min-height: 64px;
+    padding: .75rem 1rem .75rem .8rem;
+  }
+
+  .menu-toggle {
+    display: block;
+    flex: 0 0 34px;
+    padding: 2px 5px;
+  }
+
+  .logo-text {
+    margin-right: auto;
+    margin-left: .65rem;
+    font-size: 1rem;
+    letter-spacing: 1px;
+  }
+
+  .header-middle {
+    gap: 0;
+    margin-left: auto;
+  }
+
+  .vehicle-icons,
+  .search-container {
+    display: none;
+  }
+
+  .profile-icon {
+    padding: .25rem;
+  }
+
+  .header-nav {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: .45rem .8rem .8rem;
+    border-top: 1px solid rgba(255, 255, 255, .12);
+  }
+
+  .header-nav.header-nav-open {
+    display: flex;
+  }
+
+  .nav-item {
+    padding: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+  }
+
+  .nav-link {
+    display: block;
+    padding: .85rem .5rem;
+    font-size: .82rem;
+  }
+
+  .dropdown-menu {
+    position: static;
+    display: block;
+    min-width: 0;
+    padding-left: .75rem;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .dropdown-item {
+    padding: .45rem .5rem .75rem;
+    font-size: .78rem;
+  }
+
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .footer-container {
+    padding: 2.5rem 1rem 1.25rem;
+  }
 }

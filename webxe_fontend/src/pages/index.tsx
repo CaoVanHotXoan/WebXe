@@ -14,7 +14,7 @@ gsap.registerPlugin();
 
 // Sample data for banners, news, and cars
 const bannerData = [
-  { id: 1, image: 'https://images.unsplash.com/photo-1503376712344-652d0f440f5a?auto=format&fit=crop&w=1920&q=80', title: 'SIÊU DEAL CUỐI TUẦN', desc: 'Giảm giá lên đến 20% cho các dòng xe' },
+  { id: 1, image: 'https://images.unsplash.com/photo-1503376712344-652d0f440f5a?auto=format&fit=crop&w=1920&q=80', video: '/videos/webxe.mp4', title: 'SIÊU DEAL CUỐI TUẦN', desc: 'Giảm giá lên đến 20% cho các dòng xe' },
   { id: 2, image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1920&q=80', title: 'MERCEDES AMG G63', desc: 'Trải nghiệm đỉnh cao cùng ông vua địa hình.' },
   { id: 3, image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1920&q=80', title: 'KHÁM PHÁ DÒNG XE MỚI', desc: 'Dòng xe máy tiết kiệm xăng nhất năm 2026.' }
 ];
@@ -216,7 +216,7 @@ const InteractiveHeroBanner: React.FC<{ slides: typeof bannerData }> = ({ slides
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 overflow-hidden font-sans"
+      className={`${styles['hero-banner']} relative w-full bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 overflow-hidden font-sans`}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       style={{
@@ -226,34 +226,49 @@ const InteractiveHeroBanner: React.FC<{ slides: typeof bannerData }> = ({ slides
         transition: 'background-image 0s ease-in-out',
       }}
     >
+      {slides[activeIndex].video && (
+        /* Video chạy nền không âm thanh để không làm gián đoạn trải nghiệm. */
+        <video
+          key={slides[activeIndex].video}
+          className="absolute inset-0 z-0 h-full w-full object-cover"
+          src={slides[activeIndex].video}
+          poster={slides[activeIndex].image}
+          autoPlay
+          muted
+          loop
+          playsInline
+          aria-hidden="true"
+        />
+      )}
+
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50 z-10" />
 
       {/* Main content - animated text */}
       <div 
         ref={contentRef}
-        className="absolute inset-0 flex flex-col items-center justify-center z-20 text-center"
+        className={`${styles['hero-content']} absolute inset-0 flex flex-col items-center justify-center z-20 text-center`}
       >
-        <div className="space-y-6 max-w-4xl px-4 animate-fadeIn">
+        <div className={`${styles['hero-content-inner']} space-y-6 max-w-4xl px-4 animate-fadeIn`}>
           <div className="inline-block">
             <span className="text-sm font-semibold tracking-widest text-emerald-400 uppercase">
               ✨ Featured Offer
             </span>
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight tracking-tight">
+          <h1 className={`${styles['hero-title']} text-5xl md:text-7xl font-bold text-white leading-tight tracking-tight`}>
             {slides[activeIndex].title}
           </h1>
-          <p className="text-xl md:text-2xl text-gray-200 font-light">
+          <p className={`${styles['hero-desc']} text-xl md:text-2xl text-gray-200 font-light`}>
             {slides[activeIndex].desc}
           </p>
-          <button className="mt-8 px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-full hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 hover:scale-105">
+          <button className={`${styles['hero-action']} mt-8 px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-full hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 hover:scale-105`}>
             Explore Now
           </button>
         </div>
       </div>
 
       {/* Thumbnail cards - bottom right */}
-      <div className="absolute bottom-8 right-8 z-30 flex gap-3 md:gap-4">
+      <div className={`${styles['hero-thumbnails']} absolute bottom-8 right-8 z-30 flex gap-3 md:gap-4`}>
         {slides.map((slide, idx) => (
           <button
             ref={(el) => {
@@ -284,7 +299,7 @@ const InteractiveHeroBanner: React.FC<{ slides: typeof bannerData }> = ({ slides
       </div>
 
       {/* Controls - bottom left glassmorphism buttons */}
-      <div className="absolute bottom-8 left-8 z-30 flex gap-4">
+      <div className={`${styles['hero-controls']} absolute bottom-8 left-8 z-30 flex gap-4`}>
         <button
           onClick={handlePrev}
           className="p-3 md:p-4 backdrop-blur-md bg-white/10 border border-white/20 text-white rounded-2xl hover:bg-white/20 transition-all duration-300 hover:scale-110"
@@ -332,7 +347,7 @@ const InteractiveHeroBanner: React.FC<{ slides: typeof bannerData }> = ({ slides
       </div>
 
       {/* Slide counter */}
-      <div className="absolute top-8 right-8 z-30 text-white/80 text-sm font-mono tracking-wider">
+      <div className={`${styles['hero-counter']} absolute top-8 right-8 z-30 text-white/80 text-sm font-mono tracking-wider`}>
         {String(activeIndex + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}
       </div>
     </div>

@@ -215,3 +215,20 @@
     white-space: nowrap;
   }
 }
+
+/* Tablet: thu hẹp khoảng cách để form và bản đồ vừa cùng một màn hình. */
+@media (max-width: 1024px) and (min-width: 801px) {
+  .main { width: min(94%, 900px); padding: 4rem 0 5rem; }
+  .layout { gap: 1rem; }
+  .map { min-height: 360px; }
+}
+
+/* Mobile nhỏ: các tab cuộn ngang, form và bản đồ xếp dọc. */
+@media (max-width: 440px) {
+  .main { width: calc(100% - 1.5rem); padding: 2.5rem 0 3.5rem; }
+  .hero { padding-left: 1rem; }
+  .title { font-size: 2.35rem; }
+  .panel { padding: 1rem; }
+  .tab { padding: .75rem .8rem; font-size: .82rem; }
+  .map { min-height: 270px; }
+}
