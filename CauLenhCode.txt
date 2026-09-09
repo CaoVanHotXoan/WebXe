@@ -180,7 +180,18 @@
 #Lưu ý:
 	-#ghi chú từng đọn code
 
+--Reponsive--
+- hãy làm reponsive cho trang chủ, tin tức,liên hệ, information_abuotUs, chi tiết xe, login, mua bán xe,thong tin cá nhân
 
+-#dạng mobile(<= 440): menu dưới dạng hamberger nằm ở góc trên bên trái trong hamburger có(trang chủ, mua bán, tin tức, information, liện hệ) click chuột vào biều tượng hamberger để mở menu(#menu theo hàng dọc) và ẩn các icon như(# ô tô, xe máy, mô tô)
+
+-#dạng ipad(<=1024)
+
+-#lưu ý:
+	+#ghi chú từng đọn code
+
+
+-#thêm mới chỉnh cho tôi các khung layout ở trang @MuaBanXe.tsx thành bán trong suốt giống layout đăng ký đăng nhập của trang login
 
 
 

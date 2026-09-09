@@ -276,24 +276,23 @@
   font-size: 0.85rem;
 }
 
-/* Header/footer sáng đồng bộ với background showroom trên các trang chính. */
+/* Header trong suốt với chữ và icon màu trắng nổi bật trên mọi giao diện. */
 .header-container {
-  /* Header trong suốt để background nội dung chạy liền mạch phía sau. */
   background: transparent;
-  color: #1f2937;
-  border-bottom-color: rgba(31, 41, 55, .1);
+  color: #ffffff;
+  border-bottom-color: rgba(255, 255, 255, 0.15);
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
-.logo-text, .nav-link, .profile-icon, .search-btn, .menu-toggle { color: #1f2937; }
-.header-nav { border-top-color: rgba(31, 41, 55, .12); }
-.search-input { color: #1f2937; }
-.search-suggestions { background: #fff; border-color: #d1d5db; }
-.search-suggestion { color: #1f2937; border-bottom-color: #e5e7eb; }
-.search-empty { color: #6b7280; }
-.dropdown-menu { background: #fff; box-shadow: 0 8px 16px rgba(31, 41, 55, .16); }
-.dropdown-item { color: #374151; }
+.logo-text, .nav-link, .profile-icon, .search-btn, .menu-toggle, .vehicle-item { color: #ffffff; }
+.header-nav { border-top-color: rgba(255, 255, 255, 0.15); }
+.search-input { color: #ffffff; }
+.search-suggestions { background: #111; border-color: #292929; }
+.search-suggestion { color: #ffffff; border-bottom-color: #292929; }
+.search-empty { color: #999; }
+.dropdown-menu { background: #111; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5); }
+.dropdown-item { color: rgba(255, 255, 255, 0.85); }
 .footer-container { background-color: #050505; color: #aaa; border-top-color: rgba(255, 255, 255, .1); }
 .footer-logo, .footer-title { color: #fff; }
 .footer-links a { color: #aaa; }

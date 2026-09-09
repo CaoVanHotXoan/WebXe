@@ -1,10 +1,11 @@
-/* Container chính */
+/* Container chính trang chủ - Nền showroom trong suốt đồng bộ MuaBanXe */
 .main-page {
-  /* Nền sáng theo phong cách showroom trong ảnh tham chiếu. */
-  background: linear-gradient(rgba(255, 255, 255, .16), rgba(241, 245, 249, .3)), url('/images/showroom-background.png') center / cover fixed;
-  color: #1f2937;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
+  background: 
+    linear-gradient(135deg, rgba(8, 10, 15, 0.32) 0%, rgba(15, 18, 25, 0.42) 100%),
+    url('/images/showroom-background.png') center / cover fixed;
+  color: #ffffff;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 /* ==================== BANNER ==================== */
@@ -15,7 +16,6 @@
   overflow: hidden;
 }
 
-/* Slider Track chứa các Slide */
 .banner-track {
   display: flex;
   height: 100%;
@@ -28,14 +28,12 @@
   position: relative;
 }
 
-/* Ảnh Banner */
 .banner-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* Gradient overlay và nội dung Text */
 .banner-overlay {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -54,15 +52,18 @@
   text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
   text-transform: uppercase;
 }
+
 .banner-title span {
-  color: #ef4444; /* Chữ màu đỏ */
+  color: #ef4444;
 }
+
 .banner-desc {
   font-size: 1.25rem;
   max-width: 500px;
   margin-bottom: 2rem;
   color: #ddd;
 }
+
 .banner-btn {
   background-color: #ef4444;
   color: white;
@@ -75,17 +76,16 @@
   transition: background-color 0.3s;
   width: max-content;
 }
+
 .banner-btn:hover {
   background-color: #dc2626;
 }
 
-/* Kích thước banner chính được tách riêng để không chiếm toàn bộ màn hình nhỏ. */
 .hero-banner {
   height: min(80vh, 820px);
   min-height: 560px;
 }
 
-/* Nút mũi tên trái phải ở Banner */
 .arrow-btn {
   position: absolute;
   top: 50%;
@@ -103,13 +103,14 @@
   transition: all 0.3s;
   z-index: 10;
 }
+
 .arrow-btn:hover {
   background: #ef4444;
   border-color: #ef4444;
 }
+
 .arrow-btn.left { left: 2rem; }
 .arrow-btn.right { right: 2rem; }
-
 
 /* ==================== CONTENT ZONE ==================== */
 .content-zone {
@@ -124,9 +125,11 @@
   text-transform: uppercase;
   border-left: 5px solid #ef4444;
   padding-left: 1rem;
+  color: #ffffff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
-/* Slider Component (Tin tức & Tin bán xe) */
+/* Slider Component (Tin tức & Tin bán xe) - Glassmorphism cao cấp */
 .news-slider {
   position: relative;
   overflow: hidden;
@@ -138,34 +141,47 @@
   display: flex;
   gap: 2rem;
   transition: transform 0.5s ease-in-out;
-  padding: 0 4rem; /* Để hở 2 bên */
+  padding: 0 4rem;
 }
 
 .news-card {
-  min-width: calc(33.333% - 1.333rem); /* Hiển thị max 3 ảnh ở giữa */
-  background-color: #111;
-  border-radius: 8px;
+  min-width: calc(33.333% - 1.333rem);
+  background: rgba(10, 12, 18, 0.48);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
   overflow: hidden;
   position: relative;
-  transition: transform 0.3s, opacity 0.3s;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
   text-decoration: none;
   display: block;
-  opacity: 0.5; /* Mặc định mờ */
-  transform: scale(0.9);
+  opacity: 0.65;
+  transform: scale(0.92);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
 .news-card.active {
   opacity: 1;
   transform: scale(1);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+}
+
+.news-card:hover {
+  border-color: rgba(239, 68, 68, 0.7);
+  background: rgba(15, 18, 28, 0.65);
+  transform: scale(1.02);
+  box-shadow: 0 15px 40px rgba(239, 68, 68, 0.25);
 }
 
 .news-card:hover .news-img {
-  transform: scale(1.05);
+  transform: scale(1.06);
 }
 
 .news-card:hover .news-text {
-  color: #ef4444; /* Hover chữ đỏ */
+  color: #ef4444;
 }
 
 .news-img-container {
@@ -178,7 +194,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s;
+  transition: transform 0.4s ease;
 }
 
 .news-content {
@@ -186,11 +202,12 @@
 }
 
 .news-text {
-  color: #fff;
+  color: #ffffff;
   font-size: 1.1rem;
   font-weight: 600;
   line-height: 1.4;
   transition: color 0.3s;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 .news-price {
@@ -198,15 +215,16 @@
   font-weight: 700;
   margin-top: 0.5rem;
   display: block;
+  font-size: 1.05rem;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* Nút mũi tên Slider nhỏ */
 .slider-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   background: rgba(0, 0, 0, 0.7);
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
   width: 40px;
   height: 40px;
@@ -216,22 +234,24 @@
   border-radius: 50%;
   cursor: pointer;
   z-index: 5;
-  transition: background 0.3s;
+  transition: all 0.3s;
 }
+
 .slider-arrow:hover {
   background: #ef4444;
+  border-color: #ef4444;
 }
+
 .slider-arrow.left { left: 0; }
 .slider-arrow.right { right: 0; }
 
-/* Tablet: giảm chiều cao banner và nới nội dung theo chiều rộng màn hình. */
+/* Responsive adjustments */
 @media (max-width: 1024px) {
   .banner-wrapper { height: 68vh; min-height: 520px; }
   .banner-overlay { padding-left: 9%; padding-right: 9%; }
   .banner-title { font-size: clamp(2.4rem, 6vw, 3.5rem); }
   .content-zone { width: 86%; }
 
-  /* Tablet: giữ banner gọn hơn chiều cao màn hình và giảm khoảng cách nội dung. */
   .hero-banner {
     height: clamp(420px, 60vh, 620px);
     min-height: 420px;
@@ -245,7 +265,6 @@
   .hero-counter { top: 1.5rem; right: 1.5rem; }
 }
 
-/* Mobile: xếp nội dung banner và card thành một cột dễ đọc. */
 @media (max-width: 440px) {
   .banner-wrapper { height: 68vh; min-height: 460px; }
   .banner-overlay { padding: 0 1.25rem; align-items: center; text-align: center; }
@@ -261,7 +280,6 @@
   .news-card { min-width: 100%; }
   .news-content { padding: 1rem; }
 
-  /* Mobile: banner thấp, nội dung co lại và không che khuất thumbnail. */
   .hero-banner {
     height: clamp(360px, 54vh, 480px);
     min-height: 360px;
