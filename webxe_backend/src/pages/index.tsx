@@ -241,6 +241,8 @@ export default function Home() {
     row: Record<string, CellValue>;
     tableId: string;
   } | null>(null);
+  const [filterBrand, setFilterBrand] = useState<string>("");
+  const [filterType, setFilterType] = useState<string>("");
 
   useEffect(() => {
     fetch("/api/data/json")
@@ -266,6 +268,14 @@ export default function Home() {
     : undefined;
   const detailKey = detailKeyByParent[selectedId];
   const formTable = tableData.find((table) => table.id === formTableId) ?? selectedTable;
+  const filteredRecords = useMemo(() => {
+    if (selectedTable.id !== "Xe") return selectedTable.records;
+    return selectedTable.records.filter((row) => {
+      const matchesBrand = filterBrand ? Number(row.MaHang) === Number(filterBrand) : true;
+      const matchesType = filterType ? Number(row.MaLoai) === Number(filterType) : true;
+      return matchesBrand && matchesType;
+    });
+  }, [selectedTable, filterBrand, filterType]);
   const isCardView = ["Xe", "HangXe", "NguoiDung"].includes(selectedTable.id);
   const showColumnOverview = !["DonHang", "GioHang", "LoaiXe", "VaiTro"].includes(selectedTable.id);
   const displayColumns = selectedTable.columns.filter(
@@ -308,6 +318,8 @@ export default function Home() {
     setSelectedId(tableId);
     setSelectedDetailId(null);
     setIsMobileMenuOpen(false);
+    setFilterBrand("");
+    setFilterType("");
   };
 
   const openCreate = (tableId = selectedTable.id) => {
@@ -454,13 +466,6 @@ export default function Home() {
       <div className={styles.dashboardPage}>
         <aside className={styles.sidebar}>
           <div className={styles.sidebarHeader}>
-            <div className={styles.brandRow}>
-              <div className={styles.logoCircle}>🏎️</div>
-              <div>
-                <p className={styles.brandLabel}>WebXe</p>
-                <span className={styles.brandSub}>Database Dashboard</span>
-              </div>
-            </div>
             <button
               type="button"
               className={styles.mobileMenuToggle}
@@ -471,6 +476,13 @@ export default function Home() {
               <span className={styles.toggleIcon}>{isMobileMenuOpen ? "✕" : "☰"}</span>
               <span className={styles.toggleText}>Danh mục</span>
             </button>
+            <div className={styles.brandRow}>
+              <div className={styles.logoCircle}>🏎️</div>
+              <div>
+                <p className={styles.brandLabel}>WebXe</p>
+                <span className={styles.brandSub}>Database Dashboard</span>
+              </div>
+            </div>
           </div>
 
           <nav className={`${styles.navList} ${isMobileMenuOpen ? styles.mobileNavOpen : ""}`}>
@@ -519,6 +531,38 @@ export default function Home() {
               <h1>{tableLabels[selectedTable.id] ?? selectedTable.name}</h1>
             </div>
             <div className={styles.topbarActions}>
+              {selectedTable.id === "Xe" && (
+                <div className={styles.filterGroup}>
+                  <span className={styles.filterIcon}>🏢</span>
+                  <select
+                    value={filterBrand}
+                    onChange={(e) => setFilterBrand(e.target.value)}
+                    className={styles.filterSelect}
+                    aria-label="Lọc theo hãng xe"
+                  >
+                    <option value="">Tất cả hãng xe</option>
+                    {(tableData.find((t) => t.id === "HangXe")?.records || []).map((brand) => (
+                      <option key={String(brand.MaHang)} value={String(brand.MaHang ?? "")}>{String(brand.TenHang ?? "")}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {selectedTable.id === "Xe" && (
+                <div className={styles.filterGroup}>
+                  <span className={styles.filterIcon}>🚘</span>
+                  <select
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
+                    className={styles.filterSelect}
+                    aria-label="Lọc theo loại xe"
+                  >
+                    <option value="">Tất cả loại xe</option>
+                    {(tableData.find((t) => t.id === "LoaiXe")?.records || []).map((type) => (
+                      <option key={String(type.MaLoai)} value={String(type.MaLoai ?? "")}>{String(type.TenLoai ?? "")}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <button type="button" className={styles.primaryButton} onClick={() => openCreate()}>+ Thêm mới</button>
             </div>
           </div>
@@ -607,7 +651,7 @@ export default function Home() {
 
           {isCardView ? (
             <div className={`${styles.productGrid} ${["HangXe", "NguoiDung"].includes(selectedTable.id) ? styles.compactProductGrid : ""}`}>
-              {selectedTable.records.map((row, rowIndex) => (
+              {filteredRecords.map((row, rowIndex) => (
                 <article key={`${selectedTable.id}-${rowIndex}`} className={`${styles.productCard} ${["HangXe", "NguoiDung"].includes(selectedTable.id) ? styles.compactProductCard : ""}`}>
                   {(() => {
                     const images = selectedTable.id === "Xe" ? vehicleImages[String(row.MaXe)] ?? [] : [];
@@ -659,7 +703,7 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody>
-                {selectedTable.records.map((row, rowIndex) => (
+                {filteredRecords.map((row, rowIndex) => (
                   <tr key={`${selectedTable.id}-${rowIndex}`}>
                     {displayColumns.map((column) => (
                       <td key={`${selectedTable.id}-${column}-${rowIndex}`}>
