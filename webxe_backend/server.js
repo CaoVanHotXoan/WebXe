@@ -8,7 +8,7 @@ const { connectDB } = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const { chat } = require('./controllers/chatController');
 const { createOrder } = require('./controllers/orderController');
-const { authMiddleware } = require('./middlewares/authMiddleware');
+const { authMiddleware, requireRole } = require('./middlewares/authMiddleware');
 const {
   getAllTablesData,
   getAllTablesDataObject,
@@ -242,9 +242,9 @@ app.get('/api/data/view', async (req, res) => {
 });
 
 app.get('/api/data/:table', getTableData);
-app.post('/api/data/:table', createTableData);
-app.put('/api/data/:table', updateTableData);
-app.delete('/api/data/:table', deleteTableData);
+app.post('/api/data/:table', authMiddleware, requireRole(1), createTableData);
+app.put('/api/data/:table', authMiddleware, requireRole(1), updateTableData);
+app.delete('/api/data/:table', authMiddleware, requireRole(1), deleteTableData);
 app.use('/api/auth', authRoutes);
 
 connectDB();

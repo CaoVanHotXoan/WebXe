@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
+import { useAuth, UserProfile } from '@/context/AuthContext';
 import styles from './login.module.css';
 
 type FormMode = 'login' | 'register' | 'forgot_password';
 type FormStep = 'form' | 'otp';
-type ResponseData = { message?: string; token?: string; user?: unknown };
+type ResponseData = { message?: string; token?: string; user?: UserProfile };
 
 const API_BASE = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth`;
 
 export default function LoginPage() {
   const router = useRouter();
+  const { loginUser } = useAuth();
   const [mode, setMode] = useState<FormMode>('login');
   const [step, setStep] = useState<FormStep>('form');
   const [account, setAccount] = useState('');
@@ -65,9 +67,9 @@ export default function LoginPage() {
         return;
       }
       await request('/login', { username: account.trim(), password }, (data) => {
-        localStorage.setItem('auth', 'true');
-        localStorage.setItem('token', data.token || '');
-        localStorage.setItem('profile', JSON.stringify(data.user || {}));
+        if (data.token && data.user) {
+          loginUser(data.token, data.user);
+        }
         router.replace('/');
       });
       return;
@@ -106,13 +108,11 @@ export default function LoginPage() {
 
   return (
     <div className={styles['login-container']}>
-      {/* Khung chung mô phỏng bố cục ảnh mẫu: minh họa bên trái, form bên phải. */}
+      {/* Khung chung mô phỏng bố cục ảnh mẫu */}
       <div className={styles['login-layout']}>
-        {/* Minh họa ô tô màu đen không can thiệp vào chức năng form. */}
+        {/* Minh họa ô tô */}
         <div className={styles['car-illustration']} aria-hidden="true">
-          {/* Ảnh người dùng cung cấp phủ toàn bộ cột trái của khung đăng nhập. */}
           <img className={styles['login-car-image']} src="/images/login-car.png" alt="" />
-          {/* Lớp che logo gốc ở góc dưới bên phải mà không che phần xe. */}
           <span className={styles['logo-cover']} />
           <p className={styles['car-caption']}>DRIVE YOUR DREAM</p>
         </div>
