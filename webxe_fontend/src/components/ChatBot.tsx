@@ -7,10 +7,23 @@ type ChatMessage = {
   id: number;
   sender: 'bot' | 'user';
   text: string;
+  vehicleId?: number | null;
 };
 
-const quickQuestions = ['Có những xe nào?', 'Xe nào dưới 500 triệu?', 'Tôi muốn mua xe điện'];
-const extraQuestions = ['Xe tiết kiệm nhất?', 'Hãng Honda có xe nào?', 'Tư vấn xe gia đình', 'Cách bảo dưỡng xe?', 'Tôi muốn đặt xe'];
+function renderMessage(text: string) {
+  return text.split('\n').map((line, index) => {
+    const imageMatch = line.trim().match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    return (
+      <span key={`${line}-${index}`}>
+        {imageMatch ? <img className={styles.messageImage} src={imageMatch[2]} alt={imageMatch[1]} /> : line}
+        {index < text.split('\n').length - 1 && <br />}
+      </span>
+    );
+  });
+}
+
+const quickQuestions = ['Có những xe nào đang bán?', 'Xe nào dưới 500 triệu?', 'Tôi muốn mua xe điện'];
+const extraQuestions = ['Xe nào còn hàng?', 'Hãng Honda có xe nào?', 'Thông tin Ford Mustang GT 2024', 'Xe màu đen có những mẫu nào?', 'Tôi muốn đặt xe'];
 
 export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -65,9 +78,9 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
           })),
         }),
       });
-      const data = await response.json() as { message?: string };
+      const data = await response.json() as { message?: string; vehicleId?: number | null };
       if (!response.ok) throw new Error(data.message || 'Không thể kết nối trợ lý AI.');
-      setMessages((current) => [...current, { id: nextId + 1, sender: 'bot', text: data.message || 'Trợ lý chưa có câu trả lời.' }]);
+      setMessages((current) => [...current, { id: nextId + 1, sender: 'bot', text: data.message || 'Trợ lý chưa có câu trả lời.', vehicleId: data.vehicleId }]);
     } catch (error) {
       setMessages((current) => [...current, { id: nextId + 1, sender: 'bot', text: error instanceof Error ? error.message : 'Không thể kết nối trợ lý AI.' }]);
     } finally {
@@ -121,7 +134,8 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
             {messages.map((message) => (
               <div className={`${styles.messageRow} ${message.sender === 'user' ? styles.userRow : ''}`} key={message.id}>
                 <div className={`${styles.message} ${message.sender === 'user' ? styles.userMessage : styles.botMessage}`}>
-                  <p>{message.text}</p>
+                  <p>{renderMessage(message.text)}</p>
+                  {message.sender === 'bot' && message.vehicleId && <Link className={styles.vehicleLink} href={`/ChiTietXe/ChiTietXe?id=${message.vehicleId}`}>Xem thêm</Link>}
                 </div>
               </div>
             ))}
