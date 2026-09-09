@@ -36,7 +36,7 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
   const [bookingMessage, setBookingMessage] = useState('');
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data`)
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/json`)
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('Không tải được danh sách xe')))
       .then((data: { Xe?: Array<{ MaXe: number; TenXe?: string; Gia?: number | string; SoLuong?: number }> }) => {
         const liveVehicles = (data.Xe ?? []).filter((vehicle) => vehicle.TenXe && Number(vehicle.Gia) > 0).map((vehicle) => ({

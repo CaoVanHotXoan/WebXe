@@ -1,8 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { connectDB } from "../../../../config/db";
 import { login } from "../../../../controllers/auth.controller";
+import { applyCors } from "../../../utils/apiCors";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (applyCors(req, res)) return;
+
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ message: "Phương thức không được hỗ trợ" });
