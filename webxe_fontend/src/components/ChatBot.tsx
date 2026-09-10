@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Vehicle } from '@/TS/vehicleData';
+import { BACKEND_URL } from '@/services/api';
 import styles from './ChatBot.module.css';
 
 type ChatMessage = {
@@ -36,7 +37,7 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
   const [bookingMessage, setBookingMessage] = useState('');
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/json`)
+    fetch(`${BACKEND_URL}/api/data/json`)
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('Không tải được danh sách xe')))
       .then((data: { Xe?: Array<{ MaXe: number; TenXe?: string; Gia?: number | string; SoLuong?: number }> }) => {
         const liveVehicles = (data.Xe ?? []).filter((vehicle) => vehicle.TenXe && Number(vehicle.Gia) > 0).map((vehicle) => ({
@@ -67,7 +68,7 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/chat`, {
+      const response = await fetch(`${BACKEND_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -103,7 +104,7 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
     }
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/orders`, {
+      const response = await fetch(`${BACKEND_URL}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...booking, vehicleId: Number(booking.vehicleId), quantity: 1 }),

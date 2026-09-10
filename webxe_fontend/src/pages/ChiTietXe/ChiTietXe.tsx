@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { BACKEND_URL } from '@/services/api';
 import { newsItems } from '@/TS/newsData';
 import styles from './chiTietXe.module.css';
 
@@ -121,7 +122,7 @@ export default function ChiTietXePage() {
     if (!router.isReady) return;
     let active = true;
 
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/json`)
+    fetch(`${BACKEND_URL}/api/data/json`)
       .then(async (response) => {
         if (!response.ok) throw new Error('Không thể tải dữ liệu xe');
         const data = await response.json() as VehicleDataResponse;

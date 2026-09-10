@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { BACKEND_URL } from '@/services/api';
 import styles from './profile.module.css';
 
 type ActiveTab = 'account' | 'notifications' | 'password';
@@ -119,7 +120,7 @@ export default function ProfilePage() {
         const body = passwordStep === 'form'
           ? undefined
           : JSON.stringify({ currentPassword: passwords.current, newPassword: passwords.next, otp: passwordOtp });
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth${endpoint}`, {
+        const response = await fetch(`${BACKEND_URL}/api/auth${endpoint}`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
           body,

@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Vehicle } from '@/TS/vehicleData';
+import { BACKEND_URL } from '@/services/api';
 import styles from './muaBanXe.module.css';
 
 type FilterKey = 'type' | 'fuel' | 'brand' | 'price';
@@ -106,7 +107,7 @@ export default function MuaBanXePage() {
   useEffect(() => {
     setLoading(true);
     setError('');
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/json`)
+    fetch(`${BACKEND_URL}/api/data/json`)
       .then(async (response) => {
         if (!response.ok) throw new Error('Không thể tải dữ liệu xe');
         const data = await response.json() as VehicleResponse;
