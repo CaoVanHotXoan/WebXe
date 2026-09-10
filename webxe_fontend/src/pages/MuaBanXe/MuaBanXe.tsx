@@ -107,7 +107,7 @@ export default function MuaBanXePage() {
   useEffect(() => {
     setLoading(true);
     setError('');
-    fetch(`${BACKEND_URL}/api/data/json`)
+    fetch(`https://webxebackend.vercel.app/api/data/json`)
       .then(async (response) => {
         if (!response.ok) throw new Error('Không thể tải dữ liệu xe');
         const data = await response.json() as VehicleResponse;
