@@ -9,8 +9,14 @@ import { newsItems } from '@/TS/newsData';
 import Link from 'next/link';
 import gsap from 'gsap';
 
+<<<<<<< Updated upstream
 // Register GSAP plugins
 gsap.registerPlugin();
+=======
+const InteractiveHeroBanner: React.FC = () => {
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const [isMuted, setIsMuted] = React.useState(true); // Khởi tạo mặc định là true để tránh lỗi hydration và an toàn cho autoplay
+>>>>>>> Stashed changes
 
 // Sample data for banners, news, and cars
 const bannerData = [
@@ -19,6 +25,7 @@ const bannerData = [
   { id: 3, image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1920&q=80', title: 'KHÁM PHÁ DÒNG XE MỚI', desc: 'Dòng xe máy tiết kiệm xăng nhất năm 2026.' }
 ];
 
+<<<<<<< Updated upstream
 // Interactive Hero Banner Component with GSAP Morphing
 const InteractiveHeroBanner: React.FC<{ slides: typeof bannerData }> = ({ slides }) => {
   const [activeIndex, setActiveIndex] = React.useState(0);
@@ -250,6 +257,65 @@ const InteractiveHeroBanner: React.FC<{ slides: typeof bannerData }> = ({ slides
         className={`${styles['hero-content']} absolute inset-0 flex flex-col items-center justify-center z-20 text-center`}
       >
         <div className={`${styles['hero-content-inner']} space-y-6 max-w-4xl px-4 animate-fadeIn`}>
+=======
+    const storedMute = localStorage.getItem('banner_muted');
+    
+    if (storedMute !== null) {
+      const shouldMute = storedMute === 'true';
+      setIsMuted(shouldMute);
+      video.muted = shouldMute;
+      void video.play().catch(() => {
+        // Nếu user lưu trạng thái bật tiếng nhưng bị trình duyệt chặn, buộc phải chuyển về tắt tiếng
+        setIsMuted(true);
+        video.muted = true;
+        void video.play();
+      });
+    } else {
+      // Chưa có tuỳ chọn của người dùng, thử bật tiếng
+      video.muted = false;
+      void video.play().catch(() => {
+        video.muted = true;
+        setIsMuted(true);
+        void video.play();
+      });
+    }
+  }, []);
+
+  // Đồng bộ trạng thái muted vào thẻ video mỗi khi state thay đổi
+  React.useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.muted = isMuted;
+    }
+  }, [isMuted]);
+
+  const handleDoubleClick = () => {
+    setIsMuted((prev) => {
+      const newState = !prev;
+      localStorage.setItem('banner_muted', String(newState));
+      return newState;
+    });
+  };
+
+  return (
+    <div
+      className={`${styles['hero-banner']} relative w-full overflow-hidden font-sans`}
+      onDoubleClick={handleDoubleClick}
+    >
+      <video
+        ref={videoRef}
+        className="absolute inset-0 z-0 h-full w-full object-cover"
+        src={bannerData.video}
+        autoPlay
+        loop
+        muted={isMuted}
+        playsInline
+      />
+      {/* Lớp phủ chặn tương tác trực tiếp với video, chỉ nhận double click */}
+      <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
+      <div className={`${styles['hero-content']} pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center text-center`}>
+        <div className={`${styles['hero-content-inner']} animate-fadeIn space-y-6 px-4`}>
+>>>>>>> Stashed changes
           <div className="inline-block">
             <span className="text-sm font-semibold tracking-widest text-emerald-400 uppercase">
               ✨ Featured Offer
@@ -266,6 +332,7 @@ const InteractiveHeroBanner: React.FC<{ slides: typeof bannerData }> = ({ slides
           </button>
         </div>
       </div>
+<<<<<<< Updated upstream
 
       {/* Thumbnail cards - bottom right */}
       <div className={`${styles['hero-thumbnails']} absolute bottom-8 right-8 z-30 flex gap-3 md:gap-4`}>
@@ -349,6 +416,11 @@ const InteractiveHeroBanner: React.FC<{ slides: typeof bannerData }> = ({ slides
       {/* Slide counter */}
       <div className={`${styles['hero-counter']} absolute top-8 right-8 z-30 text-white/80 text-sm font-mono tracking-wider`}>
         {String(activeIndex + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}
+=======
+      {/* Chỉ báo trạng thái âm thanh ở góc dưới phải */}
+      <div className="absolute bottom-4 right-4 z-30 pointer-events-none rounded-full bg-black/60 backdrop-blur-sm px-3 py-1.5 text-white text-sm font-medium flex items-center gap-1.5 transition-opacity duration-300">
+        {isMuted ? '🔇 Tắt tiếng' : '🔊 Có tiếng'}
+>>>>>>> Stashed changes
       </div>
     </div>
   );
