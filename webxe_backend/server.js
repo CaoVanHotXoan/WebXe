@@ -27,8 +27,25 @@ const nextApp = next({ dev, hostname: 'localhost', port: PORT });
 const handle = nextApp.getRequestHandler();
 const app = express();
 
+const configuredOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowedOrigins = [...new Set([
+  'http://localhost:3000',
+  'https://webxefontend.vercel.app',
+  ...configuredOrigins,
+])];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`Origin không được phép: ${origin}`));
+  },
   credentials: true,
 }));
 app.use(express.json());

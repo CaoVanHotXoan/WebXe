@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth, UserProfile } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { BACKEND_URL } from '@/services/api';
 import styles from './login.module.css';
 
 type FormMode = 'login' | 'register' | 'forgot_password';
 type FormStep = 'form' | 'otp';
 type ResponseData = { message?: string; token?: string; user?: UserProfile };
 
-const API_BASE = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth`;
+const API_BASE = `${BACKEND_URL}/api/auth`;
 
 export default function LoginPage() {
   const router = useRouter();
