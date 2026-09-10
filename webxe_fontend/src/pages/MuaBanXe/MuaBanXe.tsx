@@ -115,7 +115,7 @@ export default function MuaBanXePage() {
         return data;
       })
       .then((data) => setVehicles(mapApiVehicles(data)))
-      .catch(() => setError('Không thể tải danh sách xe. Hãy kiểm tra backend đang chạy ở cổng 3002 rồi thử lại.'))
+      .catch(() => setError('Không thể tải danh sách xe từ máy chủ. Vui lòng thử lại sau.'))
       .finally(() => setLoading(false));
   }, [reloadKey]);
 
