@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
+<<<<<<< Updated upstream
+=======
+import { useAuth, UserProfile } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
+>>>>>>> Stashed changes
 import styles from './login.module.css';
 
 type FormMode = 'login' | 'register' | 'forgot_password';
@@ -10,6 +15,11 @@ const API_BASE = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth`;
 
 export default function LoginPage() {
   const router = useRouter();
+<<<<<<< Updated upstream
+=======
+  const { loginUser } = useAuth();
+  const { addToast } = useToast();
+>>>>>>> Stashed changes
   const [mode, setMode] = useState<FormMode>('login');
   const [step, setStep] = useState<FormStep>('form');
   const [account, setAccount] = useState('');
@@ -38,16 +48,30 @@ export default function LoginPage() {
   const request = async (endpoint: string, body: Record<string, string>, onSuccess: (data: ResponseData) => void) => {
     setLoading(true);
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      
       const data = await response.json() as ResponseData;
       if (!response.ok) throw new Error(data.message || 'Có lỗi xảy ra.');
       onSuccess(data);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Không thể kết nối máy chủ.');
+      if (requestError instanceof DOMException && requestError.name === 'AbortError') {
+        setError('Warning: Time Out...');
+        addToast('Warning: Time Out...', 'warning');
+      } else {
+        const msg = requestError instanceof Error ? requestError.message : 'Không thể kết nối máy chủ.';
+        setError(msg);
+        addToast(msg, 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -106,7 +130,19 @@ export default function LoginPage() {
 
   return (
     <div className={styles['login-container']}>
+<<<<<<< Updated upstream
       {/* Khung chung mô phỏng bố cục ảnh mẫu: minh họa bên trái, form bên phải. */}
+=======
+      <button 
+        className={styles['back-btn']} 
+        onClick={() => router.back()}
+        type="button"
+        title="Quay lại trang trước"
+      >
+        <span className={styles['back-icon']}>&larr;</span> Quay lại
+      </button>
+      {/* Khung chung mô phỏng bố cục ảnh mẫu */}
+>>>>>>> Stashed changes
       <div className={styles['login-layout']}>
         {/* Minh họa ô tô màu đen không can thiệp vào chức năng form. */}
         <div className={styles['car-illustration']} aria-hidden="true">
