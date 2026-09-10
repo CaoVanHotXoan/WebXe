@@ -6,8 +6,11 @@ import {
   getTableData,
   updateTableData,
 } from "../../../../controllers/dataController";
+import { applyCors } from "../../../utils/apiCors";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (applyCors(req, res)) return;
+
   if (!["GET", "POST", "PUT", "DELETE"].includes(req.method ?? "")) {
     res.setHeader("Allow", "GET, POST, PUT, DELETE");
     return res.status(405).json({ message: "Phương thức không được hỗ trợ" });

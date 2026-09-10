@@ -121,7 +121,7 @@ export default function ChiTietXePage() {
     if (!router.isReady) return;
     let active = true;
 
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data`)
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/json`)
       .then(async (response) => {
         if (!response.ok) throw new Error('Không thể tải dữ liệu xe');
         const data = await response.json() as VehicleDataResponse;
@@ -199,7 +199,7 @@ export default function ChiTietXePage() {
             <p className={styles.eyebrow}>THÔNG TIN XE</p><h1 className={styles.title}>{vehicle.title}</h1><p className={styles.price}>{vehicle.priceLabel}</p>
             {summary.length > 0 && <div className={styles.summary}>{summary.map(([label, value]) => <div className={styles.summaryRow} key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>}
             <div className={styles.actions}>
-              {showPhone ? <a className={styles.actionPrimary} href="tel:0987654321">0987 654 321</a> : <button type="button" className={styles.actionPrimary} onClick={() => setShowPhone(true)}>Gọi cửa hàng</button>}
+              {showPhone ? <a className={styles.actionPrimary} href="tel:0816344504">0816 344 504</a> : <button type="button" className={styles.actionPrimary} onClick={() => setShowPhone(true)}>Gọi cửa hàng</button>}
               <button type="button" className={styles.actionSecondary} onClick={() => setShowZaloQr(true)}>Nhắn cửa hàng</button>
             </div>
           </div>
@@ -215,8 +215,8 @@ export default function ChiTietXePage() {
             <button type="button" className={styles.qrClose} onClick={() => setShowZaloQr(false)} aria-label="Đóng mã QR">×</button>
             <h2 id="zalo-qr-title">Quét mã Zalo cửa hàng</h2>
             <p>Mở ứng dụng Zalo và quét mã để nhắn tin cho cửa hàng.</p>
-            <img className={styles.qrImage} src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DdQw4w9WgXcQ" alt="Mã QR liên kết YouTube" />
-            <strong>0987 654 321</strong>
+            <img className={styles.qrImage} src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=https%3A%2F%2Fzalo.me%2F0816344504" alt="Mã QR Zalo cửa hàng" />
+            <strong>0816 344 504</strong>
           </div>
         </div>
       )}

@@ -191,7 +191,14 @@ async function login(req, res) {
     return res.status(200).json({
       message: 'Đăng nhập thành công',
       token: issueToken(user),
-      user: { name: user.HoTen, email: user.Email, phone: user.SoDienThoai },
+      user: {
+        id: user.MaNguoiDung,
+        roleId: user.MaVaiTro,
+        username: user.TenDangNhap,
+        name: user.HoTen,
+        email: user.Email,
+        phone: user.SoDienThoai,
+      },
     });
   } catch (error) {
     console.error('Lỗi login:', error);

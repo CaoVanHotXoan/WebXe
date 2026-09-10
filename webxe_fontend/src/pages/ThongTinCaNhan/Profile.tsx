@@ -1,5 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { useAuth } from '@/context/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import styles from './profile.module.css';
 
 type ActiveTab = 'account' | 'notifications' | 'password';
@@ -26,6 +28,7 @@ const menuItems: { id: ActiveTab; label: string; icon: string }[] = [
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { user, token, isAuthenticated, logoutUser, updateProfileState, status } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>('account');
   const [profile, setProfile] = useState<ProfileData>(defaultProfile);
   const [draftProfile, setDraftProfile] = useState<ProfileData>(defaultProfile);
@@ -35,38 +38,28 @@ export default function ProfilePage() {
   const [passwordStep, setPasswordStep] = useState<'form' | 'otp'>('form');
   const [passwordOtp, setPasswordOtp] = useState('');
 
-  // Quay lại trang đã mở Profile, dùng trang chủ làm dự phòng khi không có lịch sử.
+  // Quay lại trang đã mở Profile
   const handleBack = () => {
-    const returnPath = sessionStorage.getItem('profileReturnPath') || '/';
-    sessionStorage.removeItem('profileReturnPath');
+    const returnPath = typeof window !== 'undefined' ? (sessionStorage.getItem('profileReturnPath') || '/') : '/';
+    if (typeof window !== 'undefined') sessionStorage.removeItem('profileReturnPath');
     router.push(returnPath);
   };
 
-  // Bảo vệ route và đọc dữ liệu hồ sơ sau khi component chạy ở trình duyệt.
+  // Synchronize profile state with domain AuthContext
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (localStorage.getItem('auth') !== 'true') {
-        router.replace('/Login/Login');
-        return;
-      }
+    if (status === 'loading') return;
+    if (user) {
+      const merged: ProfileData = {
+        name: user.name || user.username || defaultProfile.name,
+        email: user.email || defaultProfile.email,
+        phone: user.phone || defaultProfile.phone,
+        address: user.address || defaultProfile.address,
+      };
+      setProfile(merged);
+      setDraftProfile(merged);
+    }
+  }, [user, status]);
 
-      const savedProfile = localStorage.getItem('profile');
-      if (savedProfile) {
-        try {
-          const parsedProfile = JSON.parse(savedProfile) as Partial<ProfileData>;
-          const loadedProfile = { ...defaultProfile, ...parsedProfile };
-          setProfile(loadedProfile);
-          setDraftProfile(loadedProfile);
-        } catch {
-          setMessage('Không thể đọc thông tin tài khoản.');
-        }
-      }
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [router]);
-
-  // Hiển thị tên viết tắt để avatar vẫn đẹp khi người dùng chưa có ảnh thật.
   const initials = profile.name
     .split(' ')
     .filter(Boolean)
@@ -80,7 +73,7 @@ export default function ProfilePage() {
     window.setTimeout(() => setMessage(''), 3500);
   };
 
-  // Lưu hồ sơ mới vào state và localStorage.
+  // Lưu hồ sơ mới vào domain state và safe storage
   const handleProfileSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!draftProfile.name.trim() || !draftProfile.email.trim()) {
@@ -89,12 +82,17 @@ export default function ProfilePage() {
     }
 
     setProfile(draftProfile);
-    localStorage.setItem('profile', JSON.stringify(draftProfile));
+    updateProfileState({
+      ...user,
+      name: draftProfile.name,
+      email: draftProfile.email,
+      phone: draftProfile.phone,
+      address: draftProfile.address,
+    });
     setIsEditOpen(false);
     showMessage('Thông tin tài khoản đã được cập nhật.');
   };
 
-  // Kiểm tra hai mật khẩu mới trước khi lưu.
   const handlePasswordSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!passwords.current || !passwords.next || !passwords.confirm) {
@@ -110,7 +108,6 @@ export default function ProfilePage() {
       return;
     }
 
-    const token = localStorage.getItem('token');
     if (!token) {
       showMessage('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       return;
@@ -145,15 +142,15 @@ export default function ProfilePage() {
     void submitPasswordChange();
   };
 
-  // Xóa phiên đăng nhập rồi chuyển về trang Login.
+  // Xóa phiên đăng nhập bằng domain logoutUser
   const handleLogout = () => {
-    localStorage.removeItem('auth');
-    localStorage.removeItem('token');
+    logoutUser();
     router.replace('/Login/Login');
   };
 
   return (
-    <main className={styles.page}>
+    <ProtectedRoute>
+      <main className={styles.page}>
       <div className={styles.shell}>
         <header className={styles.header}>
           <button type="button" className={styles.backButton} onClick={handleBack} aria-label="Quay lại trang trước">
@@ -272,6 +269,7 @@ export default function ProfilePage() {
         </div>
       )}
     </main>
+    </ProtectedRoute>
   );
 }
 
