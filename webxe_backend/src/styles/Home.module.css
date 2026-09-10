@@ -1840,4 +1840,62 @@
     width: 98% !important;
     padding: 12px !important;
   }
-}
+}
+
+/* -------------------------------------------------------------
+ * Thanh thông báo Toast
+ * ------------------------------------------------------------- */
+.toastNotification {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  background-color: #ffffff; /* Nền trắng */
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 999px; /* Bo tròn 2 bên (pill shape) */
+  padding: 12px 24px;
+  min-width: 200px;
+  text-align: center; /* Căn chữ ở giữa */
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Đổ bóng hiện đại */
+  animation: slideInToast 0.3s ease-out forwards;
+}
+
+/* Hiệu ứng xuất hiện hiện đại */
+@keyframes slideInToast {
+  from {
+    opacity: 0;
+    transform: translateX(100%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+/* Màu viền và chữ khi thêm thành công (Xanh lá cây) */
+.success-add {
+  border-color: #10b981;
+  color: #10b981;
+}
+
+/* Màu viền và chữ khi sửa thành công (Vàng) */
+.success-edit {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+/* Màu viền và chữ khi xóa thành công (Đỏ) */
+.success-delete {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Màu viền và chữ khi có lỗi (Đỏ) */
+.error {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+

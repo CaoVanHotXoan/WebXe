@@ -231,7 +231,16 @@ export default function Home() {
   const [formTableId, setFormTableId] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<Record<string, CellValue>>({});
   const [saving, setSaving] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  // Trạng thái cho thanh thông báo toast
+  const [notification, setNotification] = useState<{ message: string; type: "success-add" | "success-edit" | "success-delete" | "error" } | null>(null);
+
+  // Hàm hiển thị thông báo toast
+  const showNotification = (message: string, type: "success-add" | "success-edit" | "success-delete" | "error") => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification(null);
+    }, 3000);
+  };
   const [detailRecord, setDetailRecord] = useState<Record<string, CellValue> | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [imageIsMain, setImageIsMain] = useState(false);
@@ -256,7 +265,7 @@ export default function Home() {
             : table.columns,
         })));
       })
-      .catch(() => setErrorMessage("Không thể tải dữ liệu từ máy chủ."));
+      .catch(() => showNotification("Warning: TIME OUT !", "error"));
   }, []);
 
   const selectedTable = useMemo(
@@ -325,14 +334,12 @@ export default function Home() {
   const openCreate = (tableId = selectedTable.id) => {
     setFormMode("create");
     setFormTableId(tableId);
-    setErrorMessage("");
     setFormValues({});
   };
 
   const openEdit = (row: Record<string, CellValue>, tableId = selectedTable.id) => {
     setFormMode("edit");
     setFormTableId(tableId);
-    setErrorMessage("");
     setFormValues({ ...row });
   };
 
@@ -361,7 +368,6 @@ export default function Home() {
   const saveVehicleImage = async () => {
     if (!detailRecord?.MaXe || !imageUrl.trim()) return;
     setImageSaving(true);
-    setErrorMessage("");
     try {
       const response = await fetch("/api/data/HinhAnhXe", {
         method: editingImageId === null ? "POST" : "PUT",
@@ -375,9 +381,11 @@ export default function Home() {
       });
       if (!response.ok) throw new Error("Không thể lưu hình ảnh xe");
       await refreshTableData();
+      // Hiện thông báo thành công
+      showNotification(editingImageId === null ? "Đã thêm thành công" : "Đã sửa thành công", editingImageId === null ? "success-add" : "success-edit");
       resetImageForm();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Không thể lưu hình ảnh xe.");
+      showNotification("Warning: TIME OUT !", "error");
     } finally {
       setImageSaving(false);
     }
@@ -385,7 +393,6 @@ export default function Home() {
 
   const deleteVehicleImage = async (imageId: number) => {
     setImageSaving(true);
-    setErrorMessage("");
     try {
       const response = await fetch("/api/data/HinhAnhXe", {
         method: "DELETE",
@@ -395,8 +402,10 @@ export default function Home() {
       if (!response.ok) throw new Error("Không thể xóa hình ảnh xe");
       await refreshTableData();
       if (editingImageId === imageId) resetImageForm();
+      // Hiện thông báo xóa thành công
+      showNotification("Đã xóa thành công", "success-delete");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Không thể xóa hình ảnh xe.");
+      showNotification("Warning: TIME OUT !", "error");
     } finally {
       setImageSaving(false);
     }
@@ -409,10 +418,10 @@ export default function Home() {
 
   const saveRecord = async () => {
     setSaving(true);
-    setErrorMessage("");
     try {
+      const isCreate = formMode === "create";
       const response = await fetch(`/api/data/${formTable.id}`, {
-        method: formMode === "create" ? "POST" : "PUT",
+        method: isCreate ? "POST" : "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formValues),
       });
@@ -424,8 +433,10 @@ export default function Home() {
         columns: Array.isArray(refreshed[table.id]) && refreshed[table.id].length > 0 ? Object.keys(refreshed[table.id][0]) : table.columns,
       })));
       setFormMode(null);
+      // Hiện thông báo thêm/sửa thành công
+      showNotification(isCreate ? "Đã thêm thành công" : "Đã sửa thành công", isCreate ? "success-add" : "success-edit");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Không thể lưu dữ liệu.");
+      showNotification("Warning: TIME OUT !", "error");
     } finally {
       setSaving(false);
     }
@@ -445,7 +456,7 @@ export default function Home() {
       method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
     });
     if (!response.ok) {
-      setErrorMessage("Không thể xóa bản ghi. Có thể bản ghi đang được bảng khác tham chiếu.");
+      showNotification("Warning: TIME OUT !", "error");
       setSaving(false);
       return;
     }
@@ -454,6 +465,8 @@ export default function Home() {
       : table));
     setPendingDelete(null);
     setSaving(false);
+    // Hiện thông báo xóa thành công
+    showNotification("Đã xóa thành công", "success-delete");
   };
 
   return (
@@ -567,70 +580,70 @@ export default function Home() {
             </div>
           </div>
 
-          {errorMessage && <p className={styles.errorMessage}>{errorMessage}</p>}
+
 
           {formMode && (
             <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => {
               if (event.target === event.currentTarget) closeForm();
             }}>
               <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="form-title">
-              <div className={styles.tableHeaderRow}>
-                <h2 id="form-title">{formMode === "create" ? "Thêm bản ghi" : "Cập nhật bản ghi"}</h2>
-                <button type="button" className={styles.closeButton} onClick={closeForm}>Đóng</button>
-              </div>
-              <div className={styles.formGrid}>
-                {formColumns.map((column) => {
-                  const fkConfig = foreignKeyConfig[column];
-                  const isForeignKey = fkConfig && fkConfig.refTable !== formTable.id;
-                  const refRecords = isForeignKey
-                    ? tableData.find((t) => t.id === fkConfig.refTable)?.records ?? []
-                    : [];
+                <div className={styles.tableHeaderRow}>
+                  <h2 id="form-title">{formMode === "create" ? "Thêm bản ghi" : "Cập nhật bản ghi"}</h2>
+                  <button type="button" className={styles.closeButton} onClick={closeForm}>Đóng</button>
+                </div>
+                <div className={styles.formGrid}>
+                  {formColumns.map((column) => {
+                    const fkConfig = foreignKeyConfig[column];
+                    const isForeignKey = fkConfig && fkConfig.refTable !== formTable.id;
+                    const refRecords = isForeignKey
+                      ? tableData.find((t) => t.id === fkConfig.refTable)?.records ?? []
+                      : [];
 
-                  return (
-                    <label key={column} className={styles.formField}>
-                      <span>{getColumnLabel(column)}</span>
-                      {isForeignKey ? (
-                        <select
-                          value={formValues[column] == null ? "" : String(formValues[column])}
-                          disabled={formMode === "edit" && (identityColumns[formTable.id] ?? []).includes(column)}
-                          onChange={(event) => {
-                            const val = event.target.value;
-                            setFormValues((current) => ({
-                              ...current,
-                              [column]: val === "" ? "" : isNaN(Number(val)) ? val : Number(val),
-                            }));
-                          }}
-                        >
-                          <option value="">-- Chọn {getColumnLabel(column).toLowerCase()} --</option>
-                          {refRecords.map((refRow, idx) => {
-                            const val = refRow[fkConfig.valueKey];
-                            const label = fkConfig.getLabel(refRow);
-                            return (
-                              <option key={`${val}-${idx}`} value={String(val)}>
-                                {label} (Mã: {String(val)})
-                              </option>
-                            );
-                          })}
-                        </select>
-                      ) : (
-                        <input
-                          type={column.includes("Ngay") ? "datetime-local" : column === "MatKhau" ? "password" : column === "LaAnhChinh" ? "checkbox" : "text"}
-                          checked={column === "LaAnhChinh" ? Boolean(formValues[column]) : undefined}
-                          value={formValues[column] == null ? "" : String(formValues[column])}
-                          disabled={formMode === "edit" && (identityColumns[formTable.id] ?? []).includes(column)}
-                          onChange={(event) => setFormValues((current) => ({ ...current, [column]: column === "LaAnhChinh" ? event.target.checked : event.target.value }))}
-                        />
-                      )}
-                      {imageColumns.has(column) && formValues[column] && (
-                        <img className={styles.formImagePreview} src={String(formValues[column])} alt={`Xem trước ${column}`} />
-                      )}
-                    </label>
-                  );
-                })}
-              </div>
-              <button type="button" className={styles.primaryButton} disabled={saving} onClick={saveRecord}>
-                {saving ? "Đang lưu..." : "Lưu thay đổi"}
-              </button>
+                    return (
+                      <label key={column} className={styles.formField}>
+                        <span>{getColumnLabel(column)}</span>
+                        {isForeignKey ? (
+                          <select
+                            value={formValues[column] == null ? "" : String(formValues[column])}
+                            disabled={formMode === "edit" && (identityColumns[formTable.id] ?? []).includes(column)}
+                            onChange={(event) => {
+                              const val = event.target.value;
+                              setFormValues((current) => ({
+                                ...current,
+                                [column]: val === "" ? "" : isNaN(Number(val)) ? val : Number(val),
+                              }));
+                            }}
+                          >
+                            <option value="">-- Chọn {getColumnLabel(column).toLowerCase()} --</option>
+                            {refRecords.map((refRow, idx) => {
+                              const val = refRow[fkConfig.valueKey];
+                              const label = fkConfig.getLabel(refRow);
+                              return (
+                                <option key={`${val}-${idx}`} value={String(val)}>
+                                  {label} (Mã: {String(val)})
+                                </option>
+                              );
+                            })}
+                          </select>
+                        ) : (
+                          <input
+                            type={column.includes("Ngay") ? "datetime-local" : column === "MatKhau" ? "password" : column === "LaAnhChinh" ? "checkbox" : "text"}
+                            checked={column === "LaAnhChinh" ? Boolean(formValues[column]) : undefined}
+                            value={formValues[column] == null ? "" : String(formValues[column])}
+                            disabled={formMode === "edit" && (identityColumns[formTable.id] ?? []).includes(column)}
+                            onChange={(event) => setFormValues((current) => ({ ...current, [column]: column === "LaAnhChinh" ? event.target.checked : event.target.value }))}
+                          />
+                        )}
+                        {imageColumns.has(column) && formValues[column] && (
+                          <img className={styles.formImagePreview} src={String(formValues[column])} alt={`Xem trước ${column}`} />
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+                <button type="button" className={styles.primaryButton} disabled={saving} onClick={saveRecord}>
+                  {saving ? "Đang lưu..." : "Lưu thay đổi"}
+                </button>
               </section>
             </div>
           )}
@@ -658,16 +671,16 @@ export default function Home() {
                     const mainImage = images.find((image) => image.isMain)?.url ?? images[0]?.url ?? row.Logo;
                     const secondaryImages = images.filter((image) => image.url !== mainImage);
                     return <div className={styles.productImageArea}>
-                    {mainImage ? (
-                      <div className={styles.productImageLayout}>
-                        <img className={styles.productImage} src={String(mainImage)} alt={String(row.TenXe || row.TenHang || row.HoTen || selectedTable.name)} />
-                        {secondaryImages.length > 0 && <div className={styles.productThumbnails}>
-                          {secondaryImages.map((image, imageIndex) => <img key={`${image.url}-${imageIndex}`} className={styles.productThumbnail} src={image.url} alt={`${String(row.TenXe || selectedTable.name)} ảnh phụ ${imageIndex + 1}`} />)}
-                        </div>}
-                      </div>
-                    ) : (
-                      <span className={styles.imagePlaceholder}>Chưa có ảnh</span>
-                    )}
+                      {mainImage ? (
+                        <div className={styles.productImageLayout}>
+                          <img className={styles.productImage} src={String(mainImage)} alt={String(row.TenXe || row.TenHang || row.HoTen || selectedTable.name)} />
+                          {secondaryImages.length > 0 && <div className={styles.productThumbnails}>
+                            {secondaryImages.map((image, imageIndex) => <img key={`${image.url}-${imageIndex}`} className={styles.productThumbnail} src={image.url} alt={`${String(row.TenXe || selectedTable.name)} ảnh phụ ${imageIndex + 1}`} />)}
+                          </div>}
+                        </div>
+                      ) : (
+                        <span className={styles.imagePlaceholder}>Chưa có ảnh</span>
+                      )}
                     </div>;
                   })()}
                   <div className={styles.productCardBody}>
@@ -691,45 +704,45 @@ export default function Home() {
             </div>
           ) : (
 
-          <div className={styles.dataWrap}>
-            <table className={styles.dataTable}>
-              <thead>
-                <tr>
-                  {displayColumns.map((column) => (
-                    <th key={column}>{getColumnLabel(column)}</th>
-                  ))}
-                  {detailTable && <th>Chức năng</th>}
-                  <th>Chức năng</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRecords.map((row, rowIndex) => (
-                  <tr key={`${selectedTable.id}-${rowIndex}`}>
+            <div className={styles.dataWrap}>
+              <table className={styles.dataTable}>
+                <thead>
+                  <tr>
                     {displayColumns.map((column) => (
-                      <td key={`${selectedTable.id}-${column}-${rowIndex}`}>
-                        {renderCellValue(column, row[column], getRelatedDisplayValue(selectedTable.id, column, row[column]))}
-                      </td>
+                      <th key={column}>{getColumnLabel(column)}</th>
                     ))}
-                    {detailTable && (
-                      <td>
-                        <button
-                          type="button"
-                          className={styles.detailButton}
-                          onClick={() => setSelectedDetailId(row[detailKey] ?? null)}
-                        >
-                          Xem chi tiết
-                        </button>
-                      </td>
-                    )}
-                    <td className={styles.rowActions}>
-                      <button type="button" className={styles.editButton} onClick={() => openEdit(row)}>Sửa</button>
-                      <button type="button" className={styles.deleteButton} onClick={() => requestDelete(row)}>Xóa</button>
-                    </td>
+                    {detailTable && <th>Chức năng</th>}
+                    <th>Chức năng</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredRecords.map((row, rowIndex) => (
+                    <tr key={`${selectedTable.id}-${rowIndex}`}>
+                      {displayColumns.map((column) => (
+                        <td key={`${selectedTable.id}-${column}-${rowIndex}`}>
+                          {renderCellValue(column, row[column], getRelatedDisplayValue(selectedTable.id, column, row[column]))}
+                        </td>
+                      ))}
+                      {detailTable && (
+                        <td>
+                          <button
+                            type="button"
+                            className={styles.detailButton}
+                            onClick={() => setSelectedDetailId(row[detailKey] ?? null)}
+                          >
+                            Xem chi tiết
+                          </button>
+                        </td>
+                      )}
+                      <td className={styles.rowActions}>
+                        <button type="button" className={styles.editButton} onClick={() => openEdit(row)}>Sửa</button>
+                        <button type="button" className={styles.deleteButton} onClick={() => requestDelete(row)}>Xóa</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
 
           {detailTable && selectedDetailId !== null && (
@@ -738,14 +751,14 @@ export default function Home() {
             }}>
               <section className={`${styles.modal} ${styles.detailModal}`} role="dialog" aria-modal="true" aria-labelledby="detail-title">
                 <div className={styles.modalHeader}>
-                <div>
-                  <p className={styles.detailLabel}>Chi tiết {tableLabels[selectedTable.id] ?? selectedTable.name} #{selectedDetailId}</p>
-                  <h2 id="detail-title">{tableLabels[detailTable.id] ?? detailTable.name}</h2>
-                </div>
-                <div className={styles.topbarActions}>
-                  <button type="button" className={styles.primaryButton} onClick={() => openCreate(detailTable.id)}>+ Thêm</button>
-                  <button type="button" className={styles.closeButton} onClick={() => setSelectedDetailId(null)}>Đóng</button>
-                </div>
+                  <div>
+                    <p className={styles.detailLabel}>Chi tiết {tableLabels[selectedTable.id] ?? selectedTable.name} #{selectedDetailId}</p>
+                    <h2 id="detail-title">{tableLabels[detailTable.id] ?? detailTable.name}</h2>
+                  </div>
+                  <div className={styles.topbarActions}>
+                    <button type="button" className={styles.primaryButton} onClick={() => openCreate(detailTable.id)}>+ Thêm</button>
+                    <button type="button" className={styles.closeButton} onClick={() => setSelectedDetailId(null)}>Đóng</button>
+                  </div>
                 </div>
                 <div className={styles.dataWrap}>
                   <table className={styles.dataTable}>
@@ -872,6 +885,13 @@ export default function Home() {
           )}
         </main>
       </div>
+
+      {/* Thanh thông báo toast hiện ở trên cùng bên phải */}
+      {notification && (
+        <div className={`${styles.toastNotification} ${styles[notification.type]}`}>
+          {notification.message}
+        </div>
+      )}
     </>
   );
 }

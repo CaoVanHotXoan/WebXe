@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { safeStorage } from '@/utils/storage';
+import { useToast } from '@/context/ToastContext';
 
 export type UserProfile = {
   id?: number;
@@ -44,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [status, setStatus] = useState<AsyncState>('loading');
   const [error, setError] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   // Domain Rehydration on client initial mount (F5 safe, SSR safe, corrupt data recovery)
   useEffect(() => {
@@ -76,11 +78,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       safeStorage.setItem('token', newToken);
       safeStorage.setItem('profile', newUser);
       setStatus('success');
+      addToast('Đăng nhập thành công', 'success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Đăng nhập thất bại');
       setStatus('error');
+      addToast('Đăng nhập thất bại', 'error');
     }
-  }, []);
+  }, [addToast]);
 
   const logoutUser = useCallback(() => {
     setToken(null);
@@ -89,7 +93,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setStatus('idle');
     // Wipe client storage completely on logout
     safeStorage.clearAll();
-  }, []);
+    addToast('Đã đăng xuất', 'success');
+  }, [addToast]);
 
   const updateProfileState = useCallback((updatedProfile: UserProfile) => {
     setUser(updatedProfile);
