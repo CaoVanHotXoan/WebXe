@@ -11,6 +11,8 @@ const allowedTables = [
   'ChiTietGioHang',
   'DonHang',
   'ChiTietDonHang',
+  'DanhMucTinTuc',
+  'TinTuc',
 ];
 
 const tableDefinitions = {
@@ -43,6 +45,23 @@ const tableDefinitions = {
     },
   },
   ChiTietDonHang: { procedure: 'ChiTietDonHang', primaryKeys: ['MaDonHang', 'MaXe'], fields: { MaDonHang: sql.Int, MaXe: sql.Int, SoLuong: sql.Int, DonGia: sql.Decimal(18, 2) } },
+  DanhMucTinTuc: {
+    procedure: 'DanhMucTinTuc',
+    primaryKeys: ['MaDanhMuc'],
+    fields: { TenDanhMuc: sql.NVarChar(100) },
+  },
+  TinTuc: {
+    procedure: 'TinTuc',
+    primaryKeys: ['MaTinTuc'],
+    fields: {
+      MaDanhMuc: sql.Int,
+      TieuDe: sql.NVarChar(255),
+      TomTat: sql.NVarChar(500),
+      NoiDung: sql.NVarChar(sql.MAX),
+      HinhAnh: sql.NVarChar(500),
+      NgayDang: sql.DateTime,
+    },
+  },
 };
 
 async function getAllTablesDataObject() {

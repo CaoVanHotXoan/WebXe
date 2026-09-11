@@ -7,6 +7,7 @@ import {
   updateTableData,
 } from "../../../../controllers/dataController";
 import { applyCors } from "../../../utils/apiCors";
+import { authMiddleware, requireRole } from "../../../../middlewares/authMiddleware";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (applyCors(req, res)) return;
@@ -19,9 +20,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     await connectDB();
     if (req.method === "GET") return getTableData(req, res);
-    if (req.method === "POST") return createTableData(req, res);
-    if (req.method === "PUT") return updateTableData(req, res);
-    return deleteTableData(req, res);
+    return authMiddleware(req, res, () => requireRole(1)(req, res, () => {
+      if (req.method === "POST") return createTableData(req, res);
+      if (req.method === "PUT") return updateTableData(req, res);
+      return deleteTableData(req, res);
+    }));
   } catch (error) {
     console.error("Lỗi kết nối database:", error);
     return res.status(503).json({ message: "Không thể kết nối cơ sở dữ liệu" });

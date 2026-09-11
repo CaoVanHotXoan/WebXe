@@ -264,3 +264,24 @@ CREATE TABLE MaXacNhan (
 
 CREATE INDEX IX_MaXacNhan_Email_MucDich
 ON MaXacNhan (Email, MucDich);
+-- ============================================================
+/* 1. DANH MỤC TIN TỨC */
+CREATE TABLE DanhMucTinTuc (
+    MaDanhMuc INT IDENTITY(1,1) PRIMARY KEY,
+    TenDanhMuc NVARCHAR(100) NOT NULL
+);
+GO
+
+/* 2. BÀI VIẾT TIN TỨC */
+CREATE TABLE TinTuc (
+    MaTinTuc INT IDENTITY(1,1) PRIMARY KEY,
+    MaDanhMuc INT NOT NULL,
+    TieuDe NVARCHAR(255) NOT NULL,
+    TomTat NVARCHAR(500),
+    NoiDung NVARCHAR(MAX) NOT NULL,
+    HinhAnh NVARCHAR(500),
+    NgayDang DATETIME DEFAULT GETDATE(),
+    
+    FOREIGN KEY (MaDanhMuc) REFERENCES DanhMucTinTuc(MaDanhMuc)
+);
+GO
