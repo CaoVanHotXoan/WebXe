@@ -112,11 +112,26 @@ const tables: TableItem[] = [
       { MaDonHang: 2, MaXe: 2, SoLuong: 1, DonGia: 980000000, ThanhTien: 980000000 },
     ],
   },
+  {
+    id: "DanhMucTinTuc",
+    name: "DanhMucTinTuc",
+    description: "Các danh mục phân loại bài viết tin tức.",
+    columns: ["MaDanhMuc", "TenDanhMuc"],
+    records: [],
+  },
+  {
+    id: "TinTuc",
+    name: "TinTuc",
+    description: "Quản lý các bài viết tin tức trên website.",
+    columns: ["MaTinTuc", "MaDanhMuc", "TieuDe", "TomTat", "NoiDung", "HinhAnh", "NgayDang"],
+    records: [],
+  },
 ];
 
 const menuGroups = [
   { id: "products", label: "Quản lý Sản phẩm", tableIds: ["Xe", "HangXe", "LoaiXe"] },
   { id: "sales", label: "Quản lý Bán hàng", tableIds: ["DonHang", "GioHang"] },
+  { id: "news", label: "Quản lý Tin tức", tableIds: ["DanhMucTinTuc", "TinTuc"] },
   { id: "system", label: "Quản lý Hệ thống", tableIds: ["NguoiDung", "VaiTro"] },
 ];
 
@@ -130,11 +145,14 @@ const tableIcons: Record<string, string> = {
   ChiTietDonHang: "🧾",
   NguoiDung: "👤",
   VaiTro: "🔑",
+  DanhMucTinTuc: "🗂️",
+  TinTuc: "📰",
 };
 
 const menuGroupIcons: Record<string, string> = {
   products: "🏎️",
   sales: "💳",
+  news: "📰",
   system: "⚙️",
 };
 
@@ -151,6 +169,7 @@ const detailKeyByParent: Record<string, string> = {
 const identityColumns: Record<string, string[]> = {
   VaiTro: ["MaVaiTro"], NguoiDung: ["MaNguoiDung"], HangXe: ["MaHang"], LoaiXe: ["MaLoai"],
   Xe: ["MaXe"], HinhAnhXe: ["MaHinhAnh"], GioHang: ["MaGioHang"], DonHang: ["MaDonHang"],
+  DanhMucTinTuc: ["MaDanhMuc"], TinTuc: ["MaTinTuc"],
 };
 
 const hiddenDisplayColumns: Record<string, string[]> = {
@@ -161,6 +180,7 @@ const tableLabels: Record<string, string> = {
   VaiTro: "Vai trò", NguoiDung: "Người dùng", HangXe: "Hãng xe", LoaiXe: "Loại xe",
   Xe: "Xe", GioHang: "Giỏ hàng", ChiTietGioHang: "Chi tiết giỏ hàng",
   DonHang: "Đơn hàng", ChiTietDonHang: "Chi tiết đơn hàng",
+  DanhMucTinTuc: "Danh mục tin tức", TinTuc: "Tin tức",
 };
 
 const columnLabels: Record<string, string> = {
@@ -173,6 +193,8 @@ const columnLabels: Record<string, string> = {
   PhuongThucThanhToan: "Phương thức thanh toán", TrangThai: "Trạng thái", NgayDat: "Ngày đặt",
   DonGia: "Đơn giá", ThanhTien: "Thành tiền", TenDangNhap: "Tên đăng nhập", MatKhau: "Mật khẩu",
   HoTen: "Họ tên", Email: "Email", MoTa: "Mô tả",
+  MaDanhMuc: "Mã danh mục", TenDanhMuc: "Tên danh mục", MaTinTuc: "Mã tin tức",
+  TieuDe: "Tiêu đề", TomTat: "Tóm tắt", NoiDung: "Nội dung", NgayDang: "Ngày đăng",
 };
 
 const foreignKeyConfig: Record<
@@ -204,6 +226,11 @@ const foreignKeyConfig: Record<
     valueKey: "MaXe",
     getLabel: (row) => String(row.TenXe || row.MaXe || ""),
   },
+  MaDanhMuc: {
+    refTable: "DanhMucTinTuc",
+    valueKey: "MaDanhMuc",
+    getLabel: (row) => String(row.TenDanhMuc || row.MaDanhMuc || ""),
+  },
 };
 
 const getColumnLabel = (column: string) => columnLabels[column] ?? column;
@@ -217,12 +244,21 @@ const renderCellValue = (column: string, value: CellValue, relatedName?: string)
   return relatedName ?? (typeof value === "boolean" ? (value ? "Có" : "Không") : String(value ?? "-"));
 };
 
+const getCrudHeaders = (): HeadersInit => {
+  const token = typeof window !== "undefined" ? window.localStorage.getItem("token") : null;
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
 export default function Home() {
   const [selectedId, setSelectedId] = useState<string>(tables[0].id);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     products: true,
     sales: true,
+    news: true,
     system: true,
   });
   const [selectedDetailId, setSelectedDetailId] = useState<CellValue>(null);
@@ -371,7 +407,7 @@ export default function Home() {
     try {
       const response = await fetch("/api/data/HinhAnhXe", {
         method: editingImageId === null ? "POST" : "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getCrudHeaders(),
         body: JSON.stringify({
           ...(editingImageId === null ? {} : { MaHinhAnh: editingImageId }),
           MaXe: detailRecord.MaXe,
@@ -385,7 +421,7 @@ export default function Home() {
       showNotification(editingImageId === null ? "Đã thêm thành công" : "Đã sửa thành công", editingImageId === null ? "success-add" : "success-edit");
       resetImageForm();
     } catch (error) {
-      showNotification("Warning: TIME OUT !", "error");
+      showNotification(error instanceof Error ? error.message : "Không thể lưu dữ liệu", "error");
     } finally {
       setImageSaving(false);
     }
@@ -396,7 +432,7 @@ export default function Home() {
     try {
       const response = await fetch("/api/data/HinhAnhXe", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: getCrudHeaders(),
         body: JSON.stringify({ MaHinhAnh: imageId }),
       });
       if (!response.ok) throw new Error("Không thể xóa hình ảnh xe");
@@ -422,10 +458,13 @@ export default function Home() {
       const isCreate = formMode === "create";
       const response = await fetch(`/api/data/${formTable.id}`, {
         method: isCreate ? "POST" : "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getCrudHeaders(),
         body: JSON.stringify(formValues),
       });
-      if (!response.ok) throw new Error("Lưu dữ liệu thất bại");
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Lưu dữ liệu thất bại");
+      }
       const refreshed = await fetch("/api/data/json").then((result) => result.json());
       setTableData(tables.map((table) => ({
         ...table,
@@ -436,7 +475,7 @@ export default function Home() {
       // Hiện thông báo thêm/sửa thành công
       showNotification(isCreate ? "Đã thêm thành công" : "Đã sửa thành công", isCreate ? "success-add" : "success-edit");
     } catch (error) {
-      showNotification("Warning: TIME OUT !", "error");
+      showNotification(error instanceof Error ? error.message : "Không thể lưu dữ liệu", "error");
     } finally {
       setSaving(false);
     }
@@ -452,11 +491,16 @@ export default function Home() {
     const keys = identityColumns[tableId] ?? (tableId === "ChiTietGioHang" ? ["MaGioHang", "MaXe"] : ["MaDonHang", "MaXe"]);
     const payload = Object.fromEntries(keys.map((key) => [key, row[key]]));
     setSaving(true);
-    const response = await fetch(`/api/data/${tableId}`, {
-      method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
-    });
-    if (!response.ok) {
-      showNotification("Warning: TIME OUT !", "error");
+    try {
+      const response = await fetch(`/api/data/${tableId}`, {
+        method: "DELETE", headers: getCrudHeaders(), body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.message || "Xóa dữ liệu thất bại");
+      }
+    } catch (error) {
+      showNotification(error instanceof Error ? error.message : "Không thể xóa dữ liệu", "error");
       setSaving(false);
       return;
     }

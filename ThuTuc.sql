@@ -279,3 +279,80 @@ BEGIN
     DELETE FROM ChiTietDonHang WHERE MaDonHang = @MaDonHang AND MaXe = @MaXe;
 END;
 GO
+
+CREATE PROCEDURE sp_ThemDanhMucTinTuc
+    @TenDanhMuc NVARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO DanhMucTinTuc (TenDanhMuc)
+    VALUES (@TenDanhMuc);
+END;
+GO
+
+CREATE PROCEDURE sp_SuaDanhMucTinTuc
+    @MaDanhMuc INT,
+    @TenDanhMuc NVARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE DanhMucTinTuc
+    SET TenDanhMuc = @TenDanhMuc
+    WHERE MaDanhMuc = @MaDanhMuc;
+END;
+GO
+
+CREATE PROCEDURE sp_XoaDanhMucTinTuc
+    @MaDanhMuc INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM DanhMucTinTuc WHERE MaDanhMuc = @MaDanhMuc;
+END;
+GO
+
+CREATE PROCEDURE sp_ThemTinTuc
+    @MaDanhMuc INT,
+    @TieuDe NVARCHAR(255),
+    @TomTat NVARCHAR(500) = NULL,
+    @NoiDung NVARCHAR(MAX),
+    @HinhAnh NVARCHAR(500) = NULL,
+    @NgayDang DATETIME = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO TinTuc (MaDanhMuc, TieuDe, TomTat, NoiDung, HinhAnh, NgayDang)
+    VALUES (@MaDanhMuc, @TieuDe, @TomTat, @NoiDung, @HinhAnh, ISNULL(@NgayDang, GETDATE()));
+END;
+GO
+
+CREATE PROCEDURE sp_SuaTinTuc
+    @MaTinTuc INT,
+    @MaDanhMuc INT,
+    @TieuDe NVARCHAR(255),
+    @TomTat NVARCHAR(500) = NULL,
+    @NoiDung NVARCHAR(MAX),
+    @HinhAnh NVARCHAR(500) = NULL,
+    @NgayDang DATETIME
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE TinTuc
+    SET MaDanhMuc = @MaDanhMuc,
+        TieuDe = @TieuDe,
+        TomTat = @TomTat,
+        NoiDung = @NoiDung,
+        HinhAnh = @HinhAnh,
+        NgayDang = @NgayDang
+    WHERE MaTinTuc = @MaTinTuc;
+END;
+GO
+
+CREATE PROCEDURE sp_XoaTinTuc
+    @MaTinTuc INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM TinTuc WHERE MaTinTuc = @MaTinTuc;
+END;
+GO
