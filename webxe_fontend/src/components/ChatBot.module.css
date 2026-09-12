@@ -349,3 +349,15 @@
     padding-right: 16px;
   }
 }
+
+.customCarCard { display: flex; flex-direction: column; gap: 8px; background: #fff; border: 1px solid #eacaa7; border-radius: 12px; overflow: hidden; margin: 10px 0; box-shadow: 0 4px 12px rgba(85, 53, 31, 0.08); }
+.customCarImage { width: 100%; height: 120px; object-fit: cover; background: #f9f9f9; }
+.customCarInfo { padding: 10px 12px 14px; }
+.customCarInfo h4 { margin: 0 0 4px 0; font-size: 14px; color: #29453e; }
+.customCarPrice { margin: 0 0 12px 0; font-size: 13px; font-weight: bold; color: #ef6a45; }
+.customCarActions { display: flex; gap: 8px; }
+.btnViewDetails { flex: 1; text-align: center; padding: 8px; background: #29453e; color: #fff; border-radius: 8px; font-size: 12px; font-weight: 700; text-decoration: none; transition: background 150ms ease; }
+.btnViewDetails:hover { background: #1e332f; }
+
+.btnBook { flex: 1; text-align: center; padding: 8px; background: #ef6a45; color: #fff; border-radius: 8px; font-size: 12px; font-weight: 700; text-decoration: none; transition: background 150ms ease; border: none; cursor: pointer; }
+.btnBook:hover { background: #df5735; }

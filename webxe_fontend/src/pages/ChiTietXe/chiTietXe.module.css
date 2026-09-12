@@ -1,7 +1,7 @@
 /* Giao diện bán trong suốt (Glassmorphic) cho trang Chi tiết xe - Nền nhìn rõ hình showroom phía sau */
 .page {
   min-height: 100vh;
-  background: 
+  background:
     linear-gradient(135deg, rgba(8, 10, 15, 0.32) 0%, rgba(15, 18, 25, 0.42) 100%),
     url('/images/showroom-background.png') center / cover fixed;
   color: #ffffff;
@@ -13,7 +13,7 @@
   padding: 3rem 0 5rem;
 }
 
-.main > p {
+.main>p {
   color: #ffffff;
   font-size: 1.1rem;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
@@ -26,13 +26,16 @@
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
-.backLink, .actionSecondary {
+.backLink,
+.actionSecondary {
   color: rgba(255, 255, 255, 0.9);
   transition: color 0.2s ease;
   text-decoration: none;
 }
 
-.backLink:hover, .actionSecondary:hover, .newsLink:hover {
+.backLink:hover,
+.actionSecondary:hover,
+.newsLink:hover {
   color: #ef4444;
 }
 
@@ -43,14 +46,18 @@
 }
 
 /* Các khung layout bán trong suốt (Glassmorphism) */
-.imagePanel, .detailsPanel, .description, .newsSection, .popularPanel {
+.imagePanel,
+.detailsPanel,
+.description,
+.newsSection,
+.popularPanel {
   position: relative;
   background: rgba(10, 12, 18, 0.48);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 18px;
-  box-shadow: 
+  box-shadow:
     0 20px 50px rgba(0, 0, 0, 0.4),
     inset 0 1px 1px rgba(255, 255, 255, 0.15);
   transition: all 0.3s ease;
@@ -102,8 +109,13 @@
   transform: translateY(-50%) scale(1.08);
 }
 
-.galleryLeft { left: 1rem; }
-.galleryRight { right: 1rem; }
+.galleryLeft {
+  left: 1rem;
+}
+
+.galleryRight {
+  right: 1rem;
+}
 
 .imageCounter {
   position: absolute;
@@ -149,7 +161,8 @@
   transition: border-color .2s, opacity .2s, transform .2s, box-shadow .2s;
 }
 
-.thumbnail:hover, .thumbnailActive {
+.thumbnail:hover,
+.thumbnailActive {
   border-color: #ef4444;
   opacity: 1;
   transform: translateY(-2px);
@@ -266,7 +279,8 @@
   margin-top: 1.7rem;
 }
 
-.actionPrimary, .actionSecondary {
+.actionPrimary,
+.actionSecondary {
   flex: 1;
   padding: .85rem 1rem;
   border-radius: 8px;
@@ -446,8 +460,13 @@
   background: #ef4444;
 }
 
-.sliderLeft { left: 0; }
-.sliderRight { right: 0; }
+.sliderLeft {
+  left: 0;
+}
+
+.sliderRight {
+  right: 0;
+}
 
 .newsLink {
   overflow: hidden;
@@ -555,39 +574,131 @@
 
 /* Responsive adjustments */
 @media (max-width: 850px) {
-  .hero, .bottom { grid-template-columns: 1fr; }
-  .mainImage { height: 430px; }
+
+  .hero,
+  .bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .mainImage {
+    height: 430px;
+  }
 }
 
 @media (max-width: 550px) {
-  .main { width: 94%; padding-top: 2rem; }
-  .specs { grid-template-columns: 1fr; }
-  .sliderTrack .newsLink { flex-basis: 100%; }
-  .actions { flex-direction: column; }
-  .mainImage { height: 300px; }
-  .galleryArrow { width: 40px; height: 40px; }
-  .thumbnail { flex-basis: 82px; height: 58px; }
-  .thumbnailCarousel { gap: .35rem; }
-  .thumbnailArrow { width: 30px; height: 30px; font-size: 1.35rem; }
+  .main {
+    width: 94%;
+    padding-top: 2rem;
+  }
+
+  .specs {
+    grid-template-columns: 1fr;
+  }
+
+  .sliderTrack .newsLink {
+    flex-basis: 100%;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .mainImage {
+    height: 300px;
+  }
+
+  .galleryArrow {
+    width: 40px;
+    height: 40px;
+  }
+
+  .thumbnail {
+    flex-basis: 82px;
+    height: 58px;
+  }
+
+  .thumbnailCarousel {
+    gap: .35rem;
+  }
+
+  .thumbnailArrow {
+    width: 30px;
+    height: 30px;
+    font-size: 1.35rem;
+  }
 }
 
 @media (max-width: 1024px) and (min-width: 851px) {
-  .main { width: 94%; padding-top: 2.5rem; }
-  .hero { grid-template-columns: 56% 44%; gap: 1rem; }
-  .mainImage { height: 430px; }
-  .detailsPanel { padding: 1.35rem; }
-  .bottom { grid-template-columns: 65% 35%; gap: 1rem; }
+  .main {
+    width: 94%;
+    padding-top: 2.5rem;
+  }
+
+  .hero {
+    grid-template-columns: 56% 44%;
+    gap: 1rem;
+  }
+
+  .mainImage {
+    height: 430px;
+  }
+
+  .detailsPanel {
+    padding: 1.35rem;
+  }
+
+  .bottom {
+    grid-template-columns: 65% 35%;
+    gap: 1rem;
+  }
 }
 
 @media (max-width: 440px) {
-  .main { width: calc(100% - 1.5rem); padding: 1.5rem 0 3rem; }
-  .imagePanel, .detailsPanel, .description, .newsSection, .popularPanel { border-radius: 12px; }
-  .mainImage { height: 245px; }
-  .detailsPanel { padding: 1rem; }
-  .title { font-size: 1.65rem; }
-  .price { font-size: 1.2rem; }
-  .summaryRow { font-size: .82rem; }
-  .actionPrimary, .actionSecondary { padding: .75rem; }
-  .description { padding: 1rem; }
-  .popularPanel { height: 360px; max-height: 360px; padding: 1rem; }
+  .main {
+    width: calc(100% - 1.5rem);
+    padding: 1.5rem 0 3rem;
+  }
+
+  .imagePanel,
+  .detailsPanel,
+  .description,
+  .newsSection,
+  .popularPanel {
+    border-radius: 12px;
+  }
+
+  .mainImage {
+    height: 245px;
+  }
+
+  .detailsPanel {
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 1.65rem;
+  }
+
+  .price {
+    font-size: 1.2rem;
+  }
+
+  .summaryRow {
+    font-size: .82rem;
+  }
+
+  .actionPrimary,
+  .actionSecondary {
+    padding: .75rem;
+  }
+
+  .description {
+    padding: 1rem;
+  }
+
+  .popularPanel {
+    height: 360px;
+    max-height: 360px;
+    padding: 1rem;
+  }
 }

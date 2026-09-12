@@ -225,57 +225,6 @@ const tablesConfig = [
     updateExample: { MaDonHang: 1, MaXe: 1, SoLuong: 2, DonGia: 620000000 },
     deleteExample: { MaDonHang: 1, MaXe: 1 },
   },
-  {
-    name: 'DanhMucTinTuc',
-    tag: '10. Quản lý Danh Mục Tin Tức',
-    description: 'API quản lý danh mục bài viết tin tức',
-    pk: ['MaDanhMuc'],
-    schema: {
-      type: 'object',
-      properties: {
-        MaDanhMuc: { type: 'integer', example: 1 },
-        TenDanhMuc: { type: 'string', example: 'Tin thị trường' },
-      },
-    },
-    createExample: { TenDanhMuc: 'Tin thị trường' },
-    updateExample: { MaDanhMuc: 1, TenDanhMuc: 'Tin xe mới nhất' },
-    deleteExample: { MaDanhMuc: 1 },
-  },
-  {
-    name: 'TinTuc',
-    tag: '11. Quản lý Tin Tức',
-    description: 'API quản lý bài viết tin tức',
-    pk: ['MaTinTuc'],
-    schema: {
-      type: 'object',
-      properties: {
-        MaTinTuc: { type: 'integer', example: 1 },
-        MaDanhMuc: { type: 'integer', example: 1 },
-        TieuDe: { type: 'string', example: 'Những mẫu xe đáng chú ý năm 2026' },
-        TomTat: { type: 'string', example: 'Tổng hợp các mẫu xe mới nhất.' },
-        NoiDung: { type: 'string', example: 'Nội dung bài viết...' },
-        HinhAnh: { type: 'string', example: 'https://example.com/news.jpg' },
-        NgayDang: { type: 'string', example: '2026-09-04T10:00:00.000Z' },
-      },
-    },
-    createExample: {
-      MaDanhMuc: 1,
-      TieuDe: 'Những mẫu xe đáng chú ý năm 2026',
-      TomTat: 'Tổng hợp các mẫu xe mới nhất.',
-      NoiDung: 'Nội dung bài viết...',
-      HinhAnh: 'https://example.com/news.jpg',
-    },
-    updateExample: {
-      MaTinTuc: 1,
-      MaDanhMuc: 1,
-      TieuDe: 'Những mẫu xe đáng chú ý năm 2026 (cập nhật)',
-      TomTat: 'Thông tin mới nhất về các mẫu xe.',
-      NoiDung: 'Nội dung bài viết đã cập nhật...',
-      HinhAnh: 'https://example.com/news-updated.jpg',
-      NgayDang: '2026-09-04T10:00:00.000Z',
-    },
-    deleteExample: { MaTinTuc: 1 },
-  },
 ];
 
 function generatePaths() {

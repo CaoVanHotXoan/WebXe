@@ -44,7 +44,7 @@ export default function ChiTietTinPage() {
               </div>
             </InfoPanel>
 
-            <InfoPanel title="TIN BÁN XE">
+            <InfoPanel title="CỬA HÀNG">
               <div className={styles.vehicleList}>
                 {vehicles.slice(0, 10).map((vehicle) => (
                   <Link href={`/ChiTietXe/ChiTietXe?id=${vehicle.id}`} className={styles.vehicleItem} key={vehicle.id}>

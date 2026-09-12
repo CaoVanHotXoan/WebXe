@@ -13,7 +13,12 @@ export const safeStorage = {
       if (raw === null || raw === undefined) {
         return fallback;
       }
-      return JSON.parse(raw) as T;
+      try {
+        return JSON.parse(raw) as T;
+      } catch (e) {
+        // Return raw string if JSON.parse fails, as setItem stores strings raw
+        return raw as unknown as T;
+      }
     } catch (error) {
       console.warn(`[SafeStorage] Failed to parse key "${key}". Clearing corrupted value.`, error);
       this.removeItem(key);

@@ -49,6 +49,7 @@ a {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -60,6 +61,7 @@ a {
     opacity: 0;
     transform: translateX(-30px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -71,6 +73,7 @@ a {
     opacity: 0;
     transform: translateX(30px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -125,9 +128,11 @@ a {
     opacity: 1;
     transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateY(0) scale(var(--spark-scale));
   }
+
   55% {
     opacity: 0.95;
   }
+
   100% {
     opacity: 0;
     transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateY(calc(var(--spark-distance) * -1)) scale(0.08);
@@ -154,9 +159,11 @@ a {
     opacity: 1;
     transform: translate(-50%, -50%) scale(0.25);
   }
+
   35% {
     opacity: 0.95;
   }
+
   100% {
     opacity: 0;
     transform: translate(-50%, -50%) scale(4.5);
