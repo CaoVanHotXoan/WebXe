@@ -36,7 +36,10 @@ app.use('/api/admin', procedureRoutes);
 app.use((req, res) => res.status(404).json({ message: 'Không tìm thấy endpoint.' }));
 app.use((error, req, res, next) => {
   console.error(error);
-  return res.status(500).json({ message: 'Lỗi máy chủ nội bộ.' });
+  return res.status(500).json({
+    message: 'Lỗi máy chủ nội bộ.',
+    ...(process.env.NODE_ENV !== 'production' && { detail: error.message })
+  });
 });
 
 app.listen(port, () => console.log(`WebXe backend đang chạy tại http://localhost:${port}`));
