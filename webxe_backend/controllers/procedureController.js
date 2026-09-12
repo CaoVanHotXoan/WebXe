@@ -1,4 +1,19 @@
 import { getPool, sql } from '../config/db.js';
+import { deleteCloudinaryImage } from './mediaController.js';
+
+const imageDeleteTargets = {
+  sp_XoaNguoiDung: { table: 'NguoiDung', id: 'MaNguoiDung', columns: ['HinhAnh'] },
+  sp_XoaHangXe: { table: 'HangXe', id: 'MaHang', columns: ['Logo'] },
+  sp_XoaHinhAnhXe: { table: 'HinhAnhXe', id: 'MaHinhAnh', columns: ['DuongDanAnh'] },
+  sp_XoaTinTuc: { table: 'TinTuc', id: 'MaTinTuc', columns: ['HinhAnh'] },
+};
+
+const imageUpdateTargets = {
+  sp_SuaNguoiDung: { table: 'NguoiDung', id: 'MaNguoiDung', columns: ['HinhAnh'] },
+  sp_SuaHangXe: { table: 'HangXe', id: 'MaHang', columns: ['Logo'] },
+  sp_SuaHinhAnhXe: { table: 'HinhAnhXe', id: 'MaHinhAnh', columns: ['DuongDanAnh'] },
+  sp_SuaTinTuc: { table: 'TinTuc', id: 'MaTinTuc', columns: ['HinhAnh'] },
+};
 
 // Whitelist này khớp với ThuTuc.sql; client không thể truyền tên procedure tùy ý.
 const p = (type, required = true) => ({ type, required });
@@ -31,7 +46,10 @@ export async function executeProcedure(req, res, next) {
       if (required && (body[name] === undefined || body[name] === null)) return res.status(400).json({ message: `Thiếu tham số ${name}.` });
     }
 
-    const request = (await getPool()).request();
+    const pool = await getPool();
+    const imageUrls = await getImageUrlsBeforeDelete(pool, req.params.procedureName, body);
+    const oldImageUrls = await getImageUrlsBeforeUpdate(pool, req.params.procedureName, body);
+    const request = pool.request();
     for (const [name, { type, required }] of Object.entries(definition)) {
       const value = body[name] === undefined ? null : body[name];
       if (value === null && required) return res.status(400).json({ message: `Tham số ${name} không được null.` });
@@ -39,8 +57,56 @@ export async function executeProcedure(req, res, next) {
     }
 
     await request.execute(req.params.procedureName);
+    await deleteCloudinaryImages(imageUrls);
+    await deleteReplacedCloudinaryImages(oldImageUrls, body, req.params.procedureName);
     return res.json({ message: `${req.params.procedureName} thực thi thành công.` });
   } catch (error) {
     return next(error);
+  }
+}
+
+async function getImageUrlsBeforeDelete(pool, procedureName, body) {
+  const target = imageDeleteTargets[procedureName];
+  if (!target || body[target.id] === undefined || body[target.id] === null) {
+    if (procedureName !== 'sp_XoaXe' || body.MaXe === undefined || body.MaXe === null) return [];
+    const result = await pool.request()
+      .input('id', sql.Int, body.MaXe)
+      .query('SELECT DuongDanAnh FROM dbo.HinhAnhXe WHERE MaXe = @id');
+    return result.recordset.map((row) => row.DuongDanAnh).filter(Boolean);
+  }
+
+  const result = await pool.request()
+    .input('id', sql.Int, body[target.id])
+    .query(`SELECT ${target.columns.join(', ')} FROM dbo.${target.table} WHERE ${target.id} = @id`);
+  return result.recordset.flatMap((row) => target.columns.map((column) => row[column])).filter(Boolean);
+}
+
+async function getImageUrlsBeforeUpdate(pool, procedureName, body) {
+  const target = imageUpdateTargets[procedureName];
+  if (!target || body[target.id] === undefined || body[target.id] === null) return [];
+
+  const result = await pool.request()
+    .input('id', sql.Int, body[target.id])
+    .query(`SELECT ${target.columns.join(', ')} FROM dbo.${target.table} WHERE ${target.id} = @id`);
+  return result.recordset.flatMap((row) => target.columns.map((column) => row[column])).filter(Boolean);
+}
+
+async function deleteReplacedCloudinaryImages(oldImageUrls, body, procedureName) {
+  const target = imageUpdateTargets[procedureName];
+  if (!target || !oldImageUrls.length) return;
+
+  const newImageUrls = target.columns
+    .map((column) => body[column])
+    .filter((value) => typeof value === 'string' && value.trim())
+    .map((value) => value.trim());
+  const replacedUrls = oldImageUrls.filter((oldUrl) => !newImageUrls.includes(oldUrl));
+  await deleteCloudinaryImages(replacedUrls);
+}
+
+async function deleteCloudinaryImages(imageUrls) {
+  if (!imageUrls.length) return;
+  const results = await Promise.allSettled(imageUrls.map((imageUrl) => deleteCloudinaryImage(imageUrl)));
+  for (const result of results) {
+    if (result.status === 'rejected') console.error('Không thể xóa ảnh trên Cloudinary:', result.reason);
   }
 }
