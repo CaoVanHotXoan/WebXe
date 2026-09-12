@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Vehicle } from '@/TS/vehicleData';
-import { BACKEND_URL } from '@/services/api';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import styles from './muaBanXe.module.css';
 
 type FilterKey = 'type' | 'fuel' | 'brand' | 'price';
@@ -107,7 +107,7 @@ export default function MuaBanXePage() {
   useEffect(() => {
     setLoading(true);
     setError('');
-   fetch(`${BACKEND_URL}/api/data/json`)
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/json`)
       .then(async (response) => {
         if (!response.ok) throw new Error('Không thể tải dữ liệu xe');
         const data = await response.json() as VehicleResponse;
@@ -115,7 +115,7 @@ export default function MuaBanXePage() {
         return data;
       })
       .then((data) => setVehicles(mapApiVehicles(data)))
-      .catch(() => setError('Không thể tải danh sách xe từ máy chủ. Vui lòng thử lại sau.'))
+      .catch(() => setError('Không thể tải danh sách xe. Hãy kiểm tra backend đang chạy ở cổng 3002 rồi thử lại.'))
       .finally(() => setLoading(false));
   }, [reloadKey]);
 
@@ -137,6 +137,7 @@ export default function MuaBanXePage() {
 
   return (
     <div className={`${styles.page} font-sans`}>
+      <LoadingSpinner isLoading={loading} mode="page" />
       <Header />
       <main className={styles.main}>
         <div className={styles.intro}>

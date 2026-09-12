@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth, UserProfile } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { BACKEND_URL } from '@/services/api';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import styles from './login.module.css';
 
 type FormMode = 'login' | 'register' | 'forgot_password';
 type FormStep = 'form' | 'otp';
 type ResponseData = { message?: string; token?: string; user?: UserProfile };
 
-const API_BASE = `${BACKEND_URL}/api/auth`;
+const API_BASE = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth`;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -86,6 +86,8 @@ export default function LoginPage() {
       await request('/login', { username: account.trim(), password }, (data) => {
         if (data.token && data.user) {
           loginUser(data.token, data.user);
+          // Ghi nhớ cờ vừa đăng nhập thành công để chạy animation
+          sessionStorage.setItem('justLoggedIn', 'true');
         }
         router.replace('/');
       });
@@ -125,6 +127,7 @@ export default function LoginPage() {
 
   return (
     <div className={styles['login-container']}>
+      <LoadingSpinner isLoading={loading} mode="page" />
       <button 
         className={styles['back-btn']} 
         onClick={() => router.back()}

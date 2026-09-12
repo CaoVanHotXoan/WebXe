@@ -1,8 +1,29 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState, Fragment } from 'react';
 import Link from 'next/link';
 import { Vehicle } from '@/TS/vehicleData';
-import { BACKEND_URL } from '@/services/api';
 import styles from './ChatBot.module.css';
+
+export interface CarItem {
+  id: number;
+  name: string;
+  price: number;
+  style?: string;
+  type?: string;
+  imageUrl: string;
+  specs?: Record<string, string>;
+}
+
+const SYSTEM_PROMPT = `Role: Chuyên gia tư vấn xe cao cấp của cửa hàng TEAM BẤT ỔN.
+Tone: Tự nhiên, thân thiện, lịch sự, hào hứng và am hiểu kỹ thuật nhưng biết cách giải thích dễ hiểu.
+Quy tắc Giao tiếp:
+- Tự nhiên & Thân thiện: Biết chào hỏi, trò chuyện xã giao (small-talk), biết lắng nghe và thấu hiểu tâm lý người mua (lần đầu mua xe, lo lắng chi phí bảo dưỡng, phân vân giữa xe số và xe tay ga...).
+- Ghi nhớ ngữ cảnh (Context Memory): Theo dõi sát luồng trò chuyện để phản hồi chính xác các câu hỏi nối tiếp (Ví dụ: "Nó có tiết kiệm xăng không?", "Màu đỏ còn không?").
+- Lắng nghe và dẫn dắt: Trả lời bằng Markdown gọn gàng. Luôn gợi ý bước tiếp theo hoặc câu hỏi mở ở cuối câu (ví dụ: "Bạn muốn đăng ký lái thử hay xem thêm thông số chi tiết của mẫu xe này?").
+Quy tắc Tư vấn:
+- Tìm xe theo yêu cầu & Tầm giá: Đưa ra 2 - 3 gợi ý tốt nhất dựa trên khoảng tài chính khách đưa ra kèm ưu/nhược điểm ngắn gọn.
+- Đề xuất theo phong cách: Gợi ý xe theo cá tính (Thể thao/Sportbike, Cổ điển/Classic, Đô thị/Scooter, Đường trường/Adventure...).
+- Thông tin cửa hàng: Khi khách hỏi địa chỉ, trả lời "Showroom TEAM BẤT ỔN, Số 1 Đại Cồ Việt, Hà Nội". Khi hỏi số điện thoại, trả lời "Hotline: 1900 8888" hoặc gợi ý đặt lịch xem xe.
+- Cấu trúc Render: Để gợi ý mẫu xe cụ thể, BẮT BUỘC trả về mã HTML tùy chỉnh với định dạng <CarCard id="{id_xe}"/> để hệ thống hiển thị thẻ xe UI đẹp mắt (không bọc trong dấu backticks). Ví dụ: <CarCard id="1"/>`;
 
 type ChatMessage = {
   id: number;
@@ -11,14 +32,65 @@ type ChatMessage = {
   vehicleId?: number | null;
 };
 
-function renderMessage(text: string) {
-  return text.split('\n').map((line, index) => {
-    const imageMatch = line.trim().match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+function renderMessage(text: string, vehicles: Vehicle[], onBook?: (vehicleId: string) => void) {
+  // Tách chuỗi dựa trên định dạng thẻ Custom Tag <CarCard id="..." />
+  const parts = text.split(/(<CarCard\s+id="[^"]+"\s*\/>)/g);
+
+  return parts.map((part, index) => {
+    // Kiểm tra xem part này có phải là thẻ CarCard không
+    const carMatch = part.match(/<CarCard\s+id="([^"]+)"\s*\/>/);
+    if (carMatch) {
+      const vehicleIdStr = carMatch[1];
+      const vehicleId = parseInt(vehicleIdStr, 10);
+      const vehicle = vehicles.find(v => v.id === vehicleId);
+      if (vehicle) {
+        return (
+          <div key={`car-${vehicleId}-${index}`} className={styles.customCarCard}>
+            <img src={vehicle.image} alt={vehicle.title} className={styles.customCarImage} />
+            <div className={styles.customCarInfo}>
+              <h4>{vehicle.title}</h4>
+              <p className={styles.customCarPrice}>{vehicle.priceLabel}</p>
+              <div className={styles.customCarActions}>
+                {onBook && (
+                  <button type="button" onClick={() => onBook(vehicleIdStr)} className={styles.btnBook}>
+                    Lái thử
+                  </button>
+                )}
+                <Link href={`/ChiTietXe/ChiTietXe?id=${vehicle.id}`} className={styles.btnViewDetails}>Xem chi tiết</Link>
+              </div>
+            </div>
+          </div>
+        );
+      } else {
+        return <span key={`car-not-found-${index}`}>[Xe không tìm thấy]</span>;
+      }
+    }
+
+    // Hiển thị text bình thường kèm xử lý ảnh Markdown ![alt](url) và in đậm **text**
     return (
-      <span key={`${line}-${index}`}>
-        {imageMatch ? <img className={styles.messageImage} src={imageMatch[2]} alt={imageMatch[1]} /> : line}
-        {index < text.split('\n').length - 1 && <br />}
-      </span>
+      <Fragment key={`text-${index}`}>
+        {part.split('\n').map((line, lineIndex) => {
+          const imageMatch = line.trim().match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+
+          // Trình parse in đậm cơ bản
+          const renderBold = (str: string) => {
+            const boldParts = str.split(/(\*\*.*?\*\*)/g);
+            return boldParts.map((bp, i) => {
+              if (bp.startsWith('**') && bp.endsWith('**')) {
+                return <strong key={i}>{bp.slice(2, -2)}</strong>;
+              }
+              return bp;
+            });
+          };
+
+          return (
+            <span key={`${line}-${lineIndex}`}>
+              {imageMatch ? <img className={styles.messageImage} src={imageMatch[2]} alt={imageMatch[1]} /> : renderBold(line)}
+              {lineIndex < part.split('\n').length - 1 && <br />}
+            </span>
+          );
+        })}
+      </Fragment>
     );
   });
 }
@@ -37,7 +109,7 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
   const [bookingMessage, setBookingMessage] = useState('');
 
   useEffect(() => {
-    fetch(`${BACKEND_URL}/api/data/json`)
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/json`)
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('Không tải được danh sách xe')))
       .then((data: { Xe?: Array<{ MaXe: number; TenXe?: string; Gia?: number | string; SoLuong?: number }> }) => {
         const liveVehicles = (data.Xe ?? []).filter((vehicle) => vehicle.TenXe && Number(vehicle.Gia) > 0).map((vehicle) => ({
@@ -68,15 +140,18 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/chat`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: trimmedQuestion,
-          history: [...messages, userMessage].map((message) => ({
-            role: message.sender === 'user' ? 'user' : 'assistant',
-            content: message.text,
-          })),
+          history: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            ...[...messages, userMessage].map((message) => ({
+              role: message.sender === 'user' ? 'user' : 'assistant',
+              content: message.text,
+            }))
+          ],
         }),
       });
       const data = await response.json() as { message?: string; vehicleId?: number | null };
@@ -104,7 +179,7 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
     }
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/orders`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...booking, vehicleId: Number(booking.vehicleId), quantity: 1 }),
@@ -135,8 +210,13 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
             {messages.map((message) => (
               <div className={`${styles.messageRow} ${message.sender === 'user' ? styles.userRow : ''}`} key={message.id}>
                 <div className={`${styles.message} ${message.sender === 'user' ? styles.userMessage : styles.botMessage}`}>
-                  <p>{renderMessage(message.text)}</p>
-                  {message.sender === 'bot' && message.vehicleId && <Link className={styles.vehicleLink} href={`/ChiTietXe/ChiTietXe?id=${message.vehicleId}`}>Xem thêm</Link>}
+                  <p>
+                    {renderMessage(message.text, vehicles, (vehicleId) => {
+                      setBooking((current) => ({ ...current, vehicleId }));
+                      setShowBooking(true);
+                    })}
+                  </p>
+                  {message.sender === 'bot' && message.vehicleId && !message.text.includes('<CarCard') && <Link className={styles.vehicleLink} href={`/ChiTietXe/ChiTietXe?id=${message.vehicleId}`}>Xem thêm</Link>}
                 </div>
               </div>
             ))}

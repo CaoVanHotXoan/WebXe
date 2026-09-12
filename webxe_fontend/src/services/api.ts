@@ -1,8 +1,7 @@
 // Utility service for API calls with automatic JWT token attachment and 401 interceptor handling
 import { safeStorage } from '@/utils/storage';
 
-// Route API requests through this Next.js deployment to avoid browser CORS restrictions.
-export const BACKEND_URL = '/api/backend';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002';
 
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = safeStorage.getItem<string | null>('token', null);

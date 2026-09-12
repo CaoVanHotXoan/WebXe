@@ -77,6 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       safeStorage.setItem('auth', 'true');
       safeStorage.setItem('token', newToken);
       safeStorage.setItem('profile', newUser);
+      sessionStorage.setItem('showWelcomeAnimation', 'true');
       setStatus('success');
       addToast('Đăng nhập thành công', 'success');
     } catch (err) {

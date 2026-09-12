@@ -3,8 +3,8 @@ import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { BACKEND_URL } from '@/services/api';
 import { newsItems } from '@/TS/newsData';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import styles from './chiTietXe.module.css';
 
 type SliderItem = { title: string; image: string; href: string };
@@ -122,7 +122,7 @@ export default function ChiTietXePage() {
     if (!router.isReady) return;
     let active = true;
 
-    fetch(`${BACKEND_URL}/api/data/json`)
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/json`)
       .then(async (response) => {
         if (!response.ok) throw new Error('Không thể tải dữ liệu xe');
         const data = await response.json() as VehicleDataResponse;
@@ -144,7 +144,7 @@ export default function ChiTietXePage() {
     };
   }, [router.isReady]);
 
-  if (!router.isReady || loading) return <div className={`${styles.page} font-sans`}><Header /><main className={styles.main}><p>Đang tải thông tin xe...</p></main><Footer /></div>;
+  if (!router.isReady || loading) return <div className={`${styles.page} font-sans`}><LoadingSpinner isLoading={true} mode="page" /><Header /><main className={styles.main}><p>Đang tải thông tin xe...</p></main><Footer /></div>;
   if (error || !vehicle) return <div className={`${styles.page} font-sans`}><Header /><main className={styles.main}><p>{error || 'Không tìm thấy xe.'}</p></main><Footer /></div>;
 
   return (
@@ -206,7 +206,7 @@ export default function ChiTietXePage() {
           </div>
         </section>
         {vehicle.description && <section className={styles.description}><h2 className={styles.sectionTitle}>Mô tả xe</h2><p>{vehicle.description}</p></section>}
-        <div className={styles.bottom}><section className={styles.newsSection}><h2 className={styles.sectionTitle}>TIN TỨC NỔI BẬT</h2><ContentSlider items={newsItems.slice(0, 10).map((item) => ({ title: item.title, image: item.image, href: `/TinTuc/ChiTietTin?id=${item.id}` }))} /><h2 className={styles.sectionTitle}>TIN BÁN XE</h2><ContentSlider items={popularVehicles.map((item) => ({ title: item.title, image: item.image, href: `/ChiTietXe/ChiTietXe?id=${item.id}` }))} /></section>
+        <div className={styles.bottom}><section className={styles.newsSection}><h2 className={styles.sectionTitle}>TIN TỨC NỔI BẬT</h2><ContentSlider items={newsItems.slice(0, 10).map((item) => ({ title: item.title, image: item.image, href: `/TinTuc/ChiTietTin?id=${item.id}` }))} /><h2 className={styles.sectionTitle}>CỬA HÀNG</h2><ContentSlider items={popularVehicles.map((item) => ({ title: item.title, image: item.image, href: `/ChiTietXe/ChiTietXe?id=${item.id}` }))} /></section>
           <aside className={styles.popularPanel}><h2 className={styles.sectionTitle}>TOP 10 XE BÁN CHẠY</h2><div className={styles.popularList}>{popularVehicles.map((item) => <Link href={`/ChiTietXe/ChiTietXe?id=${item.id}`} className={styles.popularItem} key={item.id}>{item.image && <img src={item.image} alt={item.title} />}<div><h3>{item.title}</h3><p>{item.priceLabel}</p></div></Link>)}</div></aside>
         </div>
       </main>

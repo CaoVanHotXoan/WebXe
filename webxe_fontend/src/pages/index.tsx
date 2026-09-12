@@ -5,6 +5,7 @@ import ChatBot from '@/components/ChatBot';
 import styles from '@/pages/TrangChu/trangchu.module.css';
 import { vehicles } from '@/TS/vehicleData';
 import { newsItems } from '@/TS/newsData';
+import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 const bannerData = {
   video: '/videos/webxe.mp4',
@@ -131,6 +132,9 @@ function ContentSlider({ items, hasPrice }: { items: ContentItem[]; hasPrice?: b
 }
 
 export default function TrangChu(){
+  const { user } = useAuth();
+
+
   return (
     <div className={styles['main-page']}>
       <Header />
@@ -148,7 +152,7 @@ export default function TrangChu(){
         </section>
 
         <section>
-          <h2 className={styles['section-title']}>Tin Bán Xe</h2>
+          <h2 className={styles['section-title']}>CỬA HÀNG</h2>
           <ContentSlider items={carsData} hasPrice />
         </section>
       </main>
