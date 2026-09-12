@@ -70,7 +70,13 @@ export async function login(req, res, next) {
       `);
 
     const user = result.recordset[0];
-    const passwordMatches = user && await bcrypt.compare(password, user.MatKhau);
+    const passwordHash = user?.MatKhau;
+    const passwordMatches = Boolean(
+      user
+      && typeof passwordHash === 'string'
+      && /^\$2[aby]\$\d{2}\$/.test(passwordHash)
+      && await bcrypt.compare(password, passwordHash)
+    );
     if (!passwordMatches) {
       return res.status(401).json({ message: 'Tên đăng nhập hoặc mật khẩu không đúng.' });
     }
