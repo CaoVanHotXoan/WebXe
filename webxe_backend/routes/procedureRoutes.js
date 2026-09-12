@@ -2,8 +2,11 @@ import { Router } from 'express';
 import { executeProcedure } from '../controllers/procedureController.js';
 import { listTableRows, listTables } from '../controllers/tableController.js';
 import { verifyToken, verifyAdmin } from '../middlewares/authMiddleware.js';
+import { uploadImageFromUrl } from '../controllers/mediaController.js';
 
 const router = Router();
+
+router.post('/media/upload-url', verifyToken, verifyAdmin, uploadImageFromUrl);
 
 /**
  * @swagger

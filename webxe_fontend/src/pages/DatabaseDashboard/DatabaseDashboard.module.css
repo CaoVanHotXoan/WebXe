@@ -436,6 +436,23 @@
   border-color: #0f766e;
 }
 
+.dateTimeInput {
+  color-scheme: light;
+  cursor: pointer;
+}
+
+.dateTimeInput::-webkit-calendar-picker-indicator {
+  width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.dateTimeInput::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 .tableImage {
   display: block;
   width: 72px;

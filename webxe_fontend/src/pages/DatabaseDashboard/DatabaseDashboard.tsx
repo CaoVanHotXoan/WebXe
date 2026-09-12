@@ -238,7 +238,16 @@ const foreignKeyConfig: Record<
 
 const getColumnLabel = (column: string) => columnLabels[column] ?? column;
 
-const imageColumns = new Set(["HinhAnh", "Logo"]);
+const getDateTimeLocalValue = (value: CellValue) => {
+  if (value == null || value === "") return "";
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 16);
+
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const imageColumns = new Set(["HinhAnh", "Logo", "DuongDanAnh"]);
 
 const renderCellValue = (column: string, value: CellValue, relatedName?: string) => {
   if (imageColumns.has(column) && value) {
@@ -431,11 +440,27 @@ export default function Home() {
       : table));
   };
 
+  const uploadImageUrl = async (url: string) => {
+    const imageUrl = url.trim();
+    if (!imageUrl || imageUrl.includes("res.cloudinary.com")) return imageUrl;
+
+    const response = await fetch(`${BACKEND_URL}/admin/media/upload-url`, {
+      method: "POST",
+      headers: getCrudHeaders(),
+      credentials: "include",
+      body: JSON.stringify({ url: imageUrl }),
+    });
+    const data = await response.json().catch(() => null) as { url?: string; message?: string } | null;
+    if (!response.ok || !data?.url) throw new Error(data?.message || "Không thể tải ảnh lên Cloudinary");
+    return data.url;
+  };
+
   const saveVehicleImage = async () => {
     if (!detailRecord?.MaXe || !imageUrl.trim()) return;
     setImageSaving(true);
     try {
       const action = editingImageId === null ? "create" : "edit";
+      const cloudinaryUrl = await uploadImageUrl(imageUrl);
       const response = await fetch(`${BACKEND_URL}/admin/procedures/${getProcedureName("HinhAnhXe", action)}`, {
         method: "POST",
         headers: getCrudHeaders(),
@@ -443,7 +468,7 @@ export default function Home() {
         body: JSON.stringify({
           ...(editingImageId === null ? {} : { MaHinhAnh: editingImageId }),
           MaXe: detailRecord.MaXe,
-          DuongDanAnh: imageUrl.trim(),
+          DuongDanAnh: cloudinaryUrl,
           LaAnhChinh: imageIsMain,
         }),
       });
@@ -490,11 +515,18 @@ export default function Home() {
     try {
       const isCreate = formMode === "create";
       const action = isCreate ? "create" : "edit";
+      const valuesToSave = { ...formValues };
+      for (const column of imageColumns) {
+        const value = valuesToSave[column];
+        if (typeof value === "string" && value.trim()) {
+          valuesToSave[column] = await uploadImageUrl(value);
+        }
+      }
       const response = await fetch(`${BACKEND_URL}/admin/procedures/${getProcedureName(formTable.id, action)}`, {
         method: "POST",
         headers: getCrudHeaders(),
         credentials: "include",
-        body: JSON.stringify(formValues),
+        body: JSON.stringify(valuesToSave),
       });
       if (!response.ok) {
         const error = await response.json().catch(() => null);
@@ -708,9 +740,11 @@ export default function Home() {
                           </select>
                         ) : (
                           <input
+                            className={column === "NgayDang" ? styles.dateTimeInput : undefined}
                             type={column.includes("Ngay") ? "datetime-local" : column === "MatKhau" ? "password" : column === "LaAnhChinh" ? "checkbox" : "text"}
+                            step={column.includes("Ngay") ? 60 : undefined}
                             checked={column === "LaAnhChinh" ? Boolean(formValues[column]) : undefined}
-                            value={formValues[column] == null ? "" : String(formValues[column])}
+                            value={column.includes("Ngay") ? getDateTimeLocalValue(formValues[column]) : formValues[column] == null ? "" : String(formValues[column])}
                             disabled={formMode === "edit" && (identityColumns[formTable.id] ?? []).includes(column)}
                             onChange={(event) => setFormValues((current) => ({ ...current, [column]: column === "LaAnhChinh" ? event.target.checked : event.target.value }))}
                           />
