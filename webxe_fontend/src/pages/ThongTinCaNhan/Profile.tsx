@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { BACKEND_URL } from '@/services/api';
+import { apiFetch } from '@/services/api';
 import styles from './profile.module.css';
 
 type ActiveTab = 'account' | 'notifications' | 'password';
@@ -12,6 +12,28 @@ type ProfileData = {
   email: string;
   phone: string;
   address: string;
+  image: string;
+};
+
+type ApiProfileUser = {
+  MaNguoiDung?: number;
+  MaVaiTro?: number;
+  TenVaiTro?: string;
+  TenDangNhap?: string;
+  HoTen?: string;
+  Email?: string;
+  SoDienThoai?: string;
+  DiaChi?: string;
+  HinhAnh?: string;
+  id?: number;
+  roleId?: number;
+  role?: string;
+  username?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  image?: string;
 };
 
 const defaultProfile: ProfileData = {
@@ -19,6 +41,7 @@ const defaultProfile: ProfileData = {
   email: '',
   phone: '',
   address: 'Chưa cập nhật',
+  image: '',
 };
 
 const menuItems: { id: ActiveTab; label: string; icon: string }[] = [
@@ -46,20 +69,46 @@ export default function ProfilePage() {
     router.push(returnPath);
   };
 
-  // Synchronize profile state with domain AuthContext
+  // Tải lại hồ sơ từ backend để luôn hiển thị dữ liệu mới nhất.
   useEffect(() => {
     if (status === 'loading') return;
-    if (user) {
-      const merged: ProfileData = {
-        name: user.name || user.username || defaultProfile.name,
-        email: user.email || defaultProfile.email,
-        phone: user.phone || defaultProfile.phone,
-        address: user.address || defaultProfile.address,
-      };
-      setProfile(merged);
-      setDraftProfile(merged);
-    }
-  }, [user, status]);
+    if (!user || !token) return;
+
+    const loadProfile = async () => {
+      try {
+        const data = await apiFetch<{ user?: ApiProfileUser }>('/user/profile', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (data.user) updateProfileState({
+          id: data.user.MaNguoiDung ?? data.user.id,
+          roleId: data.user.MaVaiTro ?? data.user.roleId,
+          role: data.user.TenVaiTro ?? data.user.role,
+          username: data.user.TenDangNhap ?? data.user.username,
+          name: data.user.HoTen ?? data.user.name,
+          email: data.user.Email ?? data.user.email,
+          phone: data.user.SoDienThoai ?? data.user.phone,
+          address: data.user.DiaChi ?? data.user.address,
+          image: data.user.HinhAnh ?? data.user.image,
+        });
+      } catch {
+        // Giữ dữ liệu trong AuthContext nếu backend tạm thời không phản hồi.
+      }
+    };
+    void loadProfile();
+  }, [token, status, updateProfileState]);
+
+  useEffect(() => {
+    if (!user) return;
+    const merged: ProfileData = {
+      name: user.name || user.username || defaultProfile.name,
+      email: user.email || defaultProfile.email,
+      phone: user.phone || defaultProfile.phone,
+      address: user.address || defaultProfile.address,
+      image: user.image || defaultProfile.image,
+    };
+    setProfile(merged);
+    setDraftProfile(merged);
+  }, [user]);
 
   const initials = profile.name
     .split(' ')
@@ -74,24 +123,41 @@ export default function ProfilePage() {
     window.setTimeout(() => setMessage(''), 3500);
   };
 
-  // Lưu hồ sơ mới vào domain state và safe storage
-  const handleProfileSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleProfileSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!draftProfile.name.trim() || !draftProfile.email.trim()) {
       showMessage('Vui lòng nhập tên và email.');
       return;
     }
 
-    setProfile(draftProfile);
-    updateProfileState({
-      ...user,
-      name: draftProfile.name,
-      email: draftProfile.email,
-      phone: draftProfile.phone,
-      address: draftProfile.address,
-    });
-    setIsEditOpen(false);
-    showMessage('Thông tin tài khoản đã được cập nhật.');
+    if (!token) {
+      showMessage('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      return;
+    }
+
+    try {
+      const data = await apiFetch<{ message?: string; user?: ApiProfileUser }>('/user/profile', {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(draftProfile),
+      });
+      if (!data.user) throw new Error('Máy chủ không trả về thông tin tài khoản.');
+      updateProfileState({
+        id: data.user.MaNguoiDung ?? data.user.id,
+        roleId: data.user.MaVaiTro ?? data.user.roleId,
+        role: data.user.TenVaiTro ?? data.user.role,
+        username: data.user.TenDangNhap ?? data.user.username,
+        name: data.user.HoTen ?? data.user.name,
+        email: data.user.Email ?? data.user.email,
+        phone: data.user.SoDienThoai ?? data.user.phone,
+        address: data.user.DiaChi ?? data.user.address,
+        image: data.user.HinhAnh ?? data.user.image,
+      });
+      setIsEditOpen(false);
+      showMessage(data.message || 'Thông tin tài khoản đã được cập nhật.');
+    } catch (requestError) {
+      showMessage(requestError instanceof Error ? requestError.message : 'Không thể cập nhật thông tin.');
+    }
   };
 
   const handlePasswordSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -120,7 +186,7 @@ export default function ProfilePage() {
         const body = passwordStep === 'form'
           ? undefined
           : JSON.stringify({ currentPassword: passwords.current, newPassword: passwords.next, otp: passwordOtp });
-        const response = await fetch(`${BACKEND_URL}/auth${endpoint}`, {
+        const response = await fetch(`/api/backend/auth${endpoint}`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
           body,
@@ -161,13 +227,12 @@ export default function ProfilePage() {
             <p className={styles.eyebrow}>TÀI KHOẢN CỦA BẠN</p>
             <h1>Thông tin cá nhân</h1>
           </div>
-          <button className={styles.logoutTop} onClick={handleLogout}>Đăng xuất</button>
         </header>
 
         <div className={styles.layout}>
           <aside className={styles.sidebar}>
             <div className={styles.userCard}>
-              <div className={styles.avatar}>{initials}</div>
+              {profile.image ? <img className={styles.avatarImage} src={profile.image} alt="Ảnh đại diện" /> : <div className={styles.avatar}>{initials}</div>}
               <div>
                 <p className={styles.userName}>{profile.name}</p>
                 <p className={styles.userEmail}>{profile.email || 'Chưa cập nhật email'}</p>
@@ -203,7 +268,7 @@ export default function ProfilePage() {
                   <span className={styles.status}>● Đang hoạt động</span>
                 </div>
                 <div className={styles.profileHero}>
-                  <div className={styles.largeAvatar}>{initials}</div>
+                  {profile.image ? <img className={styles.largeAvatarImage} src={profile.image} alt="Ảnh đại diện" /> : <div className={styles.largeAvatar}>{initials}</div>}
                   <div>
                     <h3>{profile.name}</h3>
                     <p>Thành viên WebXe</p>
@@ -265,6 +330,8 @@ export default function ProfilePage() {
             <label className={styles.field}>Email<input type="email" value={draftProfile.email} onChange={(event) => setDraftProfile({ ...draftProfile, email: event.target.value })} /></label>
             <label className={styles.field}>Số điện thoại<input value={draftProfile.phone} onChange={(event) => setDraftProfile({ ...draftProfile, phone: event.target.value })} /></label>
             <label className={styles.field}>Địa chỉ<input value={draftProfile.address} onChange={(event) => setDraftProfile({ ...draftProfile, address: event.target.value })} /></label>
+            <label className={styles.field}>Ảnh đại diện (URL)<input type="url" value={draftProfile.image} onChange={(event) => setDraftProfile({ ...draftProfile, image: event.target.value })} placeholder="https://..." /></label>
+            {draftProfile.image && <img className={styles.profileImagePreview} src={draftProfile.image} alt="Xem trước ảnh đại diện" />}
             <button className={styles.primaryButton} type="submit">LƯU THÔNG TIN</button>
           </form>
         </div>

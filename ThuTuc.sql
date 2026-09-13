@@ -30,25 +30,25 @@ GO
 CREATE PROCEDURE sp_ThemNguoiDung
     @MaVaiTro INT, @TenDangNhap VARCHAR(50), @MatKhau VARCHAR(255),
     @HoTen NVARCHAR(100), @Email VARCHAR(100) = NULL,
-    @SoDienThoai VARCHAR(20) = NULL, @HinhAnh NVARCHAR(500) = NULL
+    @SoDienThoai VARCHAR(20) = NULL, @DiaChi NVARCHAR(300) = NULL, @HinhAnh NVARCHAR(500) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
-    INSERT INTO NguoiDung (MaVaiTro, TenDangNhap, MatKhau, HoTen, Email, SoDienThoai, HinhAnh)
-    VALUES (@MaVaiTro, @TenDangNhap, @MatKhau, @HoTen, @Email, @SoDienThoai, @HinhAnh);
+    INSERT INTO NguoiDung (MaVaiTro, TenDangNhap, MatKhau, HoTen, Email, SoDienThoai, DiaChi, HinhAnh)
+    VALUES (@MaVaiTro, @TenDangNhap, @MatKhau, @HoTen, @Email, @SoDienThoai, @DiaChi, @HinhAnh);
 END;
 GO
 
 CREATE PROCEDURE sp_SuaNguoiDung
     @MaNguoiDung INT, @MaVaiTro INT, @TenDangNhap VARCHAR(50), @MatKhau VARCHAR(255),
     @HoTen NVARCHAR(100), @Email VARCHAR(100) = NULL,
-    @SoDienThoai VARCHAR(20) = NULL, @HinhAnh NVARCHAR(500) = NULL
+    @SoDienThoai VARCHAR(20) = NULL, @DiaChi NVARCHAR(300) = NULL, @HinhAnh NVARCHAR(500) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
     UPDATE NguoiDung
     SET MaVaiTro = @MaVaiTro, TenDangNhap = @TenDangNhap, MatKhau = @MatKhau,
-        HoTen = @HoTen, Email = @Email, SoDienThoai = @SoDienThoai, HinhAnh = @HinhAnh
+        HoTen = @HoTen, Email = @Email, SoDienThoai = @SoDienThoai, DiaChi = @DiaChi, HinhAnh = @HinhAnh
     WHERE MaNguoiDung = @MaNguoiDung;
 END;
 GO
@@ -228,6 +228,7 @@ BEGIN
     SET NOCOUNT ON;
     INSERT INTO DonHang (MaNguoiDung, HoTenNguoiNhan, SoDienThoai, DiaChi, TongTien, PhuongThucThanhToan, TrangThai, NgayDat)
     VALUES (@MaNguoiDung, @HoTenNguoiNhan, @SoDienThoai, @DiaChi, @TongTien, @PhuongThucThanhToan, @TrangThai, ISNULL(@NgayDat, GETDATE()));
+    SELECT CAST(SCOPE_IDENTITY() AS INT) AS MaDonHang;
 END;
 GO
 
@@ -238,10 +239,36 @@ CREATE PROCEDURE sp_SuaDonHang
 AS
 BEGIN
     SET NOCOUNT ON;
-    UPDATE DonHang SET MaNguoiDung = @MaNguoiDung, HoTenNguoiNhan = @HoTenNguoiNhan,
-        SoDienThoai = @SoDienThoai, DiaChi = @DiaChi, TongTien = @TongTien,
-        PhuongThucThanhToan = @PhuongThucThanhToan, TrangThai = @TrangThai, NgayDat = @NgayDat
-    WHERE MaDonHang = @MaDonHang;
+    SET XACT_ABORT ON;
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        DECLARE @TrangThaiCu NVARCHAR(50);
+        SELECT @TrangThaiCu = TrangThai FROM DonHang WHERE MaDonHang = @MaDonHang;
+        UPDATE DonHang SET MaNguoiDung = @MaNguoiDung, HoTenNguoiNhan = @HoTenNguoiNhan,
+            SoDienThoai = @SoDienThoai, DiaChi = @DiaChi,
+            PhuongThucThanhToan = @PhuongThucThanhToan, TrangThai = @TrangThai, NgayDat = @NgayDat
+        WHERE MaDonHang = @MaDonHang;
+        IF @TrangThai = N'Thành công' AND ISNULL(@TrangThaiCu, N'') <> N'Thành công'
+        BEGIN
+            UPDATE x
+            SET x.SoLuong = x.SoLuong - totals.SoLuong
+            FROM Xe x
+            INNER JOIN (
+                SELECT MaXe, SUM(SoLuong) AS SoLuong
+                FROM ChiTietDonHang
+                WHERE MaDonHang = @MaDonHang
+                GROUP BY MaXe
+            ) totals ON totals.MaXe = x.MaXe
+            WHERE x.SoLuong >= totals.SoLuong;
+            IF @@ROWCOUNT <> (SELECT COUNT(DISTINCT MaXe) FROM ChiTietDonHang WHERE MaDonHang = @MaDonHang)
+                THROW 50004, N'Số lượng xe trong kho không đủ.', 1;
+        END;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
 END;
 GO
 
@@ -259,16 +286,69 @@ AS
 BEGIN
     SET NOCOUNT ON;
     INSERT INTO ChiTietDonHang (MaDonHang, MaXe, SoLuong, DonGia) VALUES (@MaDonHang, @MaXe, @SoLuong, @DonGia);
+    UPDATE DonHang
+    SET TongTien = (SELECT COALESCE(SUM(SoLuong * DonGia), 0) FROM ChiTietDonHang WHERE MaDonHang = @MaDonHang)
+    WHERE MaDonHang = @MaDonHang;
+END;
+GO
+
+CREATE PROCEDURE sp_ThemDonHangVaChiTiet
+    @MaNguoiDung INT, @HoTenNguoiNhan NVARCHAR(100), @SoDienThoai VARCHAR(20),
+    @DiaChi NVARCHAR(300), @TongTien DECIMAL(18,2),
+    @PhuongThucThanhToan NVARCHAR(50) = NULL, @TrangThai NVARCHAR(50), @NgayDat DATETIME = NULL,
+    @MaXe INT, @SoLuong INT, @DonGia DECIMAL(18,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        IF @SoLuong <= 0 OR @DonGia < 0
+        BEGIN
+            ;THROW 50001, N'Số lượng và đơn giá không hợp lệ.', 1;
+        END;
+
+        INSERT INTO DonHang (MaNguoiDung, HoTenNguoiNhan, SoDienThoai, DiaChi, TongTien, PhuongThucThanhToan, TrangThai, NgayDat)
+        VALUES (@MaNguoiDung, @HoTenNguoiNhan, @SoDienThoai, @DiaChi, @TongTien, @PhuongThucThanhToan, @TrangThai, ISNULL(@NgayDat, GETDATE()));
+
+        DECLARE @MaDonHang INT = CAST(SCOPE_IDENTITY() AS INT);
+        INSERT INTO ChiTietDonHang (MaDonHang, MaXe, SoLuong, DonGia)
+        VALUES (@MaDonHang, @MaXe, @SoLuong, @DonGia);
+
+        IF @TrangThai = N'Thành công'
+        BEGIN
+            UPDATE Xe
+            SET SoLuong = SoLuong - @SoLuong
+            WHERE MaXe = @MaXe AND SoLuong >= @SoLuong;
+            IF @@ROWCOUNT = 0
+            BEGIN
+                ;THROW 50002, N'Số lượng xe trong kho không đủ.', 1;
+            END;
+        END;
+
+        COMMIT TRANSACTION;
+        SELECT @MaDonHang AS MaDonHang;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
 END;
 GO
 
 CREATE PROCEDURE sp_SuaChiTietDonHang
-    @MaDonHang INT, @MaXe INT, @SoLuong INT, @DonGia DECIMAL(18,2)
+    @MaDonHang INT, @MaXe INT, @SoLuong INT, @DonGia DECIMAL(18,2), @MaXeCu INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
-    UPDATE ChiTietDonHang SET SoLuong = @SoLuong, DonGia = @DonGia
-    WHERE MaDonHang = @MaDonHang AND MaXe = @MaXe;
+    UPDATE ChiTietDonHang SET MaXe = @MaXe, SoLuong = @SoLuong, DonGia = @DonGia
+    WHERE MaDonHang = @MaDonHang AND MaXe = ISNULL(@MaXeCu, @MaXe);
+    IF @@ROWCOUNT = 0
+        THROW 50003, N'Không tìm thấy chi tiết đơn hàng cần cập nhật.', 1;
+    UPDATE DonHang
+    SET TongTien = (SELECT COALESCE(SUM(SoLuong * DonGia), 0) FROM ChiTietDonHang WHERE MaDonHang = @MaDonHang)
+    WHERE MaDonHang = @MaDonHang;
 END;
 GO
 
@@ -277,6 +357,9 @@ AS
 BEGIN
     SET NOCOUNT ON;
     DELETE FROM ChiTietDonHang WHERE MaDonHang = @MaDonHang AND MaXe = @MaXe;
+    UPDATE DonHang
+    SET TongTien = (SELECT COALESCE(SUM(SoLuong * DonGia), 0) FROM ChiTietDonHang WHERE MaDonHang = @MaDonHang)
+    WHERE MaDonHang = @MaDonHang;
 END;
 GO
 

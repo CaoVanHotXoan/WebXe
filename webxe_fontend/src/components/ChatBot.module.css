@@ -45,8 +45,9 @@
   right: 0;
   bottom: 64px;
   display: flex;
-  width: min(360px, calc(100vw - 28px));
-  height: min(530px, calc(100vh - 104px));
+  min-height: 0;
+  width: min(330px, calc(100vw - 48px));
+  height: min(470px, calc(100vh - 150px));
   flex-direction: column;
   overflow: hidden;
   border: 1px solid #f4d9bd;
@@ -127,6 +128,7 @@
 
 .messages {
   display: flex;
+  min-height: 0;
   flex: 1;
   flex-direction: column;
   gap: 12px;
@@ -182,11 +184,77 @@
 }
 
 .vehicleLink {
-  display: inline-block;
-  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
   color: #cf402d;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
+  text-decoration: none;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.vehicleLink:hover {
+  color: #a92d21;
+  transform: translateX(2px);
+}
+
+.vehicleResults {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.vehicleResult {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid #f0dfd0;
+  border-radius: 10px;
+  background: #fffaf5;
+}
+
+.vehicleResultImage {
+  width: 74px;
+  height: 58px;
+  flex: 0 0 74px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.vehicleResultBody {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.vehicleName {
+  min-width: 0;
+  margin: 0;
+  color: #29413a;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.vehicleMeta {
+  margin: 0;
+  color: #76513c;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.vehicleCta {
+  margin: 2px 0 0;
+  color: #29413a;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .quickQuestions {

@@ -5,6 +5,7 @@ import HieuUng from "@/TS/HieuUng";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { ToastProvider } from "@/context/ToastContext";
+import RouteLoading from "@/components/RouteLoading";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
@@ -13,6 +14,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <CartProvider>
           {/* Khởi tạo hiệu ứng dùng chung cho mọi trang */}
           <HieuUng />
+          <RouteLoading />
           <Component {...pageProps} />
         </CartProvider>
       </AuthProvider>

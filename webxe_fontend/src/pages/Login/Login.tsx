@@ -40,11 +40,12 @@ export default function LoginPage() {
     setSuccessMsg('');
   };
 
-  const request = async (endpoint: string, body: Record<string, string>, onSuccess: (data: ResponseData) => void) => {
+  const request = async (endpoint: string, body: Record<string, string>, onSuccess: (data: ResponseData) => void | Promise<void>) => {
     setLoading(true);
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      timeoutId = setTimeout(() => controller.abort(), 10000);
       
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
@@ -54,8 +55,6 @@ export default function LoginPage() {
         signal: controller.signal
       });
       
-      clearTimeout(timeoutId);
-      
       const responseText = await response.text();
       let data: ResponseData = {};
       try {
@@ -64,7 +63,7 @@ export default function LoginPage() {
         throw new Error(response.ok ? 'Máy chủ trả về dữ liệu không hợp lệ.' : `Máy chủ trả lỗi HTTP ${response.status}. Hãy kiểm tra backend đang chạy.`);
       }
       if (!response.ok) throw new Error(data.message || 'Có lỗi xảy ra.');
-      onSuccess(data);
+      await onSuccess(data);
     } catch (requestError) {
       if (requestError instanceof DOMException && requestError.name === 'AbortError') {
         setError('Warning: Time Out...');
@@ -75,6 +74,7 @@ export default function LoginPage() {
         addToast(msg, 'error');
       }
     } finally {
+      if (timeoutId) clearTimeout(timeoutId);
       setLoading(false);
     }
   };
@@ -90,13 +90,18 @@ export default function LoginPage() {
         setError('Vui lòng nhập tài khoản và mật khẩu.');
         return;
       }
-      await request('/login', { tenDangNhap: account.trim(), password }, (data) => {
-        if (data.token && data.user) {
-          loginUser(data.token, data.user);
+      await request('/login', { tenDangNhap: account.trim(), password }, async (data) => {
+        if (!data.token || !data.user) {
+          throw new Error('Máy chủ chưa trả về phiên đăng nhập hợp lệ.');
         }
-        router.replace(data.user?.role?.toLowerCase() === 'admin' || data.user?.roleId === 1
+        loginUser(data.token, data.user);
+        const returnUrl = typeof router.query.returnUrl === 'string' && router.query.returnUrl.startsWith('/')
+          ? router.query.returnUrl
+          : null;
+        const destination = returnUrl || (data.user.role?.toLowerCase() === 'admin' || data.user.roleId === 1
           ? '/DatabaseDashboard/DatabaseDashboard'
           : '/');
+        await router.replace(destination);
       });
       return;
     }
