@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import CarImageSlider from '@/components/CarImageSlider';
 import { BACKEND_URL } from '@/services/api';
 import styles from './chiTietXe.module.css';
 
@@ -100,15 +101,12 @@ export default function ChiTietXePage() {
   const [vehicles, setVehicles] = useState<DetailedVehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [imageIndex, setImageIndex] = useState(0);
   const [showPhone, setShowPhone] = useState(false);
   const [showZaloQr, setShowZaloQr] = useState(false);
   const [newsSlides, setNewsSlides] = useState<SliderItem[]>([]);
-  const thumbnailsRef = useRef<HTMLDivElement>(null);
   const vehicleId = Number(router.query.id);
   const vehicle = vehicles.find((item) => item.id === vehicleId);
   const vehicleImages = vehicle?.images ?? [];
-  const currentImageIndex = Math.min(imageIndex, Math.max(vehicleImages.length - 1, 0));
   const summary = vehicle ? [
     ['Hãng xe', vehicle.brand],
     ['Loại xe', vehicle.type],
@@ -123,6 +121,7 @@ export default function ChiTietXePage() {
     if (!router.isReady) return;
     let active = true;
 
+    import('@/components/LoadingSpinner').then(({ spinnerAPI }) => spinnerAPI.start());
     fetch(`${BACKEND_URL}/data/json`)
       .then(async (response) => {
         if (!response.ok) throw new Error('Không thể tải dữ liệu xe');
@@ -138,6 +137,7 @@ export default function ChiTietXePage() {
       })
       .finally(() => {
         if (active) setLoading(false);
+        import('@/components/LoadingSpinner').then(({ spinnerAPI }) => spinnerAPI.complete());
       });
 
     return () => {
@@ -168,49 +168,11 @@ export default function ChiTietXePage() {
       <main className={styles.main}>
         <p className={styles.breadcrumb}><Link href="/MuaBanXe/MuaBanXe" className={styles.backLink}>Mua bán xe</Link> / Chi tiết xe</p>
         <section className={styles.hero}>
-          {vehicleImages.length > 0 && <div className={styles.imagePanel}>
-            <div className={styles.gallery}>
-              <img className={styles.mainImage} src={vehicleImages[currentImageIndex]} alt={`${vehicle.title} - ảnh ${currentImageIndex + 1}`} />
-              <button type="button" className={`${styles.galleryArrow} ${styles.galleryLeft}`} onClick={() => setImageIndex((index) => (index > 0 ? index - 1 : vehicleImages.length - 1))} aria-label="Ảnh trước">‹</button>
-              <button type="button" className={`${styles.galleryArrow} ${styles.galleryRight}`} onClick={() => setImageIndex((index) => (index < vehicleImages.length - 1 ? index + 1 : 0))} aria-label="Ảnh tiếp theo">›</button>
-              <div className={styles.imageCounter}>{currentImageIndex + 1} / {vehicleImages.length}</div>
+          {vehicleImages.length > 0 && (
+            <div className={styles.imagePanel}>
+              <CarImageSlider car={{ title: vehicle.title, images: vehicleImages }} />
             </div>
-            <div className={styles.thumbnailCarousel}>
-              <button
-                type="button"
-                className={styles.thumbnailArrow}
-                onClick={() => thumbnailsRef.current?.scrollBy({ left: -260, behavior: 'smooth' })}
-                aria-label="Cuộn thumbnail sang trái"
-              >
-                ‹
-              </button>
-              <div className={styles.thumbnails} ref={thumbnailsRef} aria-label="Chọn ảnh xe">
-                {vehicleImages.map((image, index) => (
-                  <button
-                    type="button"
-                    className={`${styles.thumbnail} ${index === currentImageIndex ? styles.thumbnailActive : ''}`}
-                    onClick={() => {
-                      setImageIndex(index);
-                      thumbnailsRef.current?.children[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                    }}
-                    key={image}
-                    aria-label={`Xem ảnh ${index + 1}`}
-                    aria-current={index === currentImageIndex ? 'true' : undefined}
-                  >
-                    <img src={image} alt="" />
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                className={styles.thumbnailArrow}
-                onClick={() => thumbnailsRef.current?.scrollBy({ left: 260, behavior: 'smooth' })}
-                aria-label="Cuộn thumbnail sang phải"
-              >
-                ›
-              </button>
-            </div>
-          </div>}
+          )}
           <div className={styles.detailsPanel}>
             <p className={styles.eyebrow}>THÔNG TIN XE</p><h1 className={styles.title}>{vehicle.title}</h1><p className={styles.price}>{vehicle.priceLabel}</p>
             {summary.length > 0 && <div className={styles.summary}>{summary.map(([label, value]) => <div className={styles.summaryRow} key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>}

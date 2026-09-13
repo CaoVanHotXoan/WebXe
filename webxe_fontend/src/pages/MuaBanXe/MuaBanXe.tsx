@@ -107,7 +107,8 @@ export default function MuaBanXePage() {
   useEffect(() => {
     setLoading(true);
     setError('');
-  fetch(`${BACKEND_URL}/data/json`)
+    import('@/components/LoadingSpinner').then(({ spinnerAPI }) => spinnerAPI.start());
+    fetch(`${BACKEND_URL}/data/json`)
       .then(async (response) => {
         if (!response.ok) throw new Error('Không thể tải dữ liệu xe');
         const data = await response.json() as VehicleResponse;
@@ -116,7 +117,10 @@ export default function MuaBanXePage() {
       })
       .then((data) => setVehicles(mapApiVehicles(data)))
       .catch(() => setError('Không thể tải danh sách xe từ máy chủ. Vui lòng thử lại sau.'))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        import('@/components/LoadingSpinner').then(({ spinnerAPI }) => spinnerAPI.complete());
+      });
   }, [reloadKey]);
 
   const filterOptions = useMemo<Record<FilterKey, string[]>>(() => ({
@@ -171,7 +175,7 @@ export default function MuaBanXePage() {
               <h2 className={styles.popularTitle}>TOP 10 XE BÁN CHẠY NHẤT</h2>
               <div className={styles.popularList}>{popularVehicles.slice(0, 10).map((vehicle) => (
                 <Link href={`/ChiTietXe/ChiTietXe?id=${vehicle.id}`} className={`${styles.popularItem} ${!vehicle.image ? styles.popularItemNoImage : ''}`} key={vehicle.id}>
-                              {vehicle.image && <img className={styles.popularImage} src={vehicle.image} alt={vehicle.title} />}
+                  {vehicle.image && <img className={styles.popularImage} src={vehicle.image} alt={vehicle.title} />}
                   <div><h3 className={styles.popularName}>{vehicle.title}</h3><p className={styles.popularPrice}>{vehicle.priceLabel}</p></div>
                 </Link>
               ))}</div>

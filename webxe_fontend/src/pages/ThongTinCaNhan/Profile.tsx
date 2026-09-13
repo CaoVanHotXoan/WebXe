@@ -152,124 +152,124 @@ export default function ProfilePage() {
   return (
     <ProtectedRoute>
       <main className={styles.page}>
-      <div className={styles.shell}>
-        <header className={styles.header}>
-          <button type="button" className={styles.backButton} onClick={handleBack} aria-label="Quay lại trang trước">
-            ←
-          </button>
-          <div>
-            <p className={styles.eyebrow}>TÀI KHOẢN CỦA BẠN</p>
-            <h1>Thông tin cá nhân</h1>
-          </div>
-          <button className={styles.logoutTop} onClick={handleLogout}>Đăng xuất</button>
-        </header>
-
-        <div className={styles.layout}>
-          <aside className={styles.sidebar}>
-            <div className={styles.userCard}>
-              <div className={styles.avatar}>{initials}</div>
-              <div>
-                <p className={styles.userName}>{profile.name}</p>
-                <p className={styles.userEmail}>{profile.email || 'Chưa cập nhật email'}</p>
-              </div>
+        <div className={styles.shell}>
+          <header className={styles.header}>
+            <button type="button" className={styles.backButton} onClick={handleBack} aria-label="Quay lại trang trước">
+              ←
+            </button>
+            <div>
+              <p className={styles.eyebrow}>TÀI KHOẢN CỦA BẠN</p>
+              <h1>Thông tin cá nhân</h1>
             </div>
+            <button className={styles.logoutTop} onClick={handleLogout}>Đăng xuất</button>
+          </header>
 
-            <nav className={styles.menu} aria-label="Danh mục tài khoản">
-              {menuItems.map((item) => (
-                <button
-                  key={item.id}
-                  className={`${styles.menuItem} ${activeTab === item.id ? styles.menuItemActive : ''}`}
-                  onClick={() => setActiveTab(item.id)}
-                >
-                  <span className={styles.menuIcon}>{item.icon}</span>
-                  {item.label}
-                  <span className={styles.menuArrow}>→</span>
-                </button>
-              ))}
-            </nav>
-            <p className={styles.sidebarNote}>Quản lý thông tin và bảo mật tài khoản của bạn.</p>
-          </aside>
+          <div className={styles.layout}>
+            <aside className={styles.sidebar}>
+              <div className={styles.userCard}>
+                <div className={styles.avatar}>{initials}</div>
+                <div>
+                  <p className={styles.userName}>{profile.name}</p>
+                  <p className={styles.userEmail}>{profile.email || 'Chưa cập nhật email'}</p>
+                </div>
+              </div>
 
-          <section className={styles.content}>
-            {message && <div className={styles.toast} role="status">{message}</div>}
-
-            {activeTab === 'account' && (
-              <div className={styles.panel}>
-                <div className={styles.panelHeading}>
-                  <div>
-                    <p className={styles.eyebrow}>HỒ SƠ</p>
-                    <h2>Thông tin tài khoản</h2>
-                  </div>
-                  <span className={styles.status}>● Đang hoạt động</span>
-                </div>
-                <div className={styles.profileHero}>
-                  <div className={styles.largeAvatar}>{initials}</div>
-                  <div>
-                    <h3>{profile.name}</h3>
-                    <p>Thành viên WebXe</p>
-                  </div>
-                </div>
-                <div className={styles.infoGrid}>
-                  <InfoItem label="Họ và tên" value={profile.name} />
-                  <InfoItem label="Email" value={profile.email || 'Chưa cập nhật'} />
-                  <InfoItem label="Số điện thoại" value={profile.phone || 'Chưa cập nhật'} />
-                  <InfoItem label="Địa chỉ" value={profile.address} />
-                </div>
-                <div className={styles.actions}>
-                  <button className={styles.primaryButton} onClick={() => { setDraftProfile(profile); setIsEditOpen(true); }}>
-                    Cập nhật thông tin
+              <nav className={styles.menu} aria-label="Danh mục tài khoản">
+                {menuItems.map((item) => (
+                  <button
+                    key={item.id}
+                    className={`${styles.menuItem} ${activeTab === item.id ? styles.menuItemActive : ''}`}
+                    onClick={() => setActiveTab(item.id)}
+                  >
+                    <span className={styles.menuIcon}>{item.icon}</span>
+                    {item.label}
+                    <span className={styles.menuArrow}>→</span>
                   </button>
-                  <button className={styles.secondaryButton} onClick={handleLogout}>Đăng xuất</button>
-                </div>
-              </div>
-            )}
+                ))}
+              </nav>
+              <p className={styles.sidebarNote}>Quản lý thông tin và bảo mật tài khoản của bạn.</p>
+            </aside>
 
-            {activeTab === 'notifications' && (
-              <div className={styles.panel}>
-                <div className={styles.panelHeading}>
-                  <div><p className={styles.eyebrow}>TIN MỚI</p><h2>Thông báo</h2></div>
-                  <span className={styles.badge}>0 mới</span>
-                </div>
-                <div className={styles.emptyState}>
-                  <span className={styles.emptyIcon}>♢</span>
-                  <h3>Chưa có thông báo</h3>
-                  <p>Các cập nhật mới về tài khoản và đơn hàng sẽ xuất hiện tại đây.</p>
-                </div>
-              </div>
-            )}
+            <section className={styles.content}>
+              {message && <div className={styles.toast} role="status">{message}</div>}
 
-            {activeTab === 'password' && (
-              <div className={styles.panel}>
-                <div className={styles.panelHeading}>
-                  <div><p className={styles.eyebrow}>BẢO MẬT</p><h2>Đổi mật khẩu</h2></div>
+              {activeTab === 'account' && (
+                <div className={styles.panel}>
+                  <div className={styles.panelHeading}>
+                    <div>
+                      <p className={styles.eyebrow}>HỒ SƠ</p>
+                      <h2>Thông tin tài khoản</h2>
+                    </div>
+                    <span className={styles.status}>● Đang hoạt động</span>
+                  </div>
+                  <div className={styles.profileHero}>
+                    <div className={styles.largeAvatar}>{initials}</div>
+                    <div>
+                      <h3>{profile.name}</h3>
+                      <p>Thành viên WebXe</p>
+                    </div>
+                  </div>
+                  <div className={styles.infoGrid}>
+                    <InfoItem label="Họ và tên" value={profile.name} />
+                    <InfoItem label="Email" value={profile.email || 'Chưa cập nhật'} />
+                    <InfoItem label="Số điện thoại" value={profile.phone || 'Chưa cập nhật'} />
+                    <InfoItem label="Địa chỉ" value={profile.address} />
+                  </div>
+                  <div className={styles.actions}>
+                    <button className={styles.primaryButton} onClick={() => { setDraftProfile(profile); setIsEditOpen(true); }}>
+                      Cập nhật thông tin
+                    </button>
+                    <button className={styles.secondaryButton} onClick={handleLogout}>Đăng xuất</button>
+                  </div>
                 </div>
-                <p className={styles.description}>Sử dụng mật khẩu mạnh và không chia sẻ mật khẩu với người khác.</p>
-                <form className={styles.form} onSubmit={handlePasswordSubmit}>
-                  <PasswordField label="Mật khẩu hiện tại" value={passwords.current} onChange={(value) => setPasswords({ ...passwords, current: value })} />
-                  <PasswordField label="Mật khẩu mới" value={passwords.next} onChange={(value) => setPasswords({ ...passwords, next: value })} />
-                  <PasswordField label="Xác nhận mật khẩu mới" value={passwords.confirm} onChange={(value) => setPasswords({ ...passwords, confirm: value })} />
-                  {passwordStep === 'otp' && <PasswordField label="Mã xác nhận Gmail" value={passwordOtp} onChange={setPasswordOtp} />}
-                  <button className={styles.primaryButton} type="submit">{passwordStep === 'otp' ? 'Xác nhận và lưu' : 'Gửi mã xác nhận'}</button>
-                </form>
-              </div>
-            )}
-          </section>
+              )}
+
+              {activeTab === 'notifications' && (
+                <div className={styles.panel}>
+                  <div className={styles.panelHeading}>
+                    <div><p className={styles.eyebrow}>TIN MỚI</p><h2>Thông báo</h2></div>
+                    <span className={styles.badge}>0 mới</span>
+                  </div>
+                  <div className={styles.emptyState}>
+                    <span className={styles.emptyIcon}>♢</span>
+                    <h3>Chưa có thông báo</h3>
+                    <p>Các cập nhật mới về tài khoản và đơn hàng sẽ xuất hiện tại đây.</p>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'password' && (
+                <div className={styles.panel}>
+                  <div className={styles.panelHeading}>
+                    <div><p className={styles.eyebrow}>BẢO MẬT</p><h2>Đổi mật khẩu</h2></div>
+                  </div>
+                  <p className={styles.description}>Sử dụng mật khẩu mạnh và không chia sẻ mật khẩu với người khác.</p>
+                  <form className={styles.form} onSubmit={handlePasswordSubmit}>
+                    <PasswordField label="Mật khẩu hiện tại" value={passwords.current} onChange={(value) => setPasswords({ ...passwords, current: value })} />
+                    <PasswordField label="Mật khẩu mới" value={passwords.next} onChange={(value) => setPasswords({ ...passwords, next: value })} />
+                    <PasswordField label="Xác nhận mật khẩu mới" value={passwords.confirm} onChange={(value) => setPasswords({ ...passwords, confirm: value })} />
+                    {passwordStep === 'otp' && <PasswordField label="Mã xác nhận Gmail" value={passwordOtp} onChange={setPasswordOtp} />}
+                    <button className={styles.primaryButton} type="submit">{passwordStep === 'otp' ? 'Xác nhận và lưu' : 'Gửi mã xác nhận'}</button>
+                  </form>
+                </div>
+              )}
+            </section>
+          </div>
         </div>
-      </div>
 
-      {isEditOpen && (
-        <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setIsEditOpen(false); }}>
-          <form className={styles.modal} onSubmit={handleProfileSubmit}>
-            <div className={styles.modalHeading}><div><p className={styles.eyebrow}>HỒ SƠ</p><h2>Cập nhật thông tin</h2></div><button type="button" className={styles.closeButton} onClick={() => setIsEditOpen(false)}>×</button></div>
-            <label className={styles.field}>Tên<input value={draftProfile.name} onChange={(event) => setDraftProfile({ ...draftProfile, name: event.target.value })} /></label>
-            <label className={styles.field}>Email<input type="email" value={draftProfile.email} onChange={(event) => setDraftProfile({ ...draftProfile, email: event.target.value })} /></label>
-            <label className={styles.field}>Số điện thoại<input value={draftProfile.phone} onChange={(event) => setDraftProfile({ ...draftProfile, phone: event.target.value })} /></label>
-            <label className={styles.field}>Địa chỉ<input value={draftProfile.address} onChange={(event) => setDraftProfile({ ...draftProfile, address: event.target.value })} /></label>
-            <button className={styles.primaryButton} type="submit">LƯU THÔNG TIN</button>
-          </form>
-        </div>
-      )}
-    </main>
+        {isEditOpen && (
+          <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setIsEditOpen(false); }}>
+            <form className={styles.modal} onSubmit={handleProfileSubmit}>
+              <div className={styles.modalHeading}><div><p className={styles.eyebrow}>HỒ SƠ</p><h2>Cập nhật thông tin</h2></div><button type="button" className={styles.closeButton} onClick={() => setIsEditOpen(false)}>×</button></div>
+              <label className={styles.field}>Tên<input value={draftProfile.name} onChange={(event) => setDraftProfile({ ...draftProfile, name: event.target.value })} /></label>
+              <label className={styles.field}>Email<input type="email" value={draftProfile.email} onChange={(event) => setDraftProfile({ ...draftProfile, email: event.target.value })} /></label>
+              <label className={styles.field}>Số điện thoại<input value={draftProfile.phone} onChange={(event) => setDraftProfile({ ...draftProfile, phone: event.target.value })} /></label>
+              <label className={styles.field}>Địa chỉ<input value={draftProfile.address} onChange={(event) => setDraftProfile({ ...draftProfile, address: event.target.value })} /></label>
+              <button className={styles.primaryButton} type="submit">LƯU THÔNG TIN</button>
+            </form>
+          </div>
+        )}
+      </main>
     </ProtectedRoute>
   );
 }

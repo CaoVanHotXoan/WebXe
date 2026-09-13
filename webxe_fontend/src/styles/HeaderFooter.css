@@ -1,6 +1,8 @@
 /* ==================== HEADER ==================== */
 .header-container {
-  background-color: #000;
+  background-color: rgba(10, 12, 18, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: #fff;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: sticky;
@@ -86,9 +88,11 @@
   width: min(330px, 80vw);
   max-height: 360px;
   overflow-y: auto;
-  border: 1px solid #292929;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
-  background: #111;
+  background: rgba(10, 12, 18, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 12px 30px rgba(0, 0, 0, .55);
 }
 .search-suggestion {
@@ -213,7 +217,10 @@
   position: absolute;
   top: 100%;
   left: 0;
-  background-color: #111;
+  background-color: rgba(10, 12, 18, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   min-width: 150px;
   box-shadow: 0 8px 16px rgba(0,0,0,0.5);
   opacity: 0;
@@ -243,7 +250,9 @@
 
 /* ==================== FOOTER ==================== */
 .footer-container {
-  background-color: #050505;
+  background-color: rgba(10, 12, 18, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: #aaa;
   padding: 4rem 5% 2rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);

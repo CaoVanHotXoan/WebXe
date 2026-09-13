@@ -21,7 +21,7 @@ const InteractiveHeroBanner: React.FC = () => {
     if (!video) return;
 
     const storedMute = localStorage.getItem('banner_muted');
-    
+
     if (storedMute !== null) {
       const shouldMute = storedMute === 'true';
       setIsMuted(shouldMute);
@@ -113,7 +113,7 @@ type NewsCard = { id: number; title: string; image: string };
 type ContentItem = { id: number; title: string; image: string; price?: string };
 
 // Small content slider component (reusable)
-function ContentSlider({ items, hasPrice }: { items: ContentItem[]; hasPrice?: boolean }){
+function ContentSlider({ items, hasPrice }: { items: ContentItem[]; hasPrice?: boolean }) {
   const [startIndex, setStartIndex] = React.useState(0);
   const maxVisible = 3;
 
@@ -123,11 +123,11 @@ function ContentSlider({ items, hasPrice }: { items: ContentItem[]; hasPrice?: b
   return (
     <div className={styles['news-slider']}>
       <button className={`${styles['slider-arrow']} ${styles['left']}`} onClick={handlePrev} aria-label="prev">◀</button>
-      <div className={styles['news-track']} style={{ transform: `translateX(calc(-${startIndex * (100/3)}%))` }}>
-        {items.map((it, idx)=>{
+      <div className={styles['news-track']} style={{ transform: `translateX(calc(-${startIndex * (100 / 3)}%))` }}>
+        {items.map((it, idx) => {
           const isActive = idx >= startIndex && idx < startIndex + maxVisible;
           return (
-            <Link key={it.id} href={hasPrice ? `/ChiTietXe/ChiTietXe?id=${it.id}` : `/TinTuc/ChiTietTin?id=${it.id}`} className={`${styles['news-card']} ${isActive?styles.active:''}`}>
+            <Link key={it.id} href={hasPrice ? `/ChiTietXe/ChiTietXe?id=${it.id}` : `/TinTuc/ChiTietTin?id=${it.id}`} className={`${styles['news-card']} ${isActive ? styles.active : ''}`}>
               <div className={styles['news-img-container']}><img src={it.image} className={styles['news-img']} alt={it.title} /></div>
               <div className={styles['news-content']}>
                 <h3 className={styles['news-text']}>{it.title}</h3>
@@ -142,12 +142,13 @@ function ContentSlider({ items, hasPrice }: { items: ContentItem[]; hasPrice?: b
   );
 }
 
-export default function TrangChu(){
+export default function TrangChu() {
   const [newsByCategory, setNewsByCategory] = React.useState<Record<string, NewsCard[]>>({});
   const [newsLoading, setNewsLoading] = React.useState(true);
   const [newsError, setNewsError] = React.useState('');
 
   React.useEffect(() => {
+    import('@/components/LoadingSpinner').then(({ spinnerAPI }) => spinnerAPI.start());
     fetch(`${BACKEND_URL}/data/news`)
       .then(async (response) => {
         if (!response.ok) throw new Error('Không thể tải dữ liệu tin tức.');
@@ -172,7 +173,10 @@ export default function TrangChu(){
         setNewsByCategory(grouped);
       })
       .catch((requestError) => setNewsError(requestError instanceof Error ? requestError.message : 'Không thể tải dữ liệu tin tức.'))
-      .finally(() => setNewsLoading(false));
+      .finally(() => {
+        setNewsLoading(false);
+        import('@/components/LoadingSpinner').then(({ spinnerAPI }) => spinnerAPI.complete());
+      });
   }, []);
 
   return (

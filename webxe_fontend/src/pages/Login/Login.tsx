@@ -7,7 +7,8 @@ import styles from './login.module.css';
 
 type FormMode = 'login' | 'register' | 'forgot_password';
 type FormStep = 'form' | 'otp';
-type ResponseData = { message?: string; token?: string; user?: UserProfile };
+export interface AuthResponse { message?: string; token?: string; user?: UserProfile }
+export interface LoginFormInputs { account: string; password?: string; }
 
 const API_BASE = `${BACKEND_URL}/auth`;
 
@@ -25,7 +26,7 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const switchMode = (newMode: FormMode) => {
     setMode(newMode);
@@ -40,12 +41,12 @@ export default function LoginPage() {
     setSuccessMsg('');
   };
 
-  const request = async (endpoint: string, body: Record<string, string>, onSuccess: (data: ResponseData) => void) => {
-    setLoading(true);
+  const request = async (endpoint: string, body: Record<string, string>, onSuccess: (data: AuthResponse) => void) => {
+    setIsAuthenticating(true);
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-      
+
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,13 +54,13 @@ export default function LoginPage() {
         credentials: 'include',
         signal: controller.signal
       });
-      
+
       clearTimeout(timeoutId);
-      
+
       const responseText = await response.text();
-      let data: ResponseData = {};
+      let data: AuthResponse = {};
       try {
-        data = responseText ? JSON.parse(responseText) as ResponseData : {};
+        data = responseText ? JSON.parse(responseText) as AuthResponse : {};
       } catch {
         throw new Error(response.ok ? 'Máy chủ trả về dữ liệu không hợp lệ.' : `Máy chủ trả lỗi HTTP ${response.status}. Hãy kiểm tra backend đang chạy.`);
       }
@@ -75,7 +76,7 @@ export default function LoginPage() {
         addToast(msg, 'error');
       }
     } finally {
-      setLoading(false);
+      setIsAuthenticating(false);
     }
   };
 
@@ -137,8 +138,8 @@ export default function LoginPage() {
 
   return (
     <div className={styles['login-container']}>
-      <button 
-        className={styles['back-btn']} 
+      <button
+        className={styles['back-btn']}
         onClick={() => router.back()}
         type="button"
         title="Quay lại trang trước"
@@ -160,16 +161,26 @@ export default function LoginPage() {
             {successMsg && <div className={styles['success-message']}>{successMsg}</div>}
             <form onSubmit={submit}>
               {mode === 'register' && step === 'form' && <>
-                <div className={styles['input-group']}><input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Họ và tên" className={styles['input-field']} /></div>
-                <div className={styles['input-group']}><input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Tên đăng nhập" className={styles['input-field']} /></div>
+                <div className={styles['input-group']}><input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Họ và tên" className={`${styles['input-field']} disabled:opacity-60 disabled:cursor-not-allowed`} disabled={isAuthenticating} /></div>
+                <div className={styles['input-group']}><input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Tên đăng nhập" className={`${styles['input-field']} disabled:opacity-60 disabled:cursor-not-allowed`} disabled={isAuthenticating} /></div>
               </>}
-              <div className={styles['input-group']}><input value={account} onChange={(event) => setAccount(event.target.value)} placeholder={mode === 'login' ? 'Email hoặc tên đăng nhập' : 'Gmail'} className={styles['input-field']} disabled={step === 'otp'} /></div>
-              {step === 'otp' && <div className={styles['input-group']}><input value={otp} onChange={(event) => setOtp(event.target.value)} placeholder="Mã xác nhận 6 chữ số" className={styles['input-field']} inputMode="numeric" maxLength={6} /></div>}
-              {(mode === 'login' || step === 'form') && <div className={styles['input-group']}><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={mode === 'forgot_password' ? 'Mật khẩu mới' : 'Mật khẩu'} className={styles['input-field']} /></div>}
-              {mode === 'register' && step === 'form' && <div className={styles['input-group']}><input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Xác nhận mật khẩu" className={styles['input-field']} /></div>}
+              <div className={styles['input-group']}><input value={account} onChange={(event) => setAccount(event.target.value)} placeholder={mode === 'login' ? 'Email hoặc tên đăng nhập' : 'Gmail'} className={`${styles['input-field']} disabled:opacity-60 disabled:cursor-not-allowed`} disabled={step === 'otp' || isAuthenticating} /></div>
+              {step === 'otp' && <div className={styles['input-group']}><input value={otp} onChange={(event) => setOtp(event.target.value)} placeholder="Mã xác nhận 6 chữ số" className={`${styles['input-field']} disabled:opacity-60 disabled:cursor-not-allowed`} inputMode="numeric" maxLength={6} disabled={isAuthenticating} /></div>}
+              {(mode === 'login' || step === 'form') && <div className={styles['input-group']}><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={mode === 'forgot_password' ? 'Mật khẩu mới' : 'Mật khẩu'} className={`${styles['input-field']} disabled:opacity-60 disabled:cursor-not-allowed`} disabled={isAuthenticating} /></div>}
+              {mode === 'register' && step === 'form' && <div className={styles['input-group']}><input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Xác nhận mật khẩu" className={`${styles['input-field']} disabled:opacity-60 disabled:cursor-not-allowed`} disabled={isAuthenticating} /></div>}
               {error && <div className={styles['error-text']}>{error}</div>}
               {mode === 'login' && <div style={{ textAlign: 'right', marginTop: '0.5rem', marginBottom: '1rem' }}><button type="button" onClick={() => switchMode('forgot_password')} className={styles['forgot-password-link']}>Quên mật khẩu?</button></div>}
-              <button type="submit" className={styles['action-btn']} disabled={loading}>{loading ? 'Đang xử lý...' : step === 'otp' ? 'Xác nhận mã' : mode === 'login' ? 'Đăng nhập' : 'Gửi mã xác nhận'}</button>
+              <button type="submit" className={`${styles['action-btn']} disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2`} disabled={isAuthenticating}>
+                {isAuthenticating ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Đang xác thực...
+                  </>
+                ) : step === 'otp' ? 'Xác nhận mã' : mode === 'login' ? 'Đăng nhập' : 'Gửi mã xác nhận'}
+              </button>
             </form>
             <div className={styles['switch-mode-text']}>
               {mode === 'login' ? <>Chưa có tài khoản? <button type="button" onClick={() => switchMode('register')} className={styles['switch-mode-btn']}>Đăng ký</button></> : <button type="button" onClick={() => switchMode('login')} className={styles['switch-mode-btn']}>Quay lại đăng nhập</button>}

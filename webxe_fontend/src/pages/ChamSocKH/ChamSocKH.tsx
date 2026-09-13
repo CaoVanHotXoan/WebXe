@@ -213,42 +213,42 @@ export default function ChamSocKHPage() {
 
         <section className={styles.chatPanel}>
           {selectedConversation ? <>
-          <header className={styles.chatHeader}>
-            <div className={styles.profileLine}>
-              <span className={styles.avatar} style={{ backgroundColor: selectedConversation.color }}>{selectedConversation.initials}</span>
-              <div>
-                <h2>{selectedConversation.name}</h2>
-                <p><span className={styles.onlineDot} /> Đang hoạt động</p>
+            <header className={styles.chatHeader}>
+              <div className={styles.profileLine}>
+                <span className={styles.avatar} style={{ backgroundColor: selectedConversation.color }}>{selectedConversation.initials}</span>
+                <div>
+                  <h2>{selectedConversation.name}</h2>
+                  <p><span className={styles.onlineDot} /> Đang hoạt động</p>
+                </div>
+              </div>
+              <div className={styles.chatActions}>
+                <button type="button" aria-label="Gọi điện" title="Gọi điện">☎</button>
+                <button type="button" aria-label="Thông tin" title="Thông tin">ⓘ</button>
+              </div>
+            </header>
+
+            <div className={styles.chatBody}>
+              <div className={styles.dateDivider}><span>Hôm nay</span></div>
+              <div className={styles.messageList}>
+                {selectedConversation.messages.map((item) => (
+                  <div key={item.id} className={`${styles.messageRow} ${item.mine ? styles.myMessage : ""}`}>
+                    <div className={styles.messageBubble}>
+                      <p>{item.text}</p>
+                      <time>{item.time}</time>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className={styles.chatActions}>
-              <button type="button" aria-label="Gọi điện" title="Gọi điện">☎</button>
-              <button type="button" aria-label="Thông tin" title="Thông tin">ⓘ</button>
-            </div>
-          </header>
 
-          <div className={styles.chatBody}>
-            <div className={styles.dateDivider}><span>Hôm nay</span></div>
-            <div className={styles.messageList}>
-              {selectedConversation.messages.map((item) => (
-                <div key={item.id} className={`${styles.messageRow} ${item.mine ? styles.myMessage : ""}`}>
-                  <div className={styles.messageBubble}>
-                    <p>{item.text}</p>
-                    <time>{item.time}</time>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <form className={styles.composer} onSubmit={sendMessage}>
-            <div className={styles.composerTools}>
-              <button type="button" aria-label="Đính kèm tệp" title="Đính kèm tệp">＋</button>
-              <button type="button" aria-label="Thêm hình ảnh" title="Thêm hình ảnh">▣</button>
-            </div>
-            <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Nhập tin nhắn hỗ trợ..." aria-label="Nội dung tin nhắn" />
-            <button className={styles.sendButton} type="submit" aria-label="Gửi tin nhắn" title="Gửi tin nhắn">➤</button>
-          </form>
+            <form className={styles.composer} onSubmit={sendMessage}>
+              <div className={styles.composerTools}>
+                <button type="button" aria-label="Đính kèm tệp" title="Đính kèm tệp">＋</button>
+                <button type="button" aria-label="Thêm hình ảnh" title="Thêm hình ảnh">▣</button>
+              </div>
+              <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Nhập tin nhắn hỗ trợ..." aria-label="Nội dung tin nhắn" />
+              <button className={styles.sendButton} type="submit" aria-label="Gửi tin nhắn" title="Gửi tin nhắn">➤</button>
+            </form>
           </> : (
             <div className={styles.emptyChat}>
               <strong>Chưa có cuộc hội thoại</strong>

@@ -1,5 +1,6 @@
 // Route API requests through this Next.js deployment to avoid browser CORS restrictions.
 export const BACKEND_URL = '/api/backend';
+import { spinnerAPI } from '@/components/LoadingSpinner';
 
 export async function apiFetch<T = unknown>(url: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
@@ -8,30 +9,41 @@ export async function apiFetch<T = unknown>(url: string, options: RequestInit = 
   }
   const fullUrl = url.startsWith('http') ? url : `${BACKEND_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 
-  const response = await fetch(fullUrl, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
+  spinnerAPI.start();
+  try {
+    const response = await fetch(fullUrl, {
+      ...options,
+      headers,
+      credentials: 'include',
+    });
 
-  const data = await response.json().catch(() => null);
-  if (response.status === 401) {
-    if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-      window.location.assign('/login');
+    const data = await response.json().catch(() => null);
+    if (response.status === 401) {
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+        window.location.assign('/login');
+      }
+      throw new Error(data?.message || 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
     }
-    throw new Error(data?.message || 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-  }
 
-  if (!response.ok) {
-    throw new Error(data?.message || `HTTP ${response.status}`);
-  }
+    if (!response.ok) {
+      throw new Error(data?.message || `HTTP ${response.status}`);
+    }
 
-  return data as T;
+    return data as T;
+  } finally {
+    spinnerAPI.complete();
+  }
 }
 
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const fullUrl = url.startsWith('http') ? url : `${BACKEND_URL}${url.startsWith('/') ? '' : '/'}${url}`;
-  return fetch(fullUrl, { ...options, credentials: 'include' });
+  
+  spinnerAPI.start();
+  try {
+    return await fetch(fullUrl, { ...options, credentials: 'include' });
+  } finally {
+    spinnerAPI.complete();
+  }
 }
 
 export async function apiRequest<T = any>(url: string, options: RequestInit = {}): Promise<T> {

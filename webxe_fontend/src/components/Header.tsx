@@ -1,14 +1,14 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useMemo, useState } from 'react';
 import { vehicles } from '@/TS/vehicleData';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import HeaderWelcomeAnimation from './HeaderWelcomeAnimation/HeaderWelcomeAnimation';
 
 export default function Header() {
   const router = useRouter();
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, user, status } = useAuth();
   const { cartCount } = useCart();
   const [searchTerm, setSearchTerm] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -20,8 +20,17 @@ export default function Header() {
   }, [searchTerm]);
 
   return (
-    <header className="header-container">
-      {/* Header Top: Logo, Search, Icons, Profile */}
+    <>
+      {isAuthenticated && user && (
+        <HeaderWelcomeAnimation 
+          username={user.name || user.username || 'bạn'}
+          isDataLoaded={status === 'success'} 
+          isAdmin={isAdmin}
+          onAnimationComplete={() => {}}
+        />
+      )}
+      <header className="header-container">
+        {/* Header Top: Logo, Search, Icons, Profile */}
       <div className="header-top">
         {/* Nút hamburger chỉ hiển thị trên mobile để mở menu dọc. */}
         <button
@@ -144,6 +153,7 @@ export default function Header() {
           <Link href="/LienHe/LienHe" className="nav-link" onClick={() => setIsMenuOpen(false)}>Liên Hệ</Link>
         </div>
       </nav>
-    </header>
+      </header>
+    </>
   );
 }

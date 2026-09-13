@@ -272,6 +272,13 @@ const getProcedureName = (tableId: string, action: "create" | "edit" | "delete")
 export default function Home() {
   const router = useRouter();
   const { token, isAdmin, status } = useAuth();
+
+  useEffect(() => {
+    if (isAdmin) {
+      sessionStorage.setItem('adminInBackend', 'true');
+    }
+  }, [isAdmin]);
+
   const [selectedId, setSelectedId] = useState<string>(tables[0].id);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
@@ -825,14 +832,14 @@ export default function Home() {
                     </div>;
                   })()}
                   <div className={styles.productCardBody}>
-                      <span className={styles.productCode}>Mã: {String(row.MaXe || row.MaHang || row.MaNguoiDung || row.MaTinTuc || "-")}</span>
-                      <h2>{String(row.TenXe || row.TenHang || row.HoTen || row.TenDangNhap || row.TieuDe || `${selectedTable.name} chưa đặt tên`)}</h2>
+                    <span className={styles.productCode}>Mã: {String(row.MaXe || row.MaHang || row.MaNguoiDung || row.MaTinTuc || "-")}</span>
+                    <h2>{String(row.TenXe || row.TenHang || row.HoTen || row.TenDangNhap || row.TieuDe || `${selectedTable.name} chưa đặt tên`)}</h2>
                     <strong className={styles.productPrice}>
-                        {selectedTable.id === "Xe" && row.Gia ? `${Number(row.Gia).toLocaleString("vi-VN")} đ` : selectedTable.id === "NguoiDung" ? String(row.Email || "Người dùng hệ thống") : selectedTable.id === "TinTuc" ? String(row.TomTat || "Tin tức WebXe") : String(row.Logo ? "Đã có logo" : "Chưa có logo")}
+                      {selectedTable.id === "Xe" && row.Gia ? `${Number(row.Gia).toLocaleString("vi-VN")} đ` : selectedTable.id === "NguoiDung" ? String(row.Email || "Người dùng hệ thống") : selectedTable.id === "TinTuc" ? String(row.TomTat || "Tin tức WebXe") : String(row.Logo ? "Đã có logo" : "Chưa có logo")}
                     </strong>
                     <div className={styles.productMeta}>
-                        <span>{selectedTable.id === "Xe" ? String(row.MauSac || "Chưa rõ màu") : selectedTable.id === "NguoiDung" ? String(row.SoDienThoai || "Chưa có SĐT") : selectedTable.id === "TinTuc" ? String(row.NgayDang || "Chưa cập nhật") : "Danh mục hãng xe"}</span>
-                        <span>{selectedTable.id === "Xe" ? `${row.SoLuong ?? 0} xe` : selectedTable.id === "NguoiDung" ? String(row.TenDangNhap || "Chưa có tài khoản") : selectedTable.id === "TinTuc" ? String(row.MaDanhMuc ? `Danh mục ${row.MaDanhMuc}` : "Chưa phân loại") : "Đang quản lý"}</span>
+                      <span>{selectedTable.id === "Xe" ? String(row.MauSac || "Chưa rõ màu") : selectedTable.id === "NguoiDung" ? String(row.SoDienThoai || "Chưa có SĐT") : selectedTable.id === "TinTuc" ? String(row.NgayDang || "Chưa cập nhật") : "Danh mục hãng xe"}</span>
+                      <span>{selectedTable.id === "Xe" ? `${row.SoLuong ?? 0} xe` : selectedTable.id === "NguoiDung" ? String(row.TenDangNhap || "Chưa có tài khoản") : selectedTable.id === "TinTuc" ? String(row.MaDanhMuc ? `Danh mục ${row.MaDanhMuc}` : "Chưa phân loại") : "Đang quản lý"}</span>
                     </div>
                     <div className={styles.productActions}>
                       <button type="button" className={styles.detailButton} onClick={() => openVehicleDetail(row)}>Xem chi tiết</button>
