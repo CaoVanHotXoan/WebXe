@@ -46,6 +46,8 @@
 .userCard { display: flex; align-items: center; gap: 13px; padding-bottom: 25px; border-bottom: 1px solid #292929; }
 .avatar, .largeAvatar { display: grid; place-items: center; border-radius: 50%; background: #e21b23; color: #fff; font-weight: 900; }
 .avatar { width: 48px; height: 48px; font-size: 1rem; }
+.avatarImage, .largeAvatarImage { display: block; border-radius: 50%; object-fit: cover; }
+.avatarImage { width: 48px; height: 48px; }
 .userName { font-weight: 700; }
 .userEmail, .sidebarNote, .profileHero p, .description, .emptyState p { color: #898989; font-size: .85rem; }
 .menu { display: grid; gap: 7px; margin-top: 25px; }
@@ -63,6 +65,7 @@
 .badge { color: #ef4444; background: #281012; }
 .profileHero { display: flex; align-items: center; gap: 18px; padding: 30px 0; border-bottom: 1px solid #292929; }
 .largeAvatar { width: 78px; height: 78px; font-size: 1.5rem; }
+.largeAvatarImage { width: 78px; height: 78px; }
 .profileHero h3 { font-size: 1.25rem; }
 .infoGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 30px; padding: 30px 0; }
 .infoItem { display: grid; gap: 7px; }
@@ -83,8 +86,13 @@
 .field input:focus { border-color: #ef4444; box-shadow: 0 0 0 3px #ef444422; }
 .toast { position: absolute; right: 20px; top: 20px; z-index: 2; background: #1b1b1b; border-left: 3px solid #ef4444; color: #eee; padding: 13px 16px; box-shadow: 0 8px 28px #0008; }
 .modalBackdrop { position: fixed; inset: 0; display: grid; place-items: center; padding: 20px; background: #000b; z-index: 10; }
-.modal { width: min(100%, 520px); display: grid; gap: 17px; background: #151515; border: 1px solid #343434; border-radius: 10px; padding: 28px; box-shadow: 0 20px 70px #000; }
+.modal { width: min(100%, 420px); max-height: calc(100vh - 40px); overflow-y: auto; display: grid; gap: 12px; background: #151515; border: 1px solid #343434; border-radius: 10px; padding: 20px; box-shadow: 0 20px 70px #000; }
+.modal h2 { font-size: 1.35rem; }
+.modal .field { gap: 5px; font-size: .78rem; }
+.modal .field input { padding: 10px 11px; }
+.modal .primaryButton { width: 100%; padding: 10px 14px; font-size: .82rem; }
 .closeButton { font-size: 1.6rem; line-height: 1; }
+.profileImagePreview { width: 82px; height: 82px; border-radius: 50%; object-fit: cover; border: 2px solid #ef4444; }
 
 @media (max-width: 760px) {
   .page { padding: 24px 14px; }

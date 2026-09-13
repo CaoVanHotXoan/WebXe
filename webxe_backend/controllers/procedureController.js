@@ -19,8 +19,8 @@ const imageUpdateTargets = {
 const p = (type, required = true) => ({ type, required });
 export const procedureDefinitions = {
   sp_ThemVaiTro: { TenVaiTro: p(sql.NVarChar(50)) }, sp_SuaVaiTro: { MaVaiTro: p(sql.Int), TenVaiTro: p(sql.NVarChar(50)) }, sp_XoaVaiTro: { MaVaiTro: p(sql.Int) },
-  sp_ThemNguoiDung: { MaVaiTro: p(sql.Int), TenDangNhap: p(sql.VarChar(50)), MatKhau: p(sql.VarChar(255)), HoTen: p(sql.NVarChar(100)), Email: p(sql.VarChar(100), false), SoDienThoai: p(sql.VarChar(20), false), HinhAnh: p(sql.NVarChar(500), false) },
-  sp_SuaNguoiDung: { MaNguoiDung: p(sql.Int), MaVaiTro: p(sql.Int), TenDangNhap: p(sql.VarChar(50)), MatKhau: p(sql.VarChar(255)), HoTen: p(sql.NVarChar(100)), Email: p(sql.VarChar(100), false), SoDienThoai: p(sql.VarChar(20), false), HinhAnh: p(sql.NVarChar(500), false) }, sp_XoaNguoiDung: { MaNguoiDung: p(sql.Int) },
+  sp_ThemNguoiDung: { MaVaiTro: p(sql.Int), TenDangNhap: p(sql.VarChar(50)), MatKhau: p(sql.VarChar(255)), HoTen: p(sql.NVarChar(100)), Email: p(sql.VarChar(100), false), SoDienThoai: p(sql.VarChar(20), false), DiaChi: p(sql.NVarChar(300), false), HinhAnh: p(sql.NVarChar(500), false) },
+  sp_SuaNguoiDung: { MaNguoiDung: p(sql.Int), MaVaiTro: p(sql.Int), TenDangNhap: p(sql.VarChar(50)), MatKhau: p(sql.VarChar(255)), HoTen: p(sql.NVarChar(100)), Email: p(sql.VarChar(100), false), SoDienThoai: p(sql.VarChar(20), false), DiaChi: p(sql.NVarChar(300), false), HinhAnh: p(sql.NVarChar(500), false) }, sp_XoaNguoiDung: { MaNguoiDung: p(sql.Int) },
   sp_ThemHangXe: { TenHang: p(sql.NVarChar(100)), Logo: p(sql.NVarChar(500), false) }, sp_SuaHangXe: { MaHang: p(sql.Int), TenHang: p(sql.NVarChar(100)), Logo: p(sql.NVarChar(500), false) }, sp_XoaHangXe: { MaHang: p(sql.Int) },
   sp_ThemLoaiXe: { TenLoai: p(sql.NVarChar(100)) }, sp_SuaLoaiXe: { MaLoai: p(sql.Int), TenLoai: p(sql.NVarChar(100)) }, sp_XoaLoaiXe: { MaLoai: p(sql.Int) },
   sp_ThemXe: { MaHang: p(sql.Int), MaLoai: p(sql.Int), TenXe: p(sql.NVarChar(150)), Gia: p(sql.Decimal(18, 2)), NamSanXuat: p(sql.Int, false), MauSac: p(sql.NVarChar(100), false), MoTa: p(sql.NVarChar(sql.MAX), false), SoLuong: p(sql.Int, false) },
@@ -30,7 +30,8 @@ export const procedureDefinitions = {
   sp_ThemChiTietGioHang: { MaGioHang: p(sql.Int), MaXe: p(sql.Int), SoLuong: p(sql.Int) }, sp_SuaChiTietGioHang: { MaGioHang: p(sql.Int), MaXe: p(sql.Int), SoLuong: p(sql.Int) }, sp_XoaChiTietGioHang: { MaGioHang: p(sql.Int), MaXe: p(sql.Int) },
   sp_ThemDonHang: { MaNguoiDung: p(sql.Int), HoTenNguoiNhan: p(sql.NVarChar(100)), SoDienThoai: p(sql.VarChar(20)), DiaChi: p(sql.NVarChar(300)), TongTien: p(sql.Decimal(18, 2)), PhuongThucThanhToan: p(sql.NVarChar(50), false), TrangThai: p(sql.NVarChar(50)), NgayDat: p(sql.DateTime, false) },
   sp_SuaDonHang: { MaDonHang: p(sql.Int), MaNguoiDung: p(sql.Int), HoTenNguoiNhan: p(sql.NVarChar(100)), SoDienThoai: p(sql.VarChar(20)), DiaChi: p(sql.NVarChar(300)), TongTien: p(sql.Decimal(18, 2)), PhuongThucThanhToan: p(sql.NVarChar(50), false), TrangThai: p(sql.NVarChar(50)), NgayDat: p(sql.DateTime) }, sp_XoaDonHang: { MaDonHang: p(sql.Int) },
-  sp_ThemChiTietDonHang: { MaDonHang: p(sql.Int), MaXe: p(sql.Int), SoLuong: p(sql.Int), DonGia: p(sql.Decimal(18, 2)) }, sp_SuaChiTietDonHang: { MaDonHang: p(sql.Int), MaXe: p(sql.Int), SoLuong: p(sql.Int), DonGia: p(sql.Decimal(18, 2)) }, sp_XoaChiTietDonHang: { MaDonHang: p(sql.Int), MaXe: p(sql.Int) },
+  sp_ThemChiTietDonHang: { MaDonHang: p(sql.Int), MaXe: p(sql.Int), SoLuong: p(sql.Int), DonGia: p(sql.Decimal(18, 2)) }, sp_SuaChiTietDonHang: { MaDonHang: p(sql.Int), MaXe: p(sql.Int), MaXeCu: p(sql.Int, false), SoLuong: p(sql.Int), DonGia: p(sql.Decimal(18, 2)) }, sp_XoaChiTietDonHang: { MaDonHang: p(sql.Int), MaXe: p(sql.Int) },
+  sp_ThemDonHangVaChiTiet: { MaNguoiDung: p(sql.Int), HoTenNguoiNhan: p(sql.NVarChar(100)), SoDienThoai: p(sql.VarChar(20)), DiaChi: p(sql.NVarChar(300)), TongTien: p(sql.Decimal(18, 2)), PhuongThucThanhToan: p(sql.NVarChar(50), false), TrangThai: p(sql.NVarChar(50)), NgayDat: p(sql.DateTime, false), MaXe: p(sql.Int), SoLuong: p(sql.Int), DonGia: p(sql.Decimal(18, 2)) },
   sp_ThemDanhMucTinTuc: { TenDanhMuc: p(sql.NVarChar(100)) }, sp_SuaDanhMucTinTuc: { MaDanhMuc: p(sql.Int), TenDanhMuc: p(sql.NVarChar(100)) }, sp_XoaDanhMucTinTuc: { MaDanhMuc: p(sql.Int) },
   sp_ThemTinTuc: { MaDanhMuc: p(sql.Int), TieuDe: p(sql.NVarChar(255)), TomTat: p(sql.NVarChar(500), false), NoiDung: p(sql.NVarChar(sql.MAX)), HinhAnh: p(sql.NVarChar(500), false), NgayDang: p(sql.DateTime, false) },
   sp_SuaTinTuc: { MaTinTuc: p(sql.Int), MaDanhMuc: p(sql.Int), TieuDe: p(sql.NVarChar(255)), TomTat: p(sql.NVarChar(500), false), NoiDung: p(sql.NVarChar(sql.MAX)), HinhAnh: p(sql.NVarChar(500), false), NgayDang: p(sql.DateTime) }, sp_XoaTinTuc: { MaTinTuc: p(sql.Int) }
@@ -56,13 +57,33 @@ export async function executeProcedure(req, res, next) {
       request.input(name, type, value);
     }
 
-    await request.execute(req.params.procedureName);
+    const result = await request.execute(req.params.procedureName);
+    if (['sp_ThemChiTietDonHang', 'sp_SuaChiTietDonHang', 'sp_XoaChiTietDonHang'].includes(req.params.procedureName)) {
+      await syncOrderTotal(pool, body.MaDonHang);
+    }
     await deleteCloudinaryImages(imageUrls);
     await deleteReplacedCloudinaryImages(oldImageUrls, body, req.params.procedureName);
-    return res.json({ message: `${req.params.procedureName} thực thi thành công.` });
+    return res.json({
+      message: `${req.params.procedureName} thực thi thành công.`,
+      record: result.recordset?.[0] ?? null,
+    });
   } catch (error) {
     return next(error);
   }
+}
+
+async function syncOrderTotal(pool, orderId) {
+  await pool.request()
+    .input('orderId', sql.Int, Number(orderId))
+    .query(`
+      UPDATE DonHang
+      SET TongTien = (
+        SELECT COALESCE(SUM(SoLuong * DonGia), 0)
+        FROM ChiTietDonHang
+        WHERE MaDonHang = @orderId
+      )
+      WHERE MaDonHang = @orderId
+    `);
 }
 
 async function getImageUrlsBeforeDelete(pool, procedureName, body) {

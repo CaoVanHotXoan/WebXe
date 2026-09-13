@@ -45,8 +45,9 @@
   right: 0;
   bottom: 64px;
   display: flex;
-  width: min(360px, calc(100vw - 28px));
-  height: min(530px, calc(100vh - 104px));
+  min-height: 0;
+  width: min(330px, calc(100vw - 48px));
+  height: min(470px, calc(100vh - 150px));
   flex-direction: column;
   overflow: hidden;
   border: 1px solid #f4d9bd;
@@ -127,6 +128,7 @@
 
 .messages {
   display: flex;
+  min-height: 0;
   flex: 1;
   flex-direction: column;
   gap: 12px;

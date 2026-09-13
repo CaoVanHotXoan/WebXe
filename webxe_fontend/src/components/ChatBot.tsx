@@ -97,6 +97,24 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
   }, [isAdmin, loadSupportConversation, status, token, user]);
 
   useEffect(() => {
+    if (status === 'loading' || !token || !user || isAdmin) return;
+    const presenceUrl = `${BACKEND_URL}/chat/presence`;
+    const presenceHeaders = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+    const sendPresence = (online: boolean, keepalive = false) => {
+      void fetch(presenceUrl, { method: 'POST', headers: presenceHeaders, credentials: 'include', keepalive, body: JSON.stringify({ online }) });
+    };
+    sendPresence(true);
+    const interval = window.setInterval(() => sendPresence(true), 10000);
+    const handlePageExit = () => sendPresence(false, true);
+    window.addEventListener('pagehide', handlePageExit);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('pagehide', handlePageExit);
+      sendPresence(false);
+    };
+  }, [isAdmin, status, token, user]);
+
+  useEffect(() => {
     fetch(`${BACKEND_URL}/data/json`)
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('Không tải được danh sách xe')))
       .then((data: { Xe?: Array<{ MaXe: number; TenXe?: string; Gia?: number | string; SoLuong?: number }> }) => {

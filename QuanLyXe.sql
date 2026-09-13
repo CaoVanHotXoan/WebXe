@@ -50,6 +50,12 @@ CREATE TABLE NguoiDung
 );
 GO
 
+IF COL_LENGTH('NguoiDung', 'DiaChi') IS NULL
+BEGIN
+    ALTER TABLE NguoiDung ADD DiaChi NVARCHAR(300) NULL;
+END;
+GO
+
 -- =======
 ALTER TABLE NguoiDung
 ALTER COLUMN Email VARCHAR(100) NOT NULL;

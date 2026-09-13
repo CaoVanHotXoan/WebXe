@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getProfile } from '../controllers/userController.js';
+import { getProfile, updateProfile, sendVehicleAvailabilityAlert } from '../controllers/userController.js';
 import { verifyToken } from '../middlewares/authMiddleware.js';
 
 const router = Router();
@@ -16,5 +16,7 @@ const router = Router();
  *       401: { description: Unauthorized khi thiếu, sai hoặc hết hạn cookie }
  */
 router.get('/profile', verifyToken, getProfile);
+router.put('/profile', verifyToken, updateProfile);
+router.post('/vehicle-availability-alert', verifyToken, sendVehicleAvailabilityAlert);
 
 export default router;
