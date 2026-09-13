@@ -30,13 +30,31 @@ function createOtp() {
 
 async function sendOtp(email, purpose) {
   const otp = createOtp();
-  otpStore.set(`${purpose}:${email}`, { otp, expiresAt: Date.now() + otpLifetimeMs });
-  await mailTransport.sendMail({
+  const result = await mailTransport.sendMail({
     from: process.env.MAIL_FROM || process.env.MAIL_USER,
     to: email,
     subject: purpose === 'register' ? 'Mã OTP đăng ký tài khoản WebXe' : 'Mã OTP đổi mật khẩu WebXe',
     text: `Mã xác nhận của bạn là ${otp}. Mã có hiệu lực trong ${process.env.OTP_EXPIRE_MINUTES || 10} phút.`
   });
+  if (result.rejected?.includes(email)) {
+    throw new Error(`Gmail từ chối người nhận ${email}.`);
+  }
+  otpStore.set(`${purpose}:${email}`, { otp, expiresAt: Date.now() + otpLifetimeMs });
+}
+
+async function notifyAdminOfRegistrationEmailFailure(email, error) {
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'qlxebaton@gmail.com';
+  try {
+    await mailTransport.sendMail({
+      from: process.env.MAIL_FROM || process.env.MAIL_USER,
+      to: adminEmail,
+      subject: 'WebXe: Không gửi được OTP đăng ký',
+      text: `WebXe không gửi được mã OTP đăng ký đến địa chỉ: ${email}\n\nLỗi SMTP: ${error.message}\n\nVui lòng kiểm tra lại địa chỉ Gmail của khách hàng.`,
+    });
+    console.log(`[Mail] Đã báo lỗi gửi OTP đăng ký cho Admin: ${adminEmail}.`);
+  } catch (adminError) {
+    console.error('[Mail] Không gửi được thông báo lỗi OTP cho Admin:', adminError.message);
+  }
 }
 
 function takeOtp(email, purpose, inputOtp) {
@@ -117,7 +135,12 @@ export async function requestRegisterOtp(req, res, next) {
       return res.status(409).json({ message: 'Tên đăng nhập hoặc email đã được sử dụng.' });
     }
 
-    await sendOtp(email, 'register');
+    try {
+      await sendOtp(email, 'register');
+    } catch (error) {
+      await notifyAdminOfRegistrationEmailFailure(email, error);
+      return res.status(422).json({ message: 'Không thể gửi OTP đến Gmail này. Vui lòng kiểm tra lại địa chỉ email.' });
+    }
     return res.json({ message: 'Mã OTP đã được gửi đến Gmail của bạn.' });
   } catch (error) {
     return next(error);

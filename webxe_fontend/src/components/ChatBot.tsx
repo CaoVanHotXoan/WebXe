@@ -10,6 +10,8 @@ type ChatMessage = {
   sender: 'bot' | 'user';
   text: string;
   vehicleId?: number | null;
+  vehicleIds?: number[];
+  vehicleNames?: string[];
 };
 
 type SupportMessage = {
@@ -36,8 +38,12 @@ function renderMessage(text: string) {
   });
 }
 
-const quickQuestions = ['Có những xe nào đang bán?', 'Xe nào dưới 500 triệu?', 'Tôi muốn mua xe điện'];
-const extraQuestions = ['Xe nào còn hàng?', 'Hãng Honda có xe nào?', 'Thông tin Ford Mustang GT 2024', 'Xe màu đen có những mẫu nào?', 'Tôi muốn đặt xe'];
+function formatMessageTime(value: string) {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+  if (match) return `${match[3]}/${match[2]}/${match[1]}, ${match[4]}:${match[5]}`;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+}
 
 export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
   const { token, user, isAdmin, status } = useAuth();
@@ -137,7 +143,7 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/chat`, {
+      const response = await fetch(`${BACKEND_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -148,9 +154,9 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
           })),
         }),
       });
-      const data = await response.json() as { message?: string; vehicleId?: number | null };
+      const data = await response.json() as { message?: string; vehicleId?: number | null; vehicleIds?: number[]; vehicleNames?: string[] };
       if (!response.ok) throw new Error(data.message || 'Không thể kết nối trợ lý AI.');
-      setMessages((current) => [...current, { id: nextId + 1, sender: 'bot', text: data.message || 'Trợ lý chưa có câu trả lời.', vehicleId: data.vehicleId }]);
+      setMessages((current) => [...current, { id: nextId + 1, sender: 'bot', text: data.message || 'Trợ lý chưa có câu trả lời.', vehicleId: data.vehicleId, vehicleIds: data.vehicleIds, vehicleNames: data.vehicleNames }]);
     } catch (error) {
       setMessages((current) => [...current, { id: nextId + 1, sender: 'bot', text: error instanceof Error ? error.message : 'Không thể kết nối trợ lý AI.' }]);
     } finally {
@@ -187,6 +193,8 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
     }
   };
 
+  if (isAdmin) return null;
+
   return (
     <div className={styles.chatbot}>
       {isOpen && (
@@ -195,7 +203,7 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
             <div className={styles.avatar} aria-hidden="true">{token && user && !isAdmin ? 'CS' : 'AI'}</div>
             <div>
               <h2>{token && user && !isAdmin ? 'Chăm sóc khách hàng' : 'Trợ lý WebXe'}</h2>
-              <p>{token && user && !isAdmin ? 'Kết nối trực tiếp với Admin' : 'Đang sẵn sàng tư vấn'}</p>
+              <p>{token && user && !isAdmin ? 'Nhắn tin trực tiếp với nhân viên' : 'Đang sẵn sàng tư vấn'}</p>
             </div>
             <button type="button" className={styles.closeButton} onClick={() => setIsOpen(false)} aria-label="Đóng chatbot">×</button>
           </header>
@@ -206,15 +214,24 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
                 <div className={`${styles.messageRow} ${message.MaNguoiGui === user.id ? styles.userRow : ''}`} key={message.MaTinNhan}>
                   <div className={`${styles.message} ${message.MaNguoiGui === user.id ? styles.userMessage : styles.botMessage}`}>
                     <p>{renderMessage(message.NoiDung)}</p>
-                    <small>{new Date(message.ThoiGian).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</small>
+                    <small>{formatMessageTime(message.ThoiGian)}</small>
                   </div>
                 </div>
               ))
             ) : messages.map((message) => (
                 <div className={`${styles.messageRow} ${message.sender === 'user' ? styles.userRow : ''}`} key={message.id}>
                   <div className={`${styles.message} ${message.sender === 'user' ? styles.userMessage : styles.botMessage}`}>
-                    <p>{renderMessage(message.text)}</p>
-                    {message.sender === 'bot' && message.vehicleId && <Link className={styles.vehicleLink} href={`/ChiTietXe/ChiTietXe?id=${message.vehicleId}`}>Xem thêm</Link>}
+                    {message.vehicleNames?.length ? (
+                      <div className={styles.vehicleResults}>
+                        {message.vehicleNames.map((vehicleName, index) => (
+                          <div className={styles.vehicleResult} key={`${vehicleName}-${index}`}>
+                            <p className={styles.vehicleName}>{vehicleName}</p>
+                            {message.vehicleIds?.[index] && <Link className={styles.vehicleLink} href={`/ChiTietXe/ChiTietXe?id=${message.vehicleIds[index]}`}>Xem chi tiết <span aria-hidden="true">→</span></Link>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : <p>{renderMessage(message.text)}</p>}
+                    {message.sender === 'bot' && !message.vehicleNames?.length && message.vehicleId ? <Link className={styles.vehicleLink} href={`/ChiTietXe/ChiTietXe?id=${message.vehicleId}`}>Xem chi tiết <span aria-hidden="true">→</span></Link> : null}
                   </div>
                 </div>
               ))}
@@ -222,9 +239,6 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
             {isLoading && <div className={styles.messageRow}><div className={`${styles.message} ${styles.botMessage}`}><p>Đang tìm thông tin và trả lời...</p></div></div>}
           </div>
 
-          <div className={styles.quickQuestions}>
-            {[...quickQuestions, ...extraQuestions].map((quickQuestion) => <button type="button" key={quickQuestion} onClick={() => quickQuestion === 'Tôi muốn đặt xe' ? setShowBooking(true) : void sendMessage(quickQuestion)} disabled={isLoading}>{quickQuestion}</button>)}
-          </div>
           {bookingMessage && <p className={styles.bookingMessage}>{bookingMessage}{bookingMessage.includes('đăng nhập') && <Link href="/Login/Login"> Đăng nhập →</Link>}</p>}
           {showBooking && <form className={styles.bookingForm} onSubmit={submitBooking}>
             <div className={styles.bookingHeading}><strong>Đặt xe</strong><button type="button" onClick={() => setShowBooking(false)} aria-label="Đóng form đặt xe">×</button></div>
@@ -239,9 +253,9 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
             </select>
             <button type="submit">Xác nhận đặt xe</button>
           </form>}
-          {!token && <p className={styles.bookingMessage}>Đăng nhập để nhắn tin trực tiếp với Admin.<Link href="/Login/Login"> Đăng nhập →</Link></p>}
+          {!token && <p className={styles.bookingMessage}>Đăng nhập để nhắn tin trực tiếp với nhân viên.<Link href="/Login/Login"> Đăng nhập →</Link></p>}
           <form className={styles.form} onSubmit={handleSubmit}>
-            <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={token && user && !isAdmin ? 'Nhắn tin cho Admin...' : 'Hỏi về mẫu xe, giá, hãng...'} aria-label="Nhập câu hỏi" />
+            <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={token && user && !isAdmin ? 'Nhắn tin với nhân viên...' : 'Hỏi về mẫu xe, giá, hãng...'} aria-label="Nhập câu hỏi" />
             <button type="submit" aria-label="Gửi câu hỏi" disabled={isLoading}>↑</button>
           </form>
         </section>

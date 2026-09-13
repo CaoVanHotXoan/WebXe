@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  chatWithAssistant,
   getAdminConversations,
   getConversationMessages,
   getCustomerConversation,
@@ -10,6 +11,7 @@ import { verifyAdmin, verifyToken } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
+router.post('/', chatWithAssistant);
 router.get('/conversation', verifyToken, getCustomerConversation);
 router.get('/conversations', verifyToken, verifyAdmin, getAdminConversations);
 router.get('/conversations/:conversationId', verifyToken, getConversationMessages);

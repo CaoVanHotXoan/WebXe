@@ -182,11 +182,48 @@
 }
 
 .vehicleLink {
-  display: inline-block;
-  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
   color: #cf402d;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
+  text-decoration: none;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.vehicleLink:hover {
+  color: #a92d21;
+  transform: translateX(2px);
+}
+
+.vehicleResults {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.vehicleResult {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid #f0dfd0;
+  border-radius: 10px;
+  background: #fffaf5;
+}
+
+.vehicleName {
+  min-width: 0;
+  margin: 0;
+  color: #29413a;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .quickQuestions {

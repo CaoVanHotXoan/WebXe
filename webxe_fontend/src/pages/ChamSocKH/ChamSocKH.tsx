@@ -28,6 +28,13 @@ type ApiConversation = {
 
 type ApiMessage = { MaTinNhan: number; MaNguoiGui: number; NoiDung: string; ThoiGian: string };
 
+function formatMessageTime(value: string) {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+  if (match) return `${match[3]}/${match[2]}/${match[1]}, ${match[4]}:${match[5]}`;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+}
+
 const initialConversations: Conversation[] = [];
 /*
   {
@@ -102,7 +109,7 @@ export default function ChamSocKHPage() {
         initials: conversation.TenKhachHang.split(" ").map((part) => part[0]).join("").slice(-2).toUpperCase(),
         color: ["#f59e0b", "#0ea5e9", "#8b5cf6", "#10b981"][index % 4],
         preview: conversation.TinNhanCuoi || "Chưa có tin nhắn",
-        time: conversation.ThoiGianTinNhanCuoi ? new Date(conversation.ThoiGianTinNhanCuoi).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "Mới",
+        time: conversation.ThoiGianTinNhanCuoi ? formatMessageTime(conversation.ThoiGianTinNhanCuoi) : "Mới",
         messages: [],
       }));
       setConversations(liveConversations);
@@ -119,7 +126,7 @@ export default function ChamSocKHPage() {
       if (!response.ok) return;
       setConversations((current) => current.map((conversation) => conversation.id === selectedId ? {
         ...conversation,
-        messages: (data.messages ?? []).map((message) => ({ id: message.MaTinNhan, text: message.NoiDung, time: new Date(message.ThoiGian).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }), mine: message.MaNguoiGui === user?.id })),
+        messages: (data.messages ?? []).map((message) => ({ id: message.MaTinNhan, text: message.NoiDung, time: formatMessageTime(message.ThoiGian), mine: message.MaNguoiGui === user?.id })),
       } : conversation));
     };
     void loadMessages();
@@ -151,7 +158,7 @@ export default function ChamSocKHPage() {
       }).then(() => setMessage("")).catch(() => undefined);
       return;
     }
-    const time = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    const time = formatMessageTime(new Date().toISOString());
     setConversations((current) => current.map((conversation) => conversation.id === selectedId ? {
       ...conversation,
       preview: text,
