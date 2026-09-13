@@ -12,6 +12,15 @@ type ChatMessage = {
   vehicleId?: number | null;
   vehicleIds?: number[];
   vehicleNames?: string[];
+  vehicleCards?: Array<{
+    id: number;
+    name: string;
+    image: string;
+    price: number;
+    year: number | null;
+    color: string | null;
+    quantity: number;
+  }>;
 };
 
 type SupportMessage = {
@@ -154,9 +163,9 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
           })),
         }),
       });
-      const data = await response.json() as { message?: string; vehicleId?: number | null; vehicleIds?: number[]; vehicleNames?: string[] };
+      const data = await response.json() as { message?: string; vehicleId?: number | null; vehicleIds?: number[]; vehicleNames?: string[]; vehicleCards?: ChatMessage['vehicleCards'] };
       if (!response.ok) throw new Error(data.message || 'Không thể kết nối trợ lý AI.');
-      setMessages((current) => [...current, { id: nextId + 1, sender: 'bot', text: data.message || 'Trợ lý chưa có câu trả lời.', vehicleId: data.vehicleId, vehicleIds: data.vehicleIds, vehicleNames: data.vehicleNames }]);
+      setMessages((current) => [...current, { id: nextId + 1, sender: 'bot', text: data.message || 'Trợ lý chưa có câu trả lời.', vehicleId: data.vehicleId, vehicleIds: data.vehicleIds, vehicleNames: data.vehicleNames, vehicleCards: data.vehicleCards }]);
     } catch (error) {
       setMessages((current) => [...current, { id: nextId + 1, sender: 'bot', text: error instanceof Error ? error.message : 'Không thể kết nối trợ lý AI.' }]);
     } finally {
@@ -221,14 +230,20 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
             ) : messages.map((message) => (
                 <div className={`${styles.messageRow} ${message.sender === 'user' ? styles.userRow : ''}`} key={message.id}>
                   <div className={`${styles.message} ${message.sender === 'user' ? styles.userMessage : styles.botMessage}`}>
-                    {message.vehicleNames?.length ? (
+                    {message.vehicleCards?.length ? (
                       <div className={styles.vehicleResults}>
-                        {message.vehicleNames.map((vehicleName, index) => (
-                          <div className={styles.vehicleResult} key={`${vehicleName}-${index}`}>
-                            <p className={styles.vehicleName}>{vehicleName}</p>
-                            {message.vehicleIds?.[index] && <Link className={styles.vehicleLink} href={`/ChiTietXe/ChiTietXe?id=${message.vehicleIds[index]}`}>Xem chi tiết <span aria-hidden="true">→</span></Link>}
-                          </div>
+                        {message.vehicleCards.map((vehicle) => (
+                          <article className={styles.vehicleResult} key={vehicle.id}>
+                            {vehicle.image && <img className={styles.vehicleResultImage} src={vehicle.image} alt={vehicle.name} />}
+                            <div className={styles.vehicleResultBody}>
+                              <p className={styles.vehicleName}>{vehicle.name}</p>
+                              <p className={styles.vehicleMeta}>{vehicle.price.toLocaleString('vi-VN')} VNĐ · {vehicle.quantity > 0 ? 'Còn hàng' : 'Hết hàng'}</p>
+                              <p className={styles.vehicleMeta}>{[vehicle.year && `Năm ${vehicle.year}`, vehicle.color && `Màu ${vehicle.color}`].filter(Boolean).join(' · ') || 'Đang cập nhật thông số'}</p>
+                              <Link className={styles.vehicleLink} href={`/ChiTietXe/ChiTietXe?id=${vehicle.id}`}>Xem chi tiết <span aria-hidden="true">→</span></Link>
+                            </div>
+                          </article>
                         ))}
+                        <p className={styles.vehicleCta}>Anh/Chị muốn xem chi tiết mẫu xe nào ạ?</p>
                       </div>
                     ) : <p>{renderMessage(message.text)}</p>}
                     {message.sender === 'bot' && !message.vehicleNames?.length && message.vehicleId ? <Link className={styles.vehicleLink} href={`/ChiTietXe/ChiTietXe?id=${message.vehicleId}`}>Xem chi tiết <span aria-hidden="true">→</span></Link> : null}

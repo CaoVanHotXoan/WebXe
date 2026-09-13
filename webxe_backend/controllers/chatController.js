@@ -62,7 +62,11 @@ async function getVehicleContext() {
   const pool = await getPool();
   const result = await pool.request().query(`
     SELECT x.MaXe, x.TenXe, h.TenHang, l.TenLoai, x.Gia, x.NamSanXuat,
-           x.MauSac, x.MoTa, x.SoLuong
+         x.MauSac, x.MoTa, x.SoLuong,
+         (SELECT TOP 1 ha.DuongDanAnh
+          FROM dbo.HinhAnhXe ha
+          WHERE ha.MaXe = x.MaXe
+          ORDER BY ha.LaAnhChinh DESC, ha.MaHinhAnh ASC) AS AnhChinh
     FROM dbo.Xe x
     LEFT JOIN dbo.HangXe h ON h.MaHang = x.MaHang
     LEFT JOIN dbo.LoaiXe l ON l.MaLoai = x.MaLoai
@@ -79,6 +83,7 @@ async function getVehicleContext() {
     mauSac: vehicle.MauSac,
     moTa: vehicle.MoTa,
     soLuong: vehicle.SoLuong,
+    anhChinh: vehicle.AnhChinh,
   }));
 
   return {
@@ -117,11 +122,16 @@ export async function chatWithAssistant(req, res, next) {
     const messages = [
       {
         role: 'system',
-        content: `Bạn là chatbot WebXe, chỉ hỗ trợ thông tin về xe trong dữ liệu được cung cấp bên dưới.
-Được phép trả lời: tên xe, hãng, loại xe, giá, năm sản xuất, màu sắc, mô tả, số lượng còn lại và tư vấn chọn xe dựa trên dữ liệu.
-      Khi người dùng hỏi giới thiệu, tìm hoặc liệt kê xe, chỉ trả về tên xe, mỗi tên trên một dòng; không thêm giá, mô tả hay thông tin khác.
-Không được trả lời các chủ đề ngoài xe như thời tiết, chính trị, bài tập, lập trình, giải trí hoặc yêu cầu viết nội dung. Với câu hỏi ngoài phạm vi, trả lời đúng câu: "Tôi chỉ hỗ trợ thông tin về các mẫu xe tại WebXe."
-Không được tự bịa dữ liệu. Nếu không tìm thấy xe hoặc thông tin trong dữ liệu, nói rõ là WebXe chưa có thông tin đó. Trả lời bằng tiếng Việt, ngắn gọn và thân thiện.
+        content: `Bạn là "Tư Vấn Viên AI" của WebXe.
+      Văn phong lịch sự, hào hứng, am hiểu kỹ thuật xe nhưng dễ hiểu; xưng hô "Em" với "Anh/Chị".
+      Mỗi câu trả lời tối đa 3-4 dòng, tuyệt đối không viết đoạn dài.
+      Chỉ trả lời thông tin xe có trong dữ liệu. Khi nhắc tên xe, bắt buộc dùng đúng tên trong dữ liệu và cú pháp ảnh Markdown: ![Tên xe](ảnh chính xe).
+      Mọi câu trả lời phải kết thúc bằng một câu hỏi gợi ý hành động tiếp theo.
+      Khi giới thiệu một xe, trả lời theo 4 dòng: ảnh + tên xe; giá VNĐ + Còn hàng/Hết hàng; 2-3 thông số có trong dữ liệu; lời mời xem chi tiết.
+      Khi khách chê giá cao, hãy gợi ý các xe giá thấp hơn cùng hãng hoặc cùng loại nếu có trong dữ liệu.
+      Nếu thông tin không có trong CSDL, trả lời đúng: "Dạ hiện thông số này em cần xác nhận lại với bộ phận kỹ thuật. Anh/Chị có thể đăng nhập nhân viên Sales liên hệ hỗ trợ trực tiếp nhé?"
+      Nếu hỏi ngoài chủ đề xe, trả lời đúng: "Dạ em chỉ hỗ trợ thông tin về các mẫu xe tại WebXe. Anh/Chị muốn tham khảo mẫu xe nào ạ?"
+      Không tự bịa giá, năm, tình trạng, thông số hoặc ảnh. Dữ liệu ảnh chính nằm ở trường anhChinh.
 
 DỮ LIỆU XE HIỆN TẠI (mỗi dòng là một JSON):
       ${vehicleContext.text || 'Chưa có dữ liệu xe.'}`,
@@ -145,7 +155,20 @@ DỮ LIỆU XE HIỆN TẠI (mỗi dòng là một JSON):
           const assistantMessage = data.choices?.[0]?.message?.content || 'Trợ lý chưa có câu trả lời.';
           const vehicleIds = findVehicleIdsInAnswer(assistantMessage, vehicleContext.vehicles);
           const vehicleNames = vehicleIds.map((vehicleId) => vehicleContext.vehicles.find((vehicle) => vehicle.id === vehicleId)?.tenXe).filter(Boolean);
-          return res.json({ message: assistantMessage, vehicleIds, vehicleNames, vehicleId: vehicleIds[0] || null });
+          const vehicleCards = vehicleIds.map((vehicleId) => {
+            const vehicle = vehicleContext.vehicles.find((item) => item.id === vehicleId);
+            if (!vehicle) return null;
+            return {
+              id: vehicle.id,
+              name: vehicle.tenXe,
+              image: vehicle.anhChinh || '',
+              price: Number(vehicle.gia) || 0,
+              year: vehicle.namSanXuat || null,
+              color: vehicle.mauSac || null,
+              quantity: Number(vehicle.soLuong) || 0,
+            };
+          }).filter(Boolean);
+          return res.json({ message: assistantMessage, vehicleIds, vehicleNames, vehicleCards, vehicleId: vehicleIds[0] || null });
         }
         lastError = new Error(data.error?.message || `Groq trả về HTTP ${response.status}`);
         if (!shouldRotateGroqKey(response)) break;

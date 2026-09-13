@@ -216,6 +216,20 @@
   background: #fffaf5;
 }
 
+.vehicleResultImage {
+  width: 74px;
+  height: 58px;
+  flex: 0 0 74px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.vehicleResultBody {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
 .vehicleName {
   min-width: 0;
   margin: 0;
@@ -224,6 +238,21 @@
   font-weight: 750;
   line-height: 1.35;
   overflow-wrap: anywhere;
+}
+
+.vehicleMeta {
+  margin: 0;
+  color: #76513c;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.vehicleCta {
+  margin: 2px 0 0;
+  color: #29413a;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .quickQuestions {

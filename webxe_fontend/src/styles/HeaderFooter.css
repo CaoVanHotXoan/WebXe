@@ -10,6 +10,7 @@
 }
 
 .header-top {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -44,6 +45,63 @@
 }
 .logo-text:hover {
   color: #ef4444; /* Hover màu đỏ */
+}
+
+.customer-welcome {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  pointer-events: none;
+  color: #ffe5b5;
+  animation: welcomeFadeOut 10s ease-in forwards;
+}
+
+.welcome-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-bottom: 3px solid rgba(255, 255, 255, .78);
+}
+
+.welcome-runner {
+  position: absolute;
+  bottom: 7px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  white-space: nowrap;
+  animation: driveAcross 10s cubic-bezier(.75, 0, .25, 1) forwards;
+}
+
+.welcome-car {
+  font-size: 34px;
+  line-height: 1;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .35));
+  animation: carBounce .45s ease-in-out infinite alternate;
+}
+
+.welcome-text {
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, .75);
+}
+
+@keyframes driveAcross {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100vw); }
+}
+
+@keyframes welcomeFadeOut {
+  0%, 86% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes carBounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-2px); }
 }
 
 /* Middle Section */
@@ -103,8 +161,11 @@
 }
 .search-suggestion:last-child { border-bottom: 0; }
 .search-suggestion:hover { background: #221014; color: #ef4444; }
+.search-suggestion-info { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: .25rem; }
 .search-suggestion-name { min-width: 0; overflow: hidden; font-size: .85rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.search-suggestion-price { color: #f87171; font-size: .75rem; font-weight: 700; }
 .search-suggestion-image { width: 58px; height: 44px; flex: 0 0 58px; border-radius: 4px; object-fit: cover; }
+.search-suggestion-placeholder { display: grid; place-items: center; background: #292929; color: #aaa; font-size: .72rem; }
 .search-empty { padding: 1rem; color: #999; font-size: .85rem; }
 .search-btn {
   background: none;
@@ -366,6 +427,14 @@
   .header-middle {
     gap: 0;
     margin-left: auto;
+  }
+
+  .welcome-car {
+    font-size: 28px;
+  }
+
+  .welcome-text {
+    font-size: .82rem;
   }
 
   .vehicle-icons,

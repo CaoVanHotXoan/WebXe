@@ -1,23 +1,72 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useMemo, useState } from 'react';
-import { vehicles } from '@/TS/vehicleData';
+import { useEffect, useMemo, useState } from 'react';
+import { BACKEND_URL } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 
+type SearchVehicle = {
+  id: number;
+  title: string;
+  price: number;
+  priceLabel: string;
+  image: string;
+  brand?: string;
+  type?: string;
+};
+
+type CatalogResponse = {
+  Xe?: Array<{ MaXe: number; MaHang?: number; MaLoai?: number; TenXe?: string; Gia?: number | string }>;
+  HinhAnhXe?: Array<{ MaXe: number; DuongDanAnh?: string; LaAnhChinh?: boolean }>;
+  HangXe?: Array<{ MaHang: number; TenHang?: string }>;
+  LoaiXe?: Array<{ MaLoai: number; TenLoai?: string }>;
+};
+
 export default function Header() {
   const router = useRouter();
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, user } = useAuth();
   const { cartCount } = useCart();
   const [searchTerm, setSearchTerm] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [searchVehicles, setSearchVehicles] = useState<SearchVehicle[]>([]);
+  const isHomePage = router.pathname === '/';
+
+  useEffect(() => {
+    let active = true;
+    fetch(`${BACKEND_URL}/data/json`)
+      .then((response) => response.ok ? response.json() as Promise<CatalogResponse> : Promise.reject(new Error('Không tải được catalog')))
+      .then((data) => {
+        if (!active) return;
+        const brands = new Map((data.HangXe ?? []).map((brand) => [brand.MaHang, brand.TenHang]));
+        const types = new Map((data.LoaiXe ?? []).map((type) => [type.MaLoai, type.TenLoai]));
+        const imageMap = new Map<number, string>();
+        (data.HinhAnhXe ?? []).forEach((image) => {
+          if (image.DuongDanAnh && (!imageMap.has(image.MaXe) || image.LaAnhChinh)) {
+            imageMap.set(image.MaXe, image.DuongDanAnh);
+          }
+        });
+        setSearchVehicles((data.Xe ?? []).filter((vehicle) => vehicle.TenXe).map((vehicle) => ({
+          id: vehicle.MaXe,
+          title: vehicle.TenXe as string,
+          price: Number(vehicle.Gia) || 0,
+          priceLabel: `${(Number(vehicle.Gia) || 0).toLocaleString('vi-VN')} VNĐ`,
+          image: imageMap.get(vehicle.MaXe) || '',
+          brand: vehicle.MaHang ? brands.get(vehicle.MaHang) : undefined,
+          type: vehicle.MaLoai ? types.get(vehicle.MaLoai) : undefined,
+        })));
+      })
+      .catch(() => {
+        if (active) setSearchVehicles([]);
+      });
+    return () => { active = false; };
+  }, []);
   
   const suggestions = useMemo(() => {
     const normalizedTerm = searchTerm.trim().toLowerCase();
     if (!normalizedTerm) return [];
-    return vehicles.filter((vehicle) => vehicle.title.toLowerCase().includes(normalizedTerm)).slice(0, 6);
-  }, [searchTerm]);
+    return searchVehicles.filter((vehicle) => vehicle.title.toLowerCase().includes(normalizedTerm)).slice(0, 6);
+  }, [searchTerm, searchVehicles]);
 
   return (
     <header className="header-container">
@@ -40,6 +89,17 @@ export default function Header() {
         <Link href="/" className="logo-text" style={{ textDecoration: 'none' }}>
           TEAM BẤT ỔN
         </Link>
+
+        {isHomePage && isAuthenticated && !isAdmin && user?.name && (
+          <div className="customer-welcome" aria-live="polite">
+            <div className="welcome-track" aria-hidden="true">
+              <div className="welcome-runner">
+                <span className="welcome-car">🚗</span>
+                <span className="welcome-text">Chào mừng, {user.name}!</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Khung giữa: Thanh tìm kiếm & Icons xe */}
         <div className="header-middle">
@@ -69,8 +129,11 @@ export default function Header() {
                     key={vehicle.id}
                     onClick={() => setSearchTerm('')}
                   >
-                    <span className="search-suggestion-name">{vehicle.title}</span>
-                    <img src={vehicle.image} alt="" className="search-suggestion-image" />
+                    <span className="search-suggestion-info">
+                      <span className="search-suggestion-name">{vehicle.title}</span>
+                      <span className="search-suggestion-price">{vehicle.priceLabel}</span>
+                    </span>
+                    {vehicle.image ? <img src={vehicle.image} alt="" className="search-suggestion-image" /> : <span className="search-suggestion-image search-suggestion-placeholder" aria-hidden="true">Xe</span>}
                   </Link>
                 )) : <p className="search-empty">Không tìm thấy xe phù hợp.</p>}
               </div>

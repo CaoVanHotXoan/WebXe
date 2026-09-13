@@ -83,20 +83,27 @@ export async function login(req, res, next) {
         SELECT TOP 1 nd.MaNguoiDung, nd.TenDangNhap, nd.MatKhau, nd.HoTen,
                nd.Email, nd.SoDienThoai, nd.HinhAnh, nd.MaVaiTro, vt.TenVaiTro
         FROM NguoiDung nd
-        INNER JOIN VaiTro vt ON vt.MaVaiTro = nd.MaVaiTro
-        WHERE nd.TenDangNhap = @loginName OR nd.Email = @loginName
+        LEFT JOIN VaiTro vt ON vt.MaVaiTro = nd.MaVaiTro
+        WHERE LOWER(LTRIM(RTRIM(nd.TenDangNhap))) = LOWER(LTRIM(RTRIM(@loginName)))
+           OR LOWER(LTRIM(RTRIM(nd.Email))) = LOWER(LTRIM(RTRIM(@loginName)))
       `);
 
     const user = result.recordset[0];
     const passwordHash = user?.MatKhau;
-    const passwordMatches = Boolean(
-      user
-      && typeof passwordHash === 'string'
-      && /^\$2[aby]\$\d{2}\$/.test(passwordHash)
-      && await bcrypt.compare(password, passwordHash)
-    );
+    const isBcryptHash = typeof passwordHash === 'string' && /^\$2[aby]\$\d{2}\$/.test(passwordHash);
+    const passwordMatches = Boolean(user && typeof passwordHash === 'string' && (
+      isBcryptHash ? await bcrypt.compare(password, passwordHash) : password === passwordHash
+    ));
     if (!passwordMatches) {
       return res.status(401).json({ message: 'Tên đăng nhập hoặc mật khẩu không đúng.' });
+    }
+
+    if (!isBcryptHash) {
+      const upgradedPassword = await bcrypt.hash(password, 12);
+      await pool.request()
+        .input('userId', sql.Int, user.MaNguoiDung)
+        .input('password', sql.VarChar(255), upgradedPassword)
+        .query('UPDATE NguoiDung SET MatKhau = @password WHERE MaNguoiDung = @userId');
     }
 
     const role = user.TenVaiTro?.toLowerCase() === 'admin' || user.MaVaiTro === 1 ? 'admin' : 'user';
@@ -110,7 +117,7 @@ export async function login(req, res, next) {
     return res.json({
       message: 'Đăng nhập thành công.',
       token,
-      user: { id: user.MaNguoiDung, username: user.TenDangNhap, name: user.HoTen, email: user.Email, role }
+      user: { id: user.MaNguoiDung, roleId: user.MaVaiTro, username: user.TenDangNhap, name: user.HoTen, email: user.Email, role }
     });
   } catch (error) {
     return next(error);
