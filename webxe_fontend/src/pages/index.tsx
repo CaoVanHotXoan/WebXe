@@ -4,12 +4,12 @@ import Footer from '@/components/Footer';
 import ChatBot from '@/components/ChatBot';
 import styles from '@/pages/TrangChu/trangchu.module.css';
 import { vehicles } from '@/TS/vehicleData';
-import { newsItems } from '@/TS/newsData';
+import { BACKEND_URL } from '@/services/api';
 import Link from 'next/link';
 const bannerData = {
   video: '/videos/webxe.mp4',
-  title: 'SIÊU DEAL CUỐI TUẦN',
-  desc: 'Giảm giá lên đến 20% cho các dòng xe',
+  title: 'CHẤT LƯỢNG VƯỢT TRỘI / ĐẲNG CẤP DẪN ĐẦU',
+  desc: 'Sẵn sàng trải nghiệm những dòng sản phẩm cao cấp nhất.',
 };
 
 const InteractiveHeroBanner: React.FC = () => {
@@ -82,7 +82,13 @@ const InteractiveHeroBanner: React.FC = () => {
           </div>
           <h1 className={`${styles['hero-title']} text-5xl font-bold leading-tight tracking-tight text-white md:text-7xl`}>{bannerData.title}</h1>
           <p className={`${styles['hero-desc']} text-xl font-light text-gray-200 md:text-2xl`}>{bannerData.desc}</p>
-          <button className={`${styles['hero-action']} pointer-events-auto mt-8 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 px-8 py-3 font-semibold text-white transition-all duration-300 hover:scale-105 hover:from-emerald-600 hover:to-teal-700`}>Explore Now</button>
+          <Link
+            href="/MuaBanXe/MuaBanXe"
+            className={`${styles['hero-action']} pointer-events-auto mt-8 inline-flex items-center justify-center rounded-full px-8 py-3 font-semibold text-white transition-all duration-300`}
+          >
+            Khám phá ngay
+            <span aria-hidden="true" className={styles['hero-action-icon']}>→</span>
+          </Link>
         </div>
       </div>
       {/* Chỉ báo trạng thái âm thanh ở góc dưới phải */}
@@ -93,10 +99,16 @@ const InteractiveHeroBanner: React.FC = () => {
   );
 };
 
-// Dùng chung dữ liệu với trang danh sách và trang chi tiết tin tức.
-const newsData = newsItems.slice(0, 5).map(({ id, title, image }) => ({ id, title, image }));
+type ApiNews = {
+  MaTinTuc: number;
+  MaDanhMuc: number;
+  TieuDe?: string | null;
+  HinhAnh?: string | null;
+};
 
-const carsData = vehicles.map(({ id, title, image, priceLabel: price }) => ({ id, title, image, price }));
+type ApiCategory = { MaDanhMuc: number; TenDanhMuc?: string | null };
+type NewsResponse = { TinTuc?: ApiNews[]; DanhMucTinTuc?: ApiCategory[] };
+type NewsCard = { id: number; title: string; image: string };
 
 type ContentItem = { id: number; title: string; image: string; price?: string };
 
@@ -131,6 +143,38 @@ function ContentSlider({ items, hasPrice }: { items: ContentItem[]; hasPrice?: b
 }
 
 export default function TrangChu(){
+  const [newsByCategory, setNewsByCategory] = React.useState<Record<string, NewsCard[]>>({});
+  const [newsLoading, setNewsLoading] = React.useState(true);
+  const [newsError, setNewsError] = React.useState('');
+
+  React.useEffect(() => {
+    fetch(`${BACKEND_URL}/data/news`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Không thể tải dữ liệu tin tức.');
+        const data = await response.json() as NewsResponse;
+        const categories = new Map(
+          (data.DanhMucTinTuc ?? []).map((category) => [
+            category.MaDanhMuc,
+            category.TenDanhMuc?.trim() || `Danh mục ${category.MaDanhMuc}`,
+          ])
+        );
+        const grouped = (data.TinTuc ?? []).reduce<Record<string, NewsCard[]>>((result, article) => {
+          if (!article.TieuDe?.trim()) return result;
+          const category = categories.get(article.MaDanhMuc) || 'Tin tức';
+          const item = {
+            id: article.MaTinTuc,
+            title: article.TieuDe.trim(),
+            image: article.HinhAnh?.trim() || '',
+          };
+          result[category] = [...(result[category] ?? []), item];
+          return result;
+        }, {});
+        setNewsByCategory(grouped);
+      })
+      .catch((requestError) => setNewsError(requestError instanceof Error ? requestError.message : 'Không thể tải dữ liệu tin tức.'))
+      .finally(() => setNewsLoading(false));
+  }, []);
+
   return (
     <div className={styles['main-page']}>
       <Header />
@@ -142,15 +186,15 @@ export default function TrangChu(){
 
       {/* Content zone */}
       <main className={styles['content-zone']}>
-        <section>
-          <h2 className={styles['section-title']}>Tin Tức Nổi Bật</h2>
-          <ContentSlider items={newsData} />
-        </section>
+        {newsLoading && <p>Đang tải tin tức...</p>}
+        {newsError && <p>{newsError}</p>}
+        {!newsLoading && !newsError && Object.entries(newsByCategory).map(([category, items]) => (
+          <section key={category}>
+            <h2 className={styles['section-title']}>{category}</h2>
+            <ContentSlider items={items} />
+          </section>
+        ))}
 
-        <section>
-          <h2 className={styles['section-title']}>Tin Bán Xe</h2>
-          <ContentSlider items={carsData} hasPrice />
-        </section>
       </main>
 
       <Footer />
