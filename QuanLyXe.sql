@@ -285,3 +285,43 @@ CREATE TABLE TinTuc (
     FOREIGN KEY (MaDanhMuc) REFERENCES DanhMucTinTuc(MaDanhMuc)
 );
 GO
+
+-- ===================================================
+/* =========================================================
+   1. BẢNG PHIÊN HỘI THOẠI (CuocHoiThoai)
+   ========================================================= */
+CREATE TABLE CuocHoiThoai
+(
+    MaCuocHoiThoai INT IDENTITY(1,1) PRIMARY KEY,
+    MaKhachHang INT NOT NULL,  -- MaNguoiDung của người dùng là Khách hàng
+    MaNhanVien INT NULL,       -- MaNguoiDung của người dùng là Sales/Admin (Để NULL khi chưa ai nhận)
+    TrangThai NVARCHAR(50) NOT NULL DEFAULT N'Đang chờ', -- 'Đang chờ', 'Đang tư vấn', 'Đã đóng'
+    NgayTao DATETIME DEFAULT GETDATE(),
+
+    -- Tham chiếu trực tiếp tới bảng NguoiDung của bạn
+    FOREIGN KEY (MaKhachHang) REFERENCES NguoiDung(MaNguoiDung),
+    FOREIGN KEY (MaNhanVien) REFERENCES NguoiDung(MaNguoiDung)
+);
+GO
+
+/* =========================================================
+   2. BẢNG CHI TIẾT TIN NHẮN (TinNhan)
+   ========================================================= */
+CREATE TABLE TinNhan
+(
+    MaTinNhan INT IDENTITY(1,1) PRIMARY KEY,
+    MaCuocHoiThoai INT NOT NULL,
+    MaNguoiGui INT NOT NULL,    -- MaNguoiDung của người phát tin nhắn (Dù là Khách hay Sales)
+    NoiDung NVARCHAR(MAX) NOT NULL,
+    ThoiGian DATETIME DEFAULT GETDATE(),
+    DaXem BIT DEFAULT 0,        -- 0: Chưa xem, 1: Đã xem
+
+    FOREIGN KEY (MaCuocHoiThoai) REFERENCES CuocHoiThoai(MaCuocHoiThoai),
+    FOREIGN KEY (MaNguoiGui) REFERENCES NguoiDung(MaNguoiDung)
+);
+GO
+
+-- Index giúp tăng tốc độ load lịch sử tin nhắn
+CREATE INDEX IX_TinNhan_MaCuocHoiThoai 
+ON TinNhan(MaCuocHoiThoai);
+GO

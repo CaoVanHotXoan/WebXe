@@ -356,3 +356,53 @@ BEGIN
     DELETE FROM TinTuc WHERE MaTinTuc = @MaTinTuc;
 END;
 GO
+
+CREATE PROCEDURE sp_ThemCuocHoiThoai
+    @MaKhachHang INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO CuocHoiThoai (MaKhachHang)
+    VALUES (@MaKhachHang);
+    SELECT CAST(SCOPE_IDENTITY() AS INT) AS MaCuocHoiThoai;
+END;
+GO
+
+CREATE PROCEDURE sp_NhanCuocHoiThoai
+    @MaCuocHoiThoai INT,
+    @MaNhanVien INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE CuocHoiThoai
+    SET MaNhanVien = @MaNhanVien,
+        TrangThai = N'Đang tư vấn'
+    WHERE MaCuocHoiThoai = @MaCuocHoiThoai;
+END;
+GO
+
+CREATE PROCEDURE sp_ThemTinNhan
+    @MaCuocHoiThoai INT,
+    @MaNguoiGui INT,
+    @NoiDung NVARCHAR(MAX)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO TinNhan (MaCuocHoiThoai, MaNguoiGui, NoiDung)
+    VALUES (@MaCuocHoiThoai, @MaNguoiGui, @NoiDung);
+    SELECT CAST(SCOPE_IDENTITY() AS INT) AS MaTinNhan;
+END;
+GO
+
+CREATE PROCEDURE sp_DanhDauTinNhanDaXem
+    @MaCuocHoiThoai INT,
+    @MaNguoiXem INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE TinNhan
+    SET DaXem = 1
+    WHERE MaCuocHoiThoai = @MaCuocHoiThoai
+      AND MaNguoiGui <> @MaNguoiXem;
+END;
+GO

@@ -1,7 +1,8 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Vehicle } from '@/TS/vehicleData';
 import { BACKEND_URL } from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
 import styles from './ChatBot.module.css';
 
 type ChatMessage = {
@@ -9,6 +10,18 @@ type ChatMessage = {
   sender: 'bot' | 'user';
   text: string;
   vehicleId?: number | null;
+};
+
+type SupportMessage = {
+  MaTinNhan: number;
+  MaNguoiGui: number;
+  NoiDung: string;
+  ThoiGian: string;
+};
+
+type SupportConversationResponse = {
+  conversation: { MaCuocHoiThoai: number };
+  messages: SupportMessage[];
 };
 
 function renderMessage(text: string) {
@@ -27,6 +40,7 @@ const quickQuestions = ['Có những xe nào đang bán?', 'Xe nào dưới 500 
 const extraQuestions = ['Xe nào còn hàng?', 'Hãng Honda có xe nào?', 'Thông tin Ford Mustang GT 2024', 'Xe màu đen có những mẫu nào?', 'Tôi muốn đặt xe'];
 
 export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
+  const { token, user, isAdmin, status } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [question, setQuestion] = useState('');
   const [nextId, setNextId] = useState(2);
@@ -35,6 +49,37 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
   const [showBooking, setShowBooking] = useState(false);
   const [booking, setBooking] = useState({ vehicleId: String(vehicles[0]?.id || ''), name: '', phone: '', address: '', paymentMethod: 'Thanh toán khi nhận xe' });
   const [bookingMessage, setBookingMessage] = useState('');
+  const [supportConversationId, setSupportConversationId] = useState<number | null>(null);
+  const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
+  const [supportError, setSupportError] = useState('');
+
+  const supportHeaders = useMemo<HeadersInit>(() => {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+      headers['Content-Type'] = 'application/json';
+    }
+    return headers;
+  }, [token]);
+
+  const loadSupportConversation = useCallback(async (): Promise<number | null> => {
+    if (!token || !user || isAdmin) return null;
+    const response = await fetch(`${BACKEND_URL}/chat/conversation`, { headers: supportHeaders, credentials: 'include' });
+    const data = await response.json() as SupportConversationResponse & { message?: string };
+    if (!response.ok) throw new Error(data.message || 'Không thể tải cuộc hội thoại.');
+    setSupportConversationId(data.conversation.MaCuocHoiThoai);
+    setSupportMessages(data.messages);
+    return data.conversation.MaCuocHoiThoai;
+  }, [isAdmin, supportHeaders, token, user]);
+
+  useEffect(() => {
+    if (status === 'loading' || !token || !user || isAdmin) return;
+    void loadSupportConversation().catch((error) => setSupportError(error instanceof Error ? error.message : 'Không thể kết nối hỗ trợ.'));
+    const interval = window.setInterval(() => {
+      void loadSupportConversation().catch(() => undefined);
+    }, 5000);
+    return () => window.clearInterval(interval);
+  }, [isAdmin, loadSupportConversation, status, token, user]);
 
   useEffect(() => {
     fetch(`${BACKEND_URL}/data/json`)
@@ -65,6 +110,30 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
     setMessages((current) => [...current, userMessage]);
     setNextId((current) => current + 2);
     setQuestion('');
+
+    if (token && user && !isAdmin) {
+      try {
+        let conversationId = supportConversationId;
+        if (!conversationId) {
+          conversationId = await loadSupportConversation();
+        }
+        if (!conversationId) throw new Error('Chưa tạo được cuộc hội thoại.');
+        const response = await fetch(`${BACKEND_URL}/chat/messages`, {
+          method: 'POST',
+          headers: supportHeaders,
+          credentials: 'include',
+          body: JSON.stringify({ conversationId, message: trimmedQuestion }),
+        });
+        const data = await response.json() as { message?: string };
+        if (!response.ok) throw new Error(data.message || 'Không thể gửi tin nhắn.');
+        setSupportError('');
+        await loadSupportConversation();
+      } catch (error) {
+        setSupportError(error instanceof Error ? error.message : 'Không thể gửi tin nhắn.');
+      }
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -123,23 +192,33 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
       {isOpen && (
         <section className={styles.window} aria-label="Trợ lý tư vấn WebXe">
           <header className={styles.header}>
-            <div className={styles.avatar} aria-hidden="true">AI</div>
+            <div className={styles.avatar} aria-hidden="true">{token && user && !isAdmin ? 'CS' : 'AI'}</div>
             <div>
-              <h2>Trợ lý WebXe</h2>
-              <p>Đang sẵn sàng tư vấn</p>
+              <h2>{token && user && !isAdmin ? 'Chăm sóc khách hàng' : 'Trợ lý WebXe'}</h2>
+              <p>{token && user && !isAdmin ? 'Kết nối trực tiếp với Admin' : 'Đang sẵn sàng tư vấn'}</p>
             </div>
             <button type="button" className={styles.closeButton} onClick={() => setIsOpen(false)} aria-label="Đóng chatbot">×</button>
           </header>
 
           <div className={styles.messages} aria-live="polite">
-            {messages.map((message) => (
-              <div className={`${styles.messageRow} ${message.sender === 'user' ? styles.userRow : ''}`} key={message.id}>
-                <div className={`${styles.message} ${message.sender === 'user' ? styles.userMessage : styles.botMessage}`}>
-                  <p>{renderMessage(message.text)}</p>
-                  {message.sender === 'bot' && message.vehicleId && <Link className={styles.vehicleLink} href={`/ChiTietXe/ChiTietXe?id=${message.vehicleId}`}>Xem thêm</Link>}
+            {token && user && !isAdmin ? (
+              supportMessages.map((message) => (
+                <div className={`${styles.messageRow} ${message.MaNguoiGui === user.id ? styles.userRow : ''}`} key={message.MaTinNhan}>
+                  <div className={`${styles.message} ${message.MaNguoiGui === user.id ? styles.userMessage : styles.botMessage}`}>
+                    <p>{renderMessage(message.NoiDung)}</p>
+                    <small>{new Date(message.ThoiGian).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</small>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : messages.map((message) => (
+                <div className={`${styles.messageRow} ${message.sender === 'user' ? styles.userRow : ''}`} key={message.id}>
+                  <div className={`${styles.message} ${message.sender === 'user' ? styles.userMessage : styles.botMessage}`}>
+                    <p>{renderMessage(message.text)}</p>
+                    {message.sender === 'bot' && message.vehicleId && <Link className={styles.vehicleLink} href={`/ChiTietXe/ChiTietXe?id=${message.vehicleId}`}>Xem thêm</Link>}
+                  </div>
+                </div>
+              ))}
+            {supportError && <p className={styles.bookingMessage}>{supportError}</p>}
             {isLoading && <div className={styles.messageRow}><div className={`${styles.message} ${styles.botMessage}`}><p>Đang tìm thông tin và trả lời...</p></div></div>}
           </div>
 
@@ -160,8 +239,9 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
             </select>
             <button type="submit">Xác nhận đặt xe</button>
           </form>}
+          {!token && <p className={styles.bookingMessage}>Đăng nhập để nhắn tin trực tiếp với Admin.<Link href="/Login/Login"> Đăng nhập →</Link></p>}
           <form className={styles.form} onSubmit={handleSubmit}>
-            <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Hỏi về mẫu xe, giá, hãng..." aria-label="Nhập câu hỏi" />
+            <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={token && user && !isAdmin ? 'Nhắn tin cho Admin...' : 'Hỏi về mẫu xe, giá, hãng...'} aria-label="Nhập câu hỏi" />
             <button type="submit" aria-label="Gửi câu hỏi" disabled={isLoading}>↑</button>
           </form>
         </section>

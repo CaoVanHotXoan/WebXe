@@ -202,7 +202,7 @@ const columnLabels: Record<string, string> = {
 
 const foreignKeyConfig: Record<
   string,
-  { refTable: string; valueKey: string; getLabel: (row: Record<string, any>) => string }
+  { refTable: string; valueKey: string; getLabel: (row: Record<string, CellValue>) => string }
 > = {
   MaHang: {
     refTable: "HangXe",
@@ -307,6 +307,7 @@ export default function Home() {
   } | null>(null);
   const [filterBrand, setFilterBrand] = useState<string>("");
   const [filterType, setFilterType] = useState<string>("");
+  const [filterCategory, setFilterCategory] = useState<string>("");
 
   useEffect(() => {
     if (status !== "loading" && (!token || !isAdmin)) {
@@ -349,15 +350,18 @@ export default function Home() {
   const detailKey = detailKeyByParent[selectedId];
   const formTable = tableData.find((table) => table.id === formTableId) ?? selectedTable;
   const filteredRecords = useMemo(() => {
+    if (selectedTable.id === "TinTuc") {
+      return selectedTable.records.filter((row) => filterCategory ? Number(row.MaDanhMuc) === Number(filterCategory) : true);
+    }
     if (selectedTable.id !== "Xe") return selectedTable.records;
     return selectedTable.records.filter((row) => {
       const matchesBrand = filterBrand ? Number(row.MaHang) === Number(filterBrand) : true;
       const matchesType = filterType ? Number(row.MaLoai) === Number(filterType) : true;
       return matchesBrand && matchesType;
     });
-  }, [selectedTable, filterBrand, filterType]);
-  const isCardView = ["Xe", "HangXe", "NguoiDung"].includes(selectedTable.id);
-  const showColumnOverview = !["DonHang", "GioHang", "LoaiXe", "VaiTro"].includes(selectedTable.id);
+  }, [selectedTable, filterBrand, filterType, filterCategory]);
+  const isCardView = ["Xe", "HangXe", "NguoiDung", "TinTuc"].includes(selectedTable.id);
+  const showColumnOverview = !["DonHang", "GioHang", "LoaiXe", "VaiTro", "DanhMucTinTuc", "TinTuc"].includes(selectedTable.id);
   const displayColumns = selectedTable.columns.filter(
     (column) => !(hiddenDisplayColumns[selectedTable.id] ?? []).includes(column)
   );
@@ -400,6 +404,7 @@ export default function Home() {
     setIsMobileMenuOpen(false);
     setFilterBrand("");
     setFilterType("");
+    setFilterCategory("");
   };
 
   const openCreate = (tableId = selectedTable.id) => {
@@ -498,7 +503,7 @@ export default function Home() {
       if (editingImageId === imageId) resetImageForm();
       // Hiện thông báo xóa thành công
       showNotification("Đã xóa thành công", "success-delete");
-    } catch (error) {
+    } catch {
       showNotification("Warning: TIME OUT !", "error");
     } finally {
       setImageSaving(false);
@@ -657,6 +662,9 @@ export default function Home() {
               <button type="button" className={styles.secondaryButton} onClick={() => void router.push("/")}>
                 ← Trang chủ
               </button>
+              <button type="button" className={styles.secondaryButton} onClick={() => void router.push("/ChamSocKH/ChamSocKH")}>
+                💬 Chăm sóc khách hàng
+              </button>
               {selectedTable.id === "Xe" && (
                 <div className={styles.filterGroup}>
                   <span className={styles.filterIcon}>🏢</span>
@@ -685,6 +693,24 @@ export default function Home() {
                     <option value="">Tất cả loại xe</option>
                     {(tableData.find((t) => t.id === "LoaiXe")?.records || []).map((type) => (
                       <option key={String(type.MaLoai)} value={String(type.MaLoai ?? "")}>{String(type.TenLoai ?? "")}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {selectedTable.id === "TinTuc" && (
+                <div className={styles.filterGroup}>
+                  <span className={styles.filterIcon}>🗂️</span>
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className={styles.filterSelect}
+                    aria-label="Lọc theo danh mục tin tức"
+                  >
+                    <option value="">Tất cả danh mục tin tức</option>
+                    {(tableData.find((table) => table.id === "DanhMucTinTuc")?.records || []).map((category) => (
+                      <option key={String(category.MaDanhMuc)} value={String(category.MaDanhMuc ?? "")}>
+                        {String(category.TenDanhMuc ?? `Danh mục ${category.MaDanhMuc}`)}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -783,12 +809,12 @@ export default function Home() {
                 <article key={`${selectedTable.id}-${rowIndex}`} className={`${styles.productCard} ${["HangXe", "NguoiDung"].includes(selectedTable.id) ? styles.compactProductCard : ""}`}>
                   {(() => {
                     const images = selectedTable.id === "Xe" ? vehicleImages[String(row.MaXe)] ?? [] : [];
-                    const mainImage = images.find((image) => image.isMain)?.url ?? images[0]?.url ?? row.Logo;
+                    const mainImage = images.find((image) => image.isMain)?.url ?? images[0]?.url ?? row.Logo ?? row.HinhAnh;
                     const secondaryImages = images.filter((image) => image.url !== mainImage);
                     return <div className={styles.productImageArea}>
                       {mainImage ? (
                         <div className={styles.productImageLayout}>
-                          <img className={styles.productImage} src={String(mainImage)} alt={String(row.TenXe || row.TenHang || row.HoTen || selectedTable.name)} />
+                          <img className={styles.productImage} src={String(mainImage)} alt={String(row.TenXe || row.TenHang || row.HoTen || row.TieuDe || selectedTable.name)} />
                           {secondaryImages.length > 0 && <div className={styles.productThumbnails}>
                             {secondaryImages.map((image, imageIndex) => <img key={`${image.url}-${imageIndex}`} className={styles.productThumbnail} src={image.url} alt={`${String(row.TenXe || selectedTable.name)} ảnh phụ ${imageIndex + 1}`} />)}
                           </div>}
@@ -799,14 +825,14 @@ export default function Home() {
                     </div>;
                   })()}
                   <div className={styles.productCardBody}>
-                    <span className={styles.productCode}>Mã: {String(row.MaXe || row.MaHang || row.MaNguoiDung || "-")}</span>
-                    <h2>{String(row.TenXe || row.TenHang || row.HoTen || row.TenDangNhap || `${selectedTable.name} chưa đặt tên`)}</h2>
+                      <span className={styles.productCode}>Mã: {String(row.MaXe || row.MaHang || row.MaNguoiDung || row.MaTinTuc || "-")}</span>
+                      <h2>{String(row.TenXe || row.TenHang || row.HoTen || row.TenDangNhap || row.TieuDe || `${selectedTable.name} chưa đặt tên`)}</h2>
                     <strong className={styles.productPrice}>
-                      {selectedTable.id === "Xe" && row.Gia ? `${Number(row.Gia).toLocaleString("vi-VN")} đ` : selectedTable.id === "NguoiDung" ? String(row.Email || "Người dùng hệ thống") : String(row.Logo ? "Đã có logo" : "Chưa có logo")}
+                        {selectedTable.id === "Xe" && row.Gia ? `${Number(row.Gia).toLocaleString("vi-VN")} đ` : selectedTable.id === "NguoiDung" ? String(row.Email || "Người dùng hệ thống") : selectedTable.id === "TinTuc" ? String(row.TomTat || "Tin tức WebXe") : String(row.Logo ? "Đã có logo" : "Chưa có logo")}
                     </strong>
                     <div className={styles.productMeta}>
-                      <span>{selectedTable.id === "Xe" ? String(row.MauSac || "Chưa rõ màu") : selectedTable.id === "NguoiDung" ? String(row.SoDienThoai || "Chưa có SĐT") : "Danh mục hãng xe"}</span>
-                      <span>{selectedTable.id === "Xe" ? `${row.SoLuong ?? 0} xe` : selectedTable.id === "NguoiDung" ? String(row.TenDangNhap || "Chưa có tài khoản") : "Đang quản lý"}</span>
+                        <span>{selectedTable.id === "Xe" ? String(row.MauSac || "Chưa rõ màu") : selectedTable.id === "NguoiDung" ? String(row.SoDienThoai || "Chưa có SĐT") : selectedTable.id === "TinTuc" ? String(row.NgayDang || "Chưa cập nhật") : "Danh mục hãng xe"}</span>
+                        <span>{selectedTable.id === "Xe" ? `${row.SoLuong ?? 0} xe` : selectedTable.id === "NguoiDung" ? String(row.TenDangNhap || "Chưa có tài khoản") : selectedTable.id === "TinTuc" ? String(row.MaDanhMuc ? `Danh mục ${row.MaDanhMuc}` : "Chưa phân loại") : "Đang quản lý"}</span>
                     </div>
                     <div className={styles.productActions}>
                       <button type="button" className={styles.detailButton} onClick={() => openVehicleDetail(row)}>Xem chi tiết</button>
@@ -919,14 +945,17 @@ export default function Home() {
                   <button type="button" className={styles.closeButton} onClick={() => setDetailRecord(null)}>Đóng</button>
                 </div>
                 <div className={styles.vehicleDetailContent}>
-                  <div className={styles.vehicleDetailImage}>
-                    {(() => {
-                      const mainImage = selectedVehicleImages.find((image) => image.LaAnhChinh === true || image.LaAnhChinh === 1 || image.LaAnhChinh === "1")?.DuongDanAnh
-                        ?? selectedVehicleImages[0]?.DuongDanAnh
-                        ?? detailRecord.Logo;
-                      return mainImage ? <img src={String(mainImage)} alt={String(detailRecord.TenXe || detailRecord.TenHang || detailRecord.HoTen || selectedTable.name)} /> : <span className={styles.imagePlaceholder}>Chưa có ảnh</span>;
-                    })()}
-                  </div>
+                  {(() => {
+                    const mainImage = selectedVehicleImages.find((image) => image.LaAnhChinh === true || image.LaAnhChinh === 1 || image.LaAnhChinh === "1")?.DuongDanAnh
+                      ?? selectedVehicleImages[0]?.DuongDanAnh
+                      ?? detailRecord.Logo
+                      ?? detailRecord.HinhAnh;
+                    return mainImage || selectedTable.id !== "TinTuc" ? (
+                      <div className={styles.vehicleDetailImage}>
+                        {mainImage && <img src={String(mainImage)} alt={String(detailRecord.TenXe || detailRecord.TenHang || detailRecord.HoTen || detailRecord.TieuDe || selectedTable.name)} />}
+                      </div>
+                    ) : null;
+                  })()}
                   <div className={styles.vehicleDetailGrid}>
                     {selectedTable.columns.map((column) => (
                       <div key={column} className={styles.vehicleDetailItem}>

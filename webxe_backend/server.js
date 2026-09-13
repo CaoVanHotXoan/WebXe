@@ -9,6 +9,7 @@ import userRoutes from './routes/userRoutes.js';
 import procedureRoutes from './routes/procedureRoutes.js';
 import { getPool } from './config/db.js';
 import catalogRoutes from './routes/catalogRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 
 const app = express();
 const port = Number(process.env.PORT || 5000);
@@ -31,6 +32,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: t
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/data', catalogRoutes);
+app.use('/api/chat', chatRoutes);
 app.use('/api/admin', procedureRoutes);
 
 app.use((req, res) => res.status(404).json({ message: 'Không tìm thấy endpoint.' }));

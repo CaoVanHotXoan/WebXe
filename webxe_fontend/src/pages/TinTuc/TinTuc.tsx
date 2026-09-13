@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { videos, NewsItem } from '@/TS/newsData';
+import { NewsItem } from '@/TS/newsData';
 import { BACKEND_URL } from '@/services/api';
 import styles from './tinTuc.module.css';
 
@@ -123,17 +123,6 @@ export default function TinTucPage() {
                     <img src={vehicle.image} alt={vehicle.title} />
                     <span>{vehicle.title}</span>
                   </Link>
-                ))}
-              </div>
-            </section>
-            <section className={styles.panel}>
-              <div className={styles.heading}><h2>Video nổi bật</h2><span>WATCH</span></div>
-              <div className={styles.videoList}>
-                {videos.map((video) => (
-                  <a href={video.url} target="_blank" rel="noreferrer" className={styles.videoItem} key={video.id}>
-                    <div className={styles.videoThumb}><span>▶</span></div>
-                    <span>{video.title}</span>
-                  </a>
                 ))}
               </div>
             </section>
