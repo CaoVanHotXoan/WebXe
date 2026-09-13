@@ -144,6 +144,17 @@ export default function ChiTietXePage() {
       active = false;
     };
   }, [router.isReady]);
+        // Code chuyển ảnh
+  useEffect(() => {
+    setImageIndex(0);
+    if (vehicleImages.length < 2) return;
+
+    const imageRotation = window.setInterval(() => {
+      setImageIndex((index) => (index + 1) % vehicleImages.length);
+    }, 6000);
+
+    return () => window.clearInterval(imageRotation);
+  }, [vehicle?.id, vehicleImages.length]);
 
   useEffect(() => {
     fetch(`${BACKEND_URL}/data/news`)

@@ -11,6 +11,7 @@ export type UserProfile = {
   email?: string;
   phone?: string;
   address?: string;
+  image?: string;
 };
 
 export type AsyncState = 'idle' | 'loading' | 'success' | 'error';

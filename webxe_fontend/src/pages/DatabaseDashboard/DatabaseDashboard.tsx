@@ -32,10 +32,10 @@ const tables: TableItem[] = [
     id: "NguoiDung",
     name: "NguoiDung",
     description: "Thông tin tài khoản đăng nhập và hồ sơ người dùng.",
-    columns: ["MaNguoiDung", "MaVaiTro", "TenDangNhap", "MatKhau", "HoTen", "Email", "SoDienThoai", "HinhAnh"],
+    columns: ["MaNguoiDung", "MaVaiTro", "TenDangNhap", "MatKhau", "HoTen", "Email", "SoDienThoai", "DiaChi", "HinhAnh"],
     records: [
-      { MaNguoiDung: 1, MaVaiTro: 1, TenDangNhap: "admin", MatKhau: "123456", HoTen: "Quản trị viên", Email: "admin@gmail.com", SoDienThoai: "0900000001" },
-      { MaNguoiDung: 2, MaVaiTro: 2, TenDangNhap: "khach01", MatKhau: "123456", HoTen: "Nguyễn Văn A", Email: "a@gmail.com", SoDienThoai: "0912345678" },
+      { MaNguoiDung: 1, MaVaiTro: 1, TenDangNhap: "admin", MatKhau: "123456", HoTen: "Quản trị viên", Email: "admin@gmail.com", SoDienThoai: "0900000001", DiaChi: "" },
+      { MaNguoiDung: 2, MaVaiTro: 2, TenDangNhap: "khach01", MatKhau: "123456", HoTen: "Nguyễn Văn A", Email: "a@gmail.com", SoDienThoai: "0912345678", DiaChi: "" },
     ],
   },
   {
@@ -133,7 +133,7 @@ const tables: TableItem[] = [
 
 const menuGroups = [
   { id: "products", label: "Quản lý Sản phẩm", tableIds: ["Xe", "HangXe", "LoaiXe"] },
-  { id: "sales", label: "Quản lý Bán hàng", tableIds: ["DonHang", "GioHang"] },
+  { id: "sales", label: "Quản lý Bán hàng", tableIds: ["DonHang"] },
   { id: "news", label: "Quản lý Tin tức", tableIds: ["DanhMucTinTuc", "TinTuc"] },
   { id: "system", label: "Quản lý Hệ thống", tableIds: ["NguoiDung", "VaiTro"] },
 ];
@@ -368,6 +368,10 @@ export default function Home() {
   const formColumns = formTable.columns.filter((column) =>
     formMode === "edit" || !(identityColumns[formTable.id] ?? []).includes(column)
   ).filter((column) => column !== "ThanhTien");
+  const isCombinedOrderCreate = formMode === "create" && formTable.id === "DonHang";
+  const isOrderEdit = formMode === "edit" && formTable.id === "DonHang";
+  const isOrderDetailForm = formTable.id === "ChiTietDonHang";
+  const customerRecords = tableData.find((table) => table.id === "NguoiDung")?.records ?? [];
   const vehicleImages = useMemo(() => {
     const images = tableData.find((table) => table.id === "HinhAnhXe")?.records ?? [];
     return images.reduce<VehicleImageMap>((result, image) => {
@@ -410,13 +414,50 @@ export default function Home() {
   const openCreate = (tableId = selectedTable.id) => {
     setFormMode("create");
     setFormTableId(tableId);
-    setFormValues({});
+    setFormValues(tableId === "DonHang" ? {
+      TrangThai: "Đang xử lý",
+      PhuongThucThanhToan: "Tiền mặt",
+      NgayDat: getDateTimeLocalValue(new Date().toISOString()),
+    } : tableId === "ChiTietDonHang" && selectedId === "DonHang" && selectedDetailId !== null ? {
+      MaDonHang: selectedDetailId,
+    } : {});
   };
 
   const openEdit = (row: Record<string, CellValue>, tableId = selectedTable.id) => {
     setFormMode("edit");
     setFormTableId(tableId);
-    setFormValues({ ...row });
+    setFormValues(tableId === "ChiTietDonHang" ? { ...row, MaXeCu: row.MaXe } : { ...row });
+  };
+
+  const updateFormValue = (column: string, value: CellValue) => {
+    setFormValues((current) => {
+      const next = { ...current, [column]: value };
+      if (column === "MaNguoiDung") {
+        const customer = customerRecords.find((record) => Number(record.MaNguoiDung) === Number(value));
+        next.HoTenNguoiNhan = customer?.HoTen ?? "";
+        next.SoDienThoai = customer?.SoDienThoai ?? "";
+        next.DiaChi = customer?.DiaChi ?? "";
+      }
+      if (isCombinedOrderCreate && column === "MaXe") {
+        const vehicle = tableData.find((table) => table.id === "Xe")?.records.find((record) => Number(record.MaXe) === Number(value));
+        next.DonGia = vehicle?.Gia ?? "";
+      }
+      if (isOrderDetailForm && column === "MaXe") {
+        const vehicle = tableData.find((table) => table.id === "Xe")?.records.find((record) => Number(record.MaXe) === Number(value));
+        next.DonGia = vehicle?.Gia ?? "";
+      }
+      if (isCombinedOrderCreate && (column === "MaXe" || column === "SoLuong" || column === "DonGia")) {
+        const quantity = Number(next.SoLuong) || 0;
+        const unitPrice = Number(next.DonGia) || 0;
+        next.TongTien = quantity * unitPrice;
+      }
+      if (isOrderDetailForm && (column === "MaXe" || column === "SoLuong" || column === "DonGia")) {
+        const quantity = Number(next.SoLuong) || 0;
+        const unitPrice = Number(next.DonGia) || 0;
+        next.ThanhTien = quantity * unitPrice;
+      }
+      return next;
+    });
   };
 
   const openVehicleDetail = (row: Record<string, CellValue>) => {
@@ -521,11 +562,69 @@ export default function Home() {
       const isCreate = formMode === "create";
       const action = isCreate ? "create" : "edit";
       const valuesToSave = { ...formValues };
+      if (isCombinedOrderCreate) {
+        const requiredOrderFields = ["MaNguoiDung", "TongTien"];
+        const hasMissingOrderField = requiredOrderFields.some((field) => valuesToSave[field] === undefined || valuesToSave[field] === null || String(valuesToSave[field]).trim() === "");
+        if (hasMissingOrderField || !valuesToSave.MaXe || !valuesToSave.SoLuong || valuesToSave.DonGia === undefined || valuesToSave.DonGia === null || String(valuesToSave.DonGia).trim() === "") {
+          throw new Error("Vui lòng nhập đủ thông tin đơn hàng và chi tiết xe.");
+        }
+
+        const orderResponse = await fetch(`${BACKEND_URL}/admin/procedures/sp_ThemDonHangVaChiTiet`, {
+          method: "POST",
+          headers: getCrudHeaders(),
+          credentials: "include",
+          body: JSON.stringify({
+            MaNguoiDung: valuesToSave.MaNguoiDung,
+            HoTenNguoiNhan: valuesToSave.HoTenNguoiNhan,
+            SoDienThoai: valuesToSave.SoDienThoai,
+            DiaChi: valuesToSave.DiaChi,
+            TongTien: valuesToSave.TongTien,
+            PhuongThucThanhToan: valuesToSave.PhuongThucThanhToan || null,
+            TrangThai: valuesToSave.TrangThai || "Chờ xác nhận",
+            NgayDat: valuesToSave.NgayDat || null,
+            MaXe: valuesToSave.MaXe,
+            SoLuong: valuesToSave.SoLuong,
+            DonGia: valuesToSave.DonGia,
+          }),
+        });
+        const orderData = await orderResponse.json().catch(() => null) as { record?: { MaDonHang?: number }; message?: string } | null;
+        if (!orderResponse.ok || !orderData?.record?.MaDonHang) throw new Error(orderData?.message || "Không thể tạo đơn hàng.");
+        await refreshTableData("DonHang");
+        await refreshTableData("ChiTietDonHang");
+        setFormMode(null);
+        showNotification("Đã thêm đơn hàng và chi tiết đơn hàng", "success-add");
+        return;
+      }
       for (const column of imageColumns) {
         const value = valuesToSave[column];
         if (typeof value === "string" && value.trim()) {
           valuesToSave[column] = await uploadImageUrl(value);
         }
+      }
+      if (isOrderDetailForm) {
+        const detailPayload = {
+          MaDonHang: Number(valuesToSave.MaDonHang),
+          MaXe: Number(valuesToSave.MaXe),
+          MaXeCu: valuesToSave.MaXeCu == null ? Number(valuesToSave.MaXe) : Number(valuesToSave.MaXeCu),
+          SoLuong: Number(valuesToSave.SoLuong),
+          DonGia: Number(valuesToSave.DonGia),
+        };
+        if (!Number.isInteger(detailPayload.MaDonHang) || !Number.isInteger(detailPayload.MaXe) || !Number.isInteger(detailPayload.SoLuong) || detailPayload.SoLuong <= 0 || !Number.isFinite(detailPayload.DonGia)) {
+          throw new Error("Thông tin chi tiết đơn hàng không hợp lệ.");
+        }
+        const detailResponse = await fetch(`${BACKEND_URL}/admin/procedures/${getProcedureName(formTable.id, action)}`, {
+          method: "POST",
+          headers: getCrudHeaders(),
+          credentials: "include",
+          body: JSON.stringify(detailPayload),
+        });
+        const detailData = await detailResponse.json().catch(() => null) as { message?: string } | null;
+        if (!detailResponse.ok) throw new Error(detailData?.message || "Không thể lưu chi tiết đơn hàng.");
+        await refreshTableData("DonHang");
+        await refreshTableData("ChiTietDonHang");
+        setFormMode(null);
+        showNotification(isCreate ? "Đã thêm chi tiết đơn hàng" : "Đã cập nhật chi tiết đơn hàng", isCreate ? "success-add" : "success-edit");
+        return;
       }
       const response = await fetch(`${BACKEND_URL}/admin/procedures/${getProcedureName(formTable.id, action)}`, {
         method: "POST",
@@ -574,6 +673,7 @@ export default function Home() {
     setTableData((current) => current.map((table) => table.id === tableId
       ? { ...table, records: table.records.filter((item) => !keys.every((key) => item[key] === row[key])) }
       : table));
+    if (tableId === "ChiTietDonHang") await refreshTableData("DonHang");
     setPendingDelete(null);
     setSaving(false);
     // Hiện thông báo xóa thành công
@@ -722,7 +822,7 @@ export default function Home() {
 
 
           {formMode && (
-            <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => {
+            <div className={`${styles.modalBackdrop} ${styles.formModalBackdrop}`} role="presentation" onMouseDown={(event) => {
               if (event.target === event.currentTarget) closeForm();
             }}>
               <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="form-title">
@@ -734,6 +834,10 @@ export default function Home() {
                   {formColumns.map((column) => {
                     const fkConfig = foreignKeyConfig[column];
                     const isForeignKey = fkConfig && fkConfig.refTable !== formTable.id;
+                    const isOrderStatus = (isCombinedOrderCreate || isOrderEdit) && column === "TrangThai";
+                    const isPaymentMethod = (isCombinedOrderCreate || isOrderEdit) && column === "PhuongThucThanhToan";
+                    const isOrderDetailVehicle = isOrderDetailForm && column === "MaXe";
+                    const isOrderDetailPrice = isOrderDetailForm && column === "DonGia";
                     const refRecords = isForeignKey
                       ? tableData.find((t) => t.id === fkConfig.refTable)?.records ?? []
                       : [];
@@ -741,16 +845,41 @@ export default function Home() {
                     return (
                       <label key={column} className={styles.formField}>
                         <span>{getColumnLabel(column)}</span>
-                        {isForeignKey ? (
+                        {isOrderStatus || isPaymentMethod ? (
                           <select
                             value={formValues[column] == null ? "" : String(formValues[column])}
+                            onChange={(event) => updateFormValue(column, event.target.value)}
+                          >
+                            {isOrderStatus ? <>
+                              {!['Đang xử lý', 'Thành công'].includes(String(formValues[column])) && formValues[column] && <option value={String(formValues[column])}>{String(formValues[column])}</option>}
+                              <option value="Đang xử lý">Đang xử lý</option>
+                              <option value="Thành công">Thành công</option>
+                            </> : <>
+                              <option value="Tiền mặt">Tiền mặt</option>
+                              <option value="Chuyển khoản">Chuyển khoản</option>
+                            </>}
+                          </select>
+                        ) : isOrderDetailVehicle ? (
+                          <select
+                            value={formValues[column] == null ? "" : String(formValues[column])}
+                            required
+                            onChange={(event) => updateFormValue(column, event.target.value ? Number(event.target.value) : "")}
+                          >
+                            <option value="">-- Chọn xe --</option>
+                            {(tableData.find((table) => table.id === "Xe")?.records ?? []).map((vehicle) => (
+                              <option key={String(vehicle.MaXe)} value={String(vehicle.MaXe)}>
+                                {String(vehicle.TenXe ?? vehicle.MaXe)} (Mã: {String(vehicle.MaXe)})
+                              </option>
+                            ))}
+                          </select>
+                        ) : isForeignKey ? (
+                          <select
+                            value={formValues[column] == null ? "" : String(formValues[column])}
+                            required={isCombinedOrderCreate && column === "MaNguoiDung"}
                             disabled={formMode === "edit" && (identityColumns[formTable.id] ?? []).includes(column)}
                             onChange={(event) => {
                               const val = event.target.value;
-                              setFormValues((current) => ({
-                                ...current,
-                                [column]: val === "" ? "" : isNaN(Number(val)) ? val : Number(val),
-                              }));
+                              updateFormValue(column, val === "" ? "" : isNaN(Number(val)) ? val : Number(val));
                             }}
                           >
                             <option value="">-- Chọn {getColumnLabel(column).toLowerCase()} --</option>
@@ -771,8 +900,10 @@ export default function Home() {
                             step={column.includes("Ngay") ? 60 : undefined}
                             checked={column === "LaAnhChinh" ? Boolean(formValues[column]) : undefined}
                             value={column.includes("Ngay") ? getDateTimeLocalValue(formValues[column]) : formValues[column] == null ? "" : String(formValues[column])}
-                            disabled={formMode === "edit" && (identityColumns[formTable.id] ?? []).includes(column)}
-                            onChange={(event) => setFormValues((current) => ({ ...current, [column]: column === "LaAnhChinh" ? event.target.checked : event.target.value }))}
+                            disabled={(formMode === "edit" && (identityColumns[formTable.id] ?? []).includes(column)) || (isOrderDetailForm && column === "MaDonHang" && formValues.MaDonHang != null)}
+                            readOnly={(isCombinedOrderCreate && column === "TongTien") || (isOrderEdit && column === "TongTien") || isOrderDetailPrice}
+                            required={isCombinedOrderCreate && ["TongTien"].includes(column)}
+                            onChange={(event) => updateFormValue(column, column === "LaAnhChinh" ? event.target.checked : event.target.value)}
                           />
                         )}
                         {imageColumns.has(column) && formValues[column] && (
@@ -781,6 +912,26 @@ export default function Home() {
                       </label>
                     );
                   })}
+                  {isCombinedOrderCreate && (
+                    <>
+                      <div className={styles.formSectionTitle}>Chi tiết đơn hàng</div>
+                      <label className={styles.formField}>
+                        <span>Xe</span>
+                        <select required value={formValues.MaXe == null ? "" : String(formValues.MaXe)} onChange={(event) => updateFormValue("MaXe", event.target.value ? Number(event.target.value) : "")}>
+                          <option value="">-- Chọn xe --</option>
+                          {(tableData.find((table) => table.id === "Xe")?.records ?? []).map((vehicle) => <option key={String(vehicle.MaXe)} value={String(vehicle.MaXe)}>{String(vehicle.TenXe ?? vehicle.MaXe)} (Mã: {String(vehicle.MaXe)})</option>)}
+                        </select>
+                      </label>
+                      <label className={styles.formField}><span>Số lượng</span><input required type="number" min="1" value={formValues.SoLuong == null ? "" : String(formValues.SoLuong)} onChange={(event) => updateFormValue("SoLuong", event.target.value ? Number(event.target.value) : "")} /></label>
+                      <label className={styles.formField}><span>Đơn giá</span><input required readOnly type="number" min="0" step="0.01" value={formValues.DonGia == null ? "" : String(formValues.DonGia)} onChange={(event) => updateFormValue("DonGia", event.target.value ? Number(event.target.value) : "")} /></label>
+                    </>
+                  )}
+                  {isOrderDetailForm && (
+                    <label className={styles.formField}>
+                      <span>Thành tiền</span>
+                      <input readOnly type="number" value={formValues.ThanhTien == null ? "" : String(formValues.ThanhTien)} />
+                    </label>
+                  )}
                 </div>
                 <button type="button" className={styles.primaryButton} disabled={saving} onClick={saveRecord}>
                   {saving ? "Đang lưu..." : "Lưu thay đổi"}
