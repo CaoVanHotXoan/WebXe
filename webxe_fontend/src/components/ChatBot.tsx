@@ -35,6 +35,17 @@ type SupportConversationResponse = {
   messages: SupportMessage[];
 };
 
+async function readApiResponse<T>(response: Response): Promise<T & { message?: string; detail?: string }> {
+  const body = await response.text();
+  try {
+    return (body ? JSON.parse(body) : {}) as T & { message?: string; detail?: string };
+  } catch {
+    throw new Error(response.ok
+      ? 'Máy chủ trả về dữ liệu không hợp lệ.'
+      : `Máy chủ hỗ trợ đang lỗi (HTTP ${response.status}).`);
+  }
+}
+
 function renderMessage(text: string) {
   return text.split('\n').map((line, index) => {
     const imageMatch = line.trim().match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
@@ -81,8 +92,8 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
     if (!token || !user || isAdmin) return null;
     const loadSequence = ++supportLoadSequence.current;
     const response = await fetch(`${BACKEND_URL}/chat/conversation`, { headers: supportHeaders, credentials: 'include' });
-    const data = await response.json() as SupportConversationResponse & { message?: string };
-    if (!response.ok) throw new Error(data.message || 'Không thể tải cuộc hội thoại.');
+    const data = await readApiResponse<SupportConversationResponse>(response);
+    if (!response.ok) throw new Error(data.detail || data.message || 'Không thể tải cuộc hội thoại.');
     if (loadSequence !== supportLoadSequence.current) return data.conversation.MaCuocHoiThoai;
     setSupportConversationId(data.conversation.MaCuocHoiThoai);
     setSupportMessages(data.messages);
@@ -234,7 +245,6 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
               <h2>{token && user && !isAdmin ? 'Chăm sóc khách hàng' : 'Trợ lý WebXe'}</h2>
               <p>{token && user && !isAdmin ? 'Nhắn tin trực tiếp với nhân viên' : 'Đang sẵn sàng tư vấn'}</p>
             </div>
-            <button type="button" className={styles.closeButton} onClick={() => setIsOpen(false)} aria-label="Đóng chatbot">×</button>
           </header>
 
           <div className={styles.messages} aria-live="polite">
