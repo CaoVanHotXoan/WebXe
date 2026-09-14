@@ -18,6 +18,8 @@ const mailTransport = nodemailer.createTransport({
   port: Number(process.env.MAIL_PORT || 587),
   secure: Number(process.env.MAIL_PORT) === 465,
   auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASSWORD },
+  requireTLS: Number(process.env.MAIL_PORT || 587) === 587,
+  tls: { minVersion: 'TLSv1.2' },
   connectionTimeout: 10000,
   greetingTimeout: 10000,
   socketTimeout: 15000,
