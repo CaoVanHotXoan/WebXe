@@ -163,7 +163,7 @@ export default function ChamSocKHPage() {
   useEffect(() => {
     const chatBody = chatBodyRef.current;
     if (!chatBody || !selectedConversation?.messages.length) return;
-    chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
+    chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "auto" });
   }, [selectedConversation?.messages]);
 
   const filteredConversations = useMemo(() => {

@@ -83,7 +83,7 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
   useEffect(() => {
     const messagesElement = supportMessagesRef.current;
     if (!messagesElement) return;
-    messagesElement.scrollTo({ top: messagesElement.scrollHeight, behavior: 'smooth' });
+    messagesElement.scrollTo({ top: messagesElement.scrollHeight, behavior: 'auto' });
   }, [supportMessages]);
 
   const supportHeaders = useMemo<HeadersInit>(() => {

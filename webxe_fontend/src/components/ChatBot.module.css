@@ -131,6 +131,7 @@
   min-height: 0;
   flex: 1;
   flex-direction: column;
+  justify-content: flex-end;
   gap: 12px;
   background: radial-gradient(circle at 10% 0%, rgba(244, 189, 82, 0.15), transparent 30%), #fffaf4;
   overflow-y: auto;
