@@ -61,7 +61,7 @@ function renderMessage(text: string) {
 function formatMessageTime(value: string) {
   const normalizedValue = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value) ? value : value.replace(' ', 'T') + '+07:00';
   const date = new Date(normalizedValue);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('vi-VN');
 }
 
 export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
