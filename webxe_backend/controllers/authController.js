@@ -13,12 +13,14 @@ const cookieOptions = {
 
 const otpStore = new Map();
 const otpLifetimeMs = Number(process.env.OTP_EXPIRE_MINUTES || 10) * 60 * 1000;
+const mailPort = Number(process.env.MAIL_PORT || 587);
+const mailPassword = String(process.env.MAIL_PASSWORD || '').replace(/\s+/g, '');
 const mailTransport = nodemailer.createTransport({
   host: process.env.MAIL_HOST,
-  port: Number(process.env.MAIL_PORT || 587),
-  secure: Number(process.env.MAIL_PORT) === 465,
-  auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASSWORD },
-  requireTLS: Number(process.env.MAIL_PORT || 587) === 587,
+  port: mailPort,
+  secure: mailPort === 465,
+  auth: { user: process.env.MAIL_USER, pass: mailPassword },
+  requireTLS: mailPort === 587,
   tls: { minVersion: 'TLSv1.2' },
   connectionTimeout: 10000,
   greetingTimeout: 10000,
@@ -34,6 +36,9 @@ function createOtp() {
 }
 
 async function sendOtp(email, purpose) {
+  if (!process.env.MAIL_HOST || !process.env.MAIL_USER || !mailPassword) {
+    throw new Error('Thiếu cấu hình MAIL_HOST, MAIL_USER hoặc MAIL_PASSWORD trên backend.');
+  }
   const otp = createOtp();
   const expirationMinutes = process.env.OTP_EXPIRE_MINUTES || 10;
   const isRegistration = purpose === 'register';
@@ -42,14 +47,16 @@ async function sendOtp(email, purpose) {
     ? 'Xác nhận đăng ký tài khoản'
     : isProfileEmail ? 'Xác nhận email hồ sơ' : 'Xác nhận đổi mật khẩu';
   const text = `Mã xác nhận WebXe của bạn là ${otp}. Mã có hiệu lực trong ${expirationMinutes} phút. Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email.`;
-  const result = await mailTransport.sendMail({
-    from: process.env.MAIL_FROM || process.env.MAIL_USER,
-    to: email,
-    subject: isRegistration
-      ? 'Mã OTP đăng ký tài khoản WebXe'
-      : isProfileEmail ? 'Mã OTP xác nhận email WebXe' : 'Mã OTP đổi mật khẩu WebXe',
-    text,
-    html: `
+  let result;
+  try {
+    result = await mailTransport.sendMail({
+      from: process.env.MAIL_FROM || process.env.MAIL_USER,
+      to: email,
+      subject: isRegistration
+        ? 'Mã OTP đăng ký tài khoản WebXe'
+        : isProfileEmail ? 'Mã OTP xác nhận email WebXe' : 'Mã OTP đổi mật khẩu WebXe',
+      text,
+      html: `
       <div style="margin:0;background:#f4f6f8;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
         <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;box-shadow:0 12px 32px rgba(15,23,42,.08);">
           <div style="padding:28px 32px;background:#182b28;color:#ffffff;">
@@ -70,8 +77,12 @@ async function sendOtp(email, purpose) {
           <div style="padding:18px 32px;border-top:1px solid #eef0f2;color:#9ca3af;font-size:11px;line-height:1.5;">Email tự động từ WebXe. Vui lòng không trả lời email này.</div>
         </div>
       </div>
-    `
-  });
+      `
+    });
+  } catch (error) {
+    console.error('[Mail] Không gửi được OTP:', error.message);
+    throw new Error('Không thể gửi OTP. Hãy kiểm tra MAIL_USER và Google App Password trên Render.');
+  }
   if (result.rejected?.includes(email)) {
     throw new Error(`Gmail từ chối người nhận ${email}.`);
   }
