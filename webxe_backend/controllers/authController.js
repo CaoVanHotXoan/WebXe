@@ -13,12 +13,14 @@ const cookieOptions = {
 
 const otpStore = new Map();
 const otpLifetimeMs = Number(process.env.OTP_EXPIRE_MINUTES || 10) * 60 * 1000;
-const mailHost = String(process.env.MAIL_HOST || 'smtp.gmail.com').trim();
-const mailUser = String(process.env.MAIL_USER || '').trim();
-const mailPassword = String(process.env.MAIL_PASSWORD || '')
+const mailHost = String(process.env.MAIL_HOST || process.env.GMAIL_HOST || 'smtp.gmail.com').trim();
+const mailUser = String(process.env.MAIL_USER || process.env.GMAIL_USER || '').trim();
+const mailPassword = String(process.env.MAIL_PASSWORD || process.env.GMAIL_APP_PASSWORD || '')
   .trim()
   .replace(/^['"]|['"]$/g, '')
   .replace(/\s+/g, '');
+
+console.log(`[Mail] SMTP ${mailHost}:${process.env.MAIL_PORT || 587}; user=${mailUser ? 'configured' : 'missing'}; password=${mailPassword ? 'configured' : 'missing'}`);
 
 function createMailTransport(port) {
   return nodemailer.createTransport({
@@ -110,7 +112,7 @@ async function sendOtp(email, purpose) {
 async function notifyAdminOfRegistrationEmailFailure(email, error) {
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'qlxebaton@gmail.com';
   try {
-    await mailTransport.sendMail({
+    await createMailTransport(Number(process.env.MAIL_PORT || 587)).sendMail({
       from: process.env.MAIL_FROM || process.env.MAIL_USER,
       to: adminEmail,
       subject: 'WebXe: Không gửi được OTP đăng ký',
