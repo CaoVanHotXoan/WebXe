@@ -57,6 +57,9 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData>(defaultProfile);
   const [draftProfile, setDraftProfile] = useState<ProfileData>(defaultProfile);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [profileOtp, setProfileOtp] = useState('');
+  const [isProfileOtpRequired, setIsProfileOtpRequired] = useState(false);
+  const [isProfileOtpSending, setIsProfileOtpSending] = useState(false);
   const [message, setMessage] = useState('');
   const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
   const [passwordStep, setPasswordStep] = useState<'form' | 'otp'>('form');
@@ -135,11 +138,30 @@ export default function ProfilePage() {
       return;
     }
 
+    const emailChanged = draftProfile.email.trim().toLowerCase() !== (profile.email || '').trim().toLowerCase();
+    if (emailChanged && !isProfileOtpRequired) {
+      setIsProfileOtpSending(true);
+      try {
+        const data = await apiFetch<{ message?: string }>('/auth/profile/email/request-otp', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ email: draftProfile.email }),
+        });
+        setIsProfileOtpRequired(true);
+        showMessage(data.message || 'Mã OTP đã được gửi đến Gmail mới.');
+      } catch (requestError) {
+        showMessage(requestError instanceof Error ? requestError.message : 'Không thể gửi OTP.');
+      } finally {
+        setIsProfileOtpSending(false);
+      }
+      return;
+    }
+
     try {
       const data = await apiFetch<{ message?: string; user?: ApiProfileUser }>('/user/profile', {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify(draftProfile),
+        body: JSON.stringify({ ...draftProfile, otp: emailChanged ? profileOtp : undefined }),
       });
       if (!data.user) throw new Error('Máy chủ không trả về thông tin tài khoản.');
       updateProfileState({
@@ -154,9 +176,15 @@ export default function ProfilePage() {
         image: data.user.HinhAnh ?? data.user.image,
       });
       setIsEditOpen(false);
+      setProfileOtp('');
+      setIsProfileOtpRequired(false);
       showMessage(data.message || 'Thông tin tài khoản đã được cập nhật.');
     } catch (requestError) {
-      showMessage(requestError instanceof Error ? requestError.message : 'Không thể cập nhật thông tin.');
+      if (emailChanged && isProfileOtpRequired) {
+        showMessage('Cập nhật thông tin thất bại: OTP không đúng hoặc đã hết hạn.');
+      } else {
+        showMessage(requestError instanceof Error ? requestError.message : 'Không thể cập nhật thông tin.');
+      }
     }
   };
 
@@ -327,12 +355,13 @@ export default function ProfilePage() {
           <form className={styles.modal} onSubmit={handleProfileSubmit}>
             <div className={styles.modalHeading}><div><p className={styles.eyebrow}>HỒ SƠ</p><h2>Cập nhật thông tin</h2></div><button type="button" className={styles.closeButton} onClick={() => setIsEditOpen(false)}>×</button></div>
             <label className={styles.field}>Tên<input value={draftProfile.name} onChange={(event) => setDraftProfile({ ...draftProfile, name: event.target.value })} /></label>
-            <label className={styles.field}>Email<input type="email" value={draftProfile.email} onChange={(event) => setDraftProfile({ ...draftProfile, email: event.target.value })} /></label>
+            <label className={styles.field}>Email<input type="email" value={draftProfile.email} onChange={(event) => { setIsProfileOtpRequired(false); setProfileOtp(''); setDraftProfile({ ...draftProfile, email: event.target.value }); }} /></label>
+            {isProfileOtpRequired && <label className={styles.field}>Mã OTP Gmail mới<input inputMode="numeric" autoComplete="one-time-code" value={profileOtp} onChange={(event) => setProfileOtp(event.target.value)} placeholder="Nhập mã 6 số" required /></label>}
             <label className={styles.field}>Số điện thoại<input value={draftProfile.phone} onChange={(event) => setDraftProfile({ ...draftProfile, phone: event.target.value })} /></label>
             <label className={styles.field}>Địa chỉ<input value={draftProfile.address} onChange={(event) => setDraftProfile({ ...draftProfile, address: event.target.value })} /></label>
             <label className={styles.field}>Ảnh đại diện (URL)<input type="url" value={draftProfile.image} onChange={(event) => setDraftProfile({ ...draftProfile, image: event.target.value })} placeholder="https://..." /></label>
             {draftProfile.image && <img className={styles.profileImagePreview} src={draftProfile.image} alt="Xem trước ảnh đại diện" />}
-            <button className={styles.primaryButton} type="submit">LƯU THÔNG TIN</button>
+            <button className={styles.primaryButton} type="submit" disabled={isProfileOtpSending}>{isProfileOtpSending ? 'ĐANG GỬI OTP...' : isProfileOtpRequired ? 'XÁC NHẬN VÀ LƯU' : 'LƯU THÔNG TIN'}</button>
           </form>
         </div>
       )}

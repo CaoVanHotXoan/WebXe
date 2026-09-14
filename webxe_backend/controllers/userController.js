@@ -1,5 +1,6 @@
 import { getPool, sql } from '../config/db.js';
 import nodemailer from 'nodemailer';
+import { normalizeEmail, takeOtp } from './authController.js';
 
 const mailTransport = nodemailer.createTransport({
   host: process.env.MAIL_HOST,
@@ -102,7 +103,8 @@ export async function getProfile(req, res, next) {
 export async function updateProfile(req, res, next) {
   try {
     const name = String(req.body?.name || '').trim();
-    const email = String(req.body?.email || '').trim().toLowerCase();
+    const email = normalizeEmail(req.body?.email);
+    const otp = String(req.body?.otp || '').trim();
     const phone = String(req.body?.phone || '').trim();
     const address = String(req.body?.address || '').trim();
     const image = String(req.body?.image || '').trim();
@@ -115,6 +117,14 @@ export async function updateProfile(req, res, next) {
     }
 
     const pool = await getPool();
+    const currentResult = await pool.request()
+      .input('id', sql.Int, Number(req.user.sub))
+      .query('SELECT Email FROM NguoiDung WHERE MaNguoiDung = @id');
+    const currentEmail = normalizeEmail(currentResult.recordset[0]?.Email);
+    if (!currentResult.recordset[0]) return res.status(404).json({ message: 'Không tìm thấy tài khoản.' });
+    if (email !== currentEmail && !takeOtp(email, 'profile_email', otp)) {
+      return res.status(400).json({ message: 'Vui lòng nhập đúng OTP đã gửi đến Gmail mới.' });
+    }
     const existing = await pool.request()
       .input('email', sql.VarChar(100), email)
       .input('id', sql.Int, Number(req.user.sub))

@@ -100,6 +100,7 @@ export default function ChamSocKHPage() {
   const [activeTab, setActiveTab] = useState("Tất cả");
   const conversationLoadSequence = useRef(0);
   const messageLoadSequence = useRef(0);
+  const chatBodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (status === "loading" || !token || !isAdmin) return;
@@ -158,6 +159,13 @@ export default function ChamSocKHPage() {
   }, [isAdmin, selectedId, status, token, user?.id]);
 
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId) ?? null;
+
+  useEffect(() => {
+    const chatBody = chatBodyRef.current;
+    if (!chatBody || !selectedConversation?.messages.length) return;
+    chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "smooth" });
+  }, [selectedConversation?.messages]);
+
   const filteredConversations = useMemo(() => {
     const keyword = search.trim().toLowerCase();
     return conversations.filter((conversation) => {
@@ -261,7 +269,7 @@ export default function ChamSocKHPage() {
             </div>
           </header>
 
-          <div className={styles.chatBody}>
+          <div ref={chatBodyRef} className={styles.chatBody}>
             <div className={styles.dateDivider}><span>Hôm nay</span></div>
             <div className={styles.messageList}>
               {selectedConversation.messages.map((item) => (

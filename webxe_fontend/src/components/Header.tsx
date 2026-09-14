@@ -32,7 +32,9 @@ export default function Header() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const [alertNames, setAlertNames] = useState(['', '', '']);
+  const [alertNames, setAlertNames] = useState<string[]>([]);
+  const [editingAlertIndex, setEditingAlertIndex] = useState<number | null>(null);
+  const [editingAlertValue, setEditingAlertValue] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [isAlertSending, setIsAlertSending] = useState(false);
   const [alertVehicles, setAlertVehicles] = useState<AlertVehicle[]>([]);
@@ -57,7 +59,7 @@ export default function Header() {
         if (!active) return;
         if (!alertDraftDirtyRef.current && !isAlertOpen) {
           const names = (data.alerts ?? []).map((alert) => alert.TenXeTimKiem).slice(0, 3);
-          setAlertNames([...names, '', ''].slice(0, 3));
+          setAlertNames(names);
         }
         setAlertVehicles(data.vehicles ?? []);
         setHasAvailableAlert(Boolean(data.hasAvailable));
@@ -73,8 +75,36 @@ export default function Header() {
     };
   }, [isCustomer, token]);
 
-  const sendVehicleAlert = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const addAlertName = () => {
+    if (alertNames.length >= 3) {
+      setAlertMessage('Bạn chỉ có thể theo dõi tối đa 3 tên xe.');
+      return;
+    }
+    setEditingAlertIndex(alertNames.length);
+    setEditingAlertValue('');
+    setAlertMessage('');
+  };
+
+  const editAlertName = (index: number) => {
+    setEditingAlertIndex(index);
+    setEditingAlertValue(alertNames[index]);
+    setAlertMessage('');
+  };
+
+  const cancelAlertEdit = () => {
+    setEditingAlertIndex(null);
+    setEditingAlertValue('');
+    setAlertMessage('');
+  };
+
+  const deleteAlertName = async (index: number) => {
+    const nextNames = alertNames.filter((_, itemIndex) => itemIndex !== index);
+    setAlertNames(nextNames);
+    alertDraftDirtyRef.current = true;
+    await persistAlertNames(nextNames);
+  };
+
+  const persistAlertNames = async (names: string[]) => {
     setIsAlertSending(true);
     setAlertMessage('');
     try {
@@ -82,19 +112,35 @@ export default function Header() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         credentials: 'include',
-        body: JSON.stringify({ vehicleNames: alertNames, notify: false }),
+        body: JSON.stringify({ vehicleNames: names.filter((name) => name.trim()), notify: false }),
       });
       const data = await response.json() as { message?: string; vehicles?: AlertVehicle[] };
-      if (!response.ok) throw new Error(data.message || 'Không thể gửi thông báo.');
+      if (!response.ok) throw new Error(data.message || 'Không thể cập nhật danh sách xe.');
+      setAlertNames(names.filter((name) => name.trim()));
       setAlertVehicles(data.vehicles ?? []);
       setHasAvailableAlert((data.vehicles ?? []).length > 0);
       alertDraftDirtyRef.current = false;
-      setAlertMessage(data.message || 'Đã lưu danh sách xe quan tâm.');
+      setEditingAlertIndex(null);
+      setEditingAlertValue('');
+      setAlertMessage(data.message || 'Đã cập nhật danh sách xe.');
     } catch (error) {
-      setAlertMessage(error instanceof Error ? error.message : 'Không thể kết nối máy chủ.');
+      setAlertMessage(error instanceof Error ? error.message : 'Không thể cập nhật danh sách xe.');
     } finally {
       setIsAlertSending(false);
     }
+  };
+
+  const submitAlertEdit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const value = editingAlertValue.trim();
+    if (!value) {
+      setAlertMessage('Vui lòng nhập tên xe.');
+      return;
+    }
+    const nextNames = [...alertNames];
+    if (editingAlertIndex === alertNames.length) nextNames.push(value);
+    else if (editingAlertIndex !== null) nextNames[editingAlertIndex] = value;
+    await persistAlertNames(nextNames);
   };
 
   useEffect(() => {
@@ -306,16 +352,20 @@ export default function Header() {
       </nav>
       {isAlertOpen && isCustomer && (
         <div className="vehicle-alert-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setIsAlertOpen(false); }}>
-          <form className="vehicle-alert-modal" onSubmit={sendVehicleAlert}>
+          <form className="vehicle-alert-modal" onSubmit={submitAlertEdit}>
             <div className="vehicle-alert-heading"><div><p>KHÁCH HÀNG</p><h2>Thông báo có xe</h2></div><button type="button" onClick={() => setIsAlertOpen(false)} aria-label="Đóng">×</button></div>
             <p className="vehicle-alert-description">Nhập tối đa 3 tên xe. WebXe sẽ kiểm tra tồn kho và gửi email khi xe đang có hàng.</p>
             {alertNames.map((name, index) => {
               const normalizedName = name.trim().toLowerCase();
               const availableVehicles = normalizedName ? alertVehicles.filter((vehicle) => vehicle.TenXe.toLowerCase().includes(normalizedName)) : [];
-              return <label key={index}>Tên xe {index + 1}<div className="vehicle-alert-input-row"><input value={name} onChange={(event) => { alertDraftDirtyRef.current = true; setAlertNames((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item)); }} placeholder={`Ví dụ: Toyota ${index === 0 ? 'Vios' : 'Camry'}`} />{availableVehicles.length > 0 && <span className="vehicle-alert-available" title="Xe đang có hàng">✓ Có hàng</span>}</div>{availableVehicles.map((vehicle) => <Link className="vehicle-alert-view" href={`/ChiTietXe/ChiTietXe?id=${vehicle.MaXe}`} key={vehicle.MaXe}>Xem {vehicle.TenXe} →</Link>)}</label>;
+              if (editingAlertIndex === index) {
+                return <label key={index}>Tên xe {index + 1}<div className="vehicle-alert-input-row"><input autoFocus value={editingAlertValue} onChange={(event) => setEditingAlertValue(event.target.value)} placeholder="Ví dụ: Toyota Vios" />{availableVehicles.length > 0 && <span className="vehicle-alert-available" title="Xe đang có hàng">✓ Có hàng</span>}</div><div className="vehicle-alert-edit-actions"><button type="submit" className="vehicle-alert-submit" disabled={isAlertSending}>{isAlertSending ? 'Đang lưu...' : 'Cập nhật'}</button><button type="button" className="vehicle-alert-cancel" onClick={cancelAlertEdit}>Hủy</button></div></label>;
+              }
+              return <div className="vehicle-alert-item" key={index}><div className="vehicle-alert-item-main"><strong>{name}</strong>{availableVehicles.length > 0 && <span className="vehicle-alert-available" title="Xe đang có hàng">✓ Có hàng</span>}</div>{availableVehicles.map((vehicle) => <Link className="vehicle-alert-view" href={`/ChiTietXe/ChiTietXe?id=${vehicle.MaXe}`} key={vehicle.MaXe}>Xem {vehicle.TenXe} →</Link>)}<div className="vehicle-alert-item-actions"><button type="button" onClick={() => editAlertName(index)}>Sửa</button><button type="button" onClick={() => void deleteAlertName(index)} disabled={isAlertSending}>Xóa</button></div></div>;
             })}
+            {editingAlertIndex === alertNames.length && <label>Tên xe {alertNames.length + 1}<div className="vehicle-alert-input-row"><input autoFocus value={editingAlertValue} onChange={(event) => setEditingAlertValue(event.target.value)} placeholder="Ví dụ: Toyota Vios" /></div><div className="vehicle-alert-edit-actions"><button type="submit" className="vehicle-alert-submit" disabled={isAlertSending}>{isAlertSending ? 'Đang lưu...' : 'Lưu'}</button><button type="button" className="vehicle-alert-cancel" onClick={cancelAlertEdit}>Hủy</button></div></label>}
             {alertMessage && <p className="vehicle-alert-message" role="status">{alertMessage}</p>}
-            <button className="vehicle-alert-submit" type="submit" disabled={isAlertSending}>{isAlertSending ? 'Đang kiểm tra...' : 'Lưu'}</button>
+            {editingAlertIndex === null && alertNames.length < 3 && <button type="button" className="vehicle-alert-add" onClick={addAlertName}>+ Thêm</button>}
           </form>
         </div>
       )}

@@ -78,6 +78,13 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
   const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
   const [supportError, setSupportError] = useState('');
   const supportLoadSequence = useRef(0);
+  const supportMessagesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const messagesElement = supportMessagesRef.current;
+    if (!messagesElement) return;
+    messagesElement.scrollTo({ top: messagesElement.scrollHeight, behavior: 'smooth' });
+  }, [supportMessages]);
 
   const supportHeaders = useMemo<HeadersInit>(() => {
     const headers: Record<string, string> = {};
@@ -247,7 +254,7 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
             </div>
           </header>
 
-          <div className={styles.messages} aria-live="polite">
+          <div ref={supportMessagesRef} className={styles.messages} aria-live="polite">
             {token && user && !isAdmin ? (
               supportMessages.map((message) => (
                 <div className={`${styles.messageRow} ${message.MaNguoiGui === user.id ? styles.userRow : ''}`} key={message.MaTinNhan}>

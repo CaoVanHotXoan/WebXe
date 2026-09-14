@@ -32,12 +32,18 @@ async function sendOtp(email, purpose) {
   const otp = createOtp();
   const expirationMinutes = process.env.OTP_EXPIRE_MINUTES || 10;
   const isRegistration = purpose === 'register';
-  const title = isRegistration ? 'Xác nhận đăng ký tài khoản' : 'Xác nhận đổi mật khẩu';
+  const isProfileEmail = purpose === 'profile_email';
+  const title = isRegistration
+    ? 'Xác nhận đăng ký tài khoản'
+    : isProfileEmail ? 'Xác nhận email hồ sơ' : 'Xác nhận đổi mật khẩu';
   const text = `Mã xác nhận WebXe của bạn là ${otp}. Mã có hiệu lực trong ${expirationMinutes} phút. Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email.`;
   const result = await mailTransport.sendMail({
     from: process.env.MAIL_FROM || process.env.MAIL_USER,
     to: email,
     subject: isRegistration ? 'Mã OTP đăng ký tài khoản WebXe' : 'Mã OTP đổi mật khẩu WebXe',
+    subject: isRegistration
+      ? 'Mã OTP đăng ký tài khoản WebXe'
+      : isProfileEmail ? 'Mã OTP xác nhận email WebXe' : 'Mã OTP đổi mật khẩu WebXe',
     text,
     html: `
       <div style="margin:0;background:#f4f6f8;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
@@ -91,6 +97,26 @@ function takeOtp(email, purpose, inputOtp) {
   }
   otpStore.delete(key);
   return true;
+}
+
+export { normalizeEmail, sendOtp, takeOtp };
+
+export async function requestProfileEmailOtp(req, res, next) {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    if (!/^\S+@gmail\.com$/i.test(email)) {
+      return res.status(400).json({ message: 'Email mới phải là địa chỉ Gmail hợp lệ.' });
+    }
+    const pool = await getPool();
+    const existing = await pool.request()
+      .input('email', sql.VarChar(100), email)
+      .query('SELECT TOP 1 MaNguoiDung FROM NguoiDung WHERE Email = @email');
+    if (existing.recordset[0]) return res.status(409).json({ message: 'Email đã được sử dụng bởi tài khoản khác.' });
+    await sendOtp(email, 'profile_email');
+    return res.json({ message: 'Mã OTP đã được gửi đến Gmail mới của bạn.' });
+  } catch (error) {
+    return next(error);
+  }
 }
 
 export async function login(req, res, next) {
