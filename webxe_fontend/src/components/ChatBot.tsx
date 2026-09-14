@@ -156,6 +156,12 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
     { id: 1, sender: 'bot', text: 'Xin chào! Mình là trợ lý WebXe. Mình có thể giúp bạn tìm mẫu xe và thông tin giá bán.' },
   ]);
 
+  useEffect(() => {
+    const messagesElement = supportMessagesRef.current;
+    if (!messagesElement) return;
+    messagesElement.scrollTo({ top: messagesElement.scrollHeight, behavior: 'auto' });
+  }, [messages]);
+
   const sendMessage = async (value: string) => {
     const trimmedQuestion = value.trim();
     if (!trimmedQuestion || isLoading) return;
@@ -201,7 +207,7 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
           })),
         }),
       });
-      const data = await response.json() as { message?: string; vehicleId?: number | null; vehicleIds?: number[]; vehicleNames?: string[]; vehicleCards?: ChatMessage['vehicleCards'] };
+      const data = await readApiResponse<{ message?: string; vehicleId?: number | null; vehicleIds?: number[]; vehicleNames?: string[]; vehicleCards?: ChatMessage['vehicleCards'] }>(response);
       if (!response.ok) throw new Error(data.message || 'Không thể kết nối trợ lý AI.');
       setMessages((current) => [...current, { id: nextId + 1, sender: 'bot', text: data.message || 'Trợ lý chưa có câu trả lời.', vehicleId: data.vehicleId, vehicleIds: data.vehicleIds, vehicleNames: data.vehicleNames, vehicleCards: data.vehicleCards }]);
     } catch (error) {

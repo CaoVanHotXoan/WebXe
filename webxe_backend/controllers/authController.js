@@ -17,7 +17,10 @@ const mailTransport = nodemailer.createTransport({
   host: process.env.MAIL_HOST,
   port: Number(process.env.MAIL_PORT || 587),
   secure: Number(process.env.MAIL_PORT) === 465,
-  auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASSWORD }
+  auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASSWORD },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
 });
 
 function normalizeEmail(value) {
@@ -197,7 +200,7 @@ export async function requestRegisterOtp(req, res, next) {
     try {
       await sendOtp(email, 'register');
     } catch (error) {
-      await notifyAdminOfRegistrationEmailFailure(email, error);
+      void notifyAdminOfRegistrationEmailFailure(email, error);
       return res.status(422).json({ message: 'Không thể gửi OTP đến Gmail này. Vui lòng kiểm tra lại địa chỉ email.' });
     }
     return res.json({ message: 'Mã OTP đã được gửi đến Gmail của bạn.' });

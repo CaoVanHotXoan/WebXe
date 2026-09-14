@@ -46,7 +46,7 @@ export default function LoginPage() {
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
       const controller = new AbortController();
-      timeoutId = setTimeout(() => controller.abort(), 10000);
+      timeoutId = setTimeout(() => controller.abort(), 30000);
       
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
@@ -67,8 +67,8 @@ export default function LoginPage() {
       await onSuccess(data);
     } catch (requestError) {
       if (requestError instanceof DOMException && requestError.name === 'AbortError') {
-        setError('Warning: Time Out...');
-        addToast('Warning: Time Out...', 'warning');
+        setError('Máy chủ phản hồi quá lâu. Vui lòng thử lại sau ít giây.');
+        addToast('Máy chủ phản hồi quá lâu. Vui lòng thử lại.', 'warning');
       } else {
         const msg = requestError instanceof Error ? requestError.message : 'Không thể kết nối máy chủ.';
         setError(msg);
