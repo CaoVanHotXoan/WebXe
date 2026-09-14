@@ -4,6 +4,7 @@ import { useAuth, UserProfile } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { BACKEND_URL } from '@/services/api';
 import styles from './login.module.css';
+import Head from "next/head";
 
 type FormMode = 'login' | 'register' | 'forgot_password';
 type FormStep = 'form' | 'otp';
@@ -142,6 +143,10 @@ export default function LoginPage() {
 
   return (
     <div className={styles['login-container']}>
+      <Head>
+        <title>Đăng nhập | WebXe</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
       <button 
         className={styles['back-btn']} 
         onClick={() => router.back()}

@@ -1,5 +1,6 @@
 import { getPool, sql } from '../config/db.js';
 import { deleteCloudinaryImage } from './mediaController.js';
+import { processVehicleAvailabilityAfterVehicleChange } from './userController.js';
 
 const imageDeleteTargets = {
   sp_XoaNguoiDung: { table: 'NguoiDung', id: 'MaNguoiDung', columns: ['HinhAnh'] },
@@ -48,6 +49,13 @@ export async function executeProcedure(req, res, next) {
     }
 
     const pool = await getPool();
+    let previousQuantity = null;
+    if (req.params.procedureName === 'sp_SuaXe') {
+      const previousVehicle = await pool.request()
+        .input('MaXe', sql.Int, body.MaXe)
+        .query('SELECT SoLuong FROM Xe WHERE MaXe = @MaXe');
+      previousQuantity = previousVehicle.recordset[0]?.SoLuong ?? null;
+    }
     const imageUrls = await getImageUrlsBeforeDelete(pool, req.params.procedureName, body);
     const oldImageUrls = await getImageUrlsBeforeUpdate(pool, req.params.procedureName, body);
     const request = pool.request();
@@ -58,6 +66,31 @@ export async function executeProcedure(req, res, next) {
     }
 
     const result = await request.execute(req.params.procedureName);
+    if (['sp_ThemXe', 'sp_SuaXe'].includes(req.params.procedureName)) {
+      let vehicleId = req.params.procedureName === 'sp_ThemXe'
+        ? result.recordset?.[0]?.MaXe
+        : body.MaXe;
+      // Fallback for databases where the updated sp_ThemXe has not been re-run yet.
+      if (!vehicleId && req.params.procedureName === 'sp_ThemXe') {
+        const createdVehicle = await pool.request()
+          .input('MaHang', sql.Int, body.MaHang)
+          .input('MaLoai', sql.Int, body.MaLoai)
+          .input('TenXe', sql.NVarChar(150), body.TenXe)
+          .query(`
+            SELECT TOP 1 MaXe
+            FROM Xe
+            WHERE MaHang = @MaHang AND MaLoai = @MaLoai AND TenXe = @TenXe
+            ORDER BY MaXe DESC
+          `);
+        vehicleId = createdVehicle.recordset[0]?.MaXe;
+      }
+      if (vehicleId) {
+        await processVehicleAvailabilityAfterVehicleChange(pool, vehicleId, previousQuantity)
+          .catch((error) => console.error('Không thể xử lý thông báo xe có hàng:', error));
+      } else {
+        console.warn(`[VehicleAlert] Không xác định được MaXe sau ${req.params.procedureName}.`);
+      }
+    }
     if (['sp_ThemChiTietDonHang', 'sp_SuaChiTietDonHang', 'sp_XoaChiTietDonHang'].includes(req.params.procedureName)) {
       await syncOrderTotal(pool, body.MaDonHang);
     }

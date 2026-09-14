@@ -10,6 +10,8 @@ export type Vehicle = {
   type?: VehicleType;
   fuel?: FuelType;
   brand?: string;
+  year?: string;
+  color?: string;
 };
 
 // Dữ liệu bán xe dùng chung cho trang chủ và trang mua bán.

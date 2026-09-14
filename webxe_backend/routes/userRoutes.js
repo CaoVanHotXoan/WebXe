@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getProfile, updateProfile, sendVehicleAvailabilityAlert } from '../controllers/userController.js';
+import { getProfile, updateProfile, getVehicleAvailabilityAlerts, sendVehicleAvailabilityAlert } from '../controllers/userController.js';
 import { verifyToken } from '../middlewares/authMiddleware.js';
 
 const router = Router();
@@ -17,6 +17,7 @@ const router = Router();
  */
 router.get('/profile', verifyToken, getProfile);
 router.put('/profile', verifyToken, updateProfile);
+router.get('/vehicle-availability-alert', verifyToken, getVehicleAvailabilityAlerts);
 router.post('/vehicle-availability-alert', verifyToken, sendVehicleAvailabilityAlert);
 
 export default router;

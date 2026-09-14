@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { BACKEND_URL } from '@/services/api';
 import styles from './chiTietXe.module.css';
+import Head from "next/head";
 
 type SliderItem = { title: string; image: string; href: string };
 type ApiVehicle = {
@@ -175,7 +176,10 @@ export default function ChiTietXePage() {
 
   return (
     <div className={`${styles.page} font-sans`}>
-      <Header />
+      <Head>
+        <title>Chi tiết xe | WebXe</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
       <main className={styles.main}>
         <p className={styles.breadcrumb}><Link href="/MuaBanXe/MuaBanXe" className={styles.backLink}>Mua bán xe</Link> / Chi tiết xe</p>
         <section className={styles.hero}>

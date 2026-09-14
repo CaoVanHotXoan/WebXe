@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BACKEND_URL } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
@@ -16,6 +16,7 @@ type SearchVehicle = {
   type?: string;
 };
 type AlertVehicle = { MaXe: number; TenXe: string; Gia: number; SoLuong: number };
+type AlertResponse = { alerts?: Array<{ TenXeTimKiem: string }>; vehicles?: AlertVehicle[]; hasAvailable?: boolean };
 
 type CatalogResponse = {
   Xe?: Array<{ MaXe: number; MaHang?: number; MaLoai?: number; TenXe?: string; Gia?: number | string }>;
@@ -35,9 +36,42 @@ export default function Header() {
   const [alertMessage, setAlertMessage] = useState('');
   const [isAlertSending, setIsAlertSending] = useState(false);
   const [alertVehicles, setAlertVehicles] = useState<AlertVehicle[]>([]);
+  const [hasAvailableAlert, setHasAvailableAlert] = useState(false);
+  const alertDraftDirtyRef = useRef(false);
   const [searchVehicles, setSearchVehicles] = useState<SearchVehicle[]>([]);
   const isHomePage = router.pathname === '/';
   const isCustomer = isAuthenticated && !isAdmin && Boolean(user);
+
+  useEffect(() => {
+    if (!isCustomer || !token) return;
+    let active = true;
+    const refreshAlerts = () => fetch(`${BACKEND_URL}/user/vehicle-availability-alert`, {
+      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Không thể tải danh sách thông báo có xe.');
+        return response.json() as Promise<AlertResponse>;
+      })
+      .then((data) => {
+        if (!active) return;
+        if (!alertDraftDirtyRef.current && !isAlertOpen) {
+          const names = (data.alerts ?? []).map((alert) => alert.TenXeTimKiem).slice(0, 3);
+          setAlertNames([...names, '', ''].slice(0, 3));
+        }
+        setAlertVehicles(data.vehicles ?? []);
+        setHasAvailableAlert(Boolean(data.hasAvailable));
+      })
+      .catch(() => {
+        if (active) setHasAvailableAlert(false);
+      });
+    void refreshAlerts();
+    const intervalId = window.setInterval(refreshAlerts, 10000);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [isCustomer, token]);
 
   const sendVehicleAlert = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -52,9 +86,9 @@ export default function Header() {
       });
       const data = await response.json() as { message?: string; vehicles?: AlertVehicle[] };
       if (!response.ok) throw new Error(data.message || 'Không thể gửi thông báo.');
-      const savedNames = alertNames.map((name) => name.trim()).filter(Boolean);
-      localStorage.setItem('vehicleAvailabilityAlerts', JSON.stringify(savedNames));
       setAlertVehicles(data.vehicles ?? []);
+      setHasAvailableAlert((data.vehicles ?? []).length > 0);
+      alertDraftDirtyRef.current = false;
       setAlertMessage(data.message || 'Đã lưu danh sách xe quan tâm.');
     } catch (error) {
       setAlertMessage(error instanceof Error ? error.message : 'Không thể kết nối máy chủ.');
@@ -66,25 +100,25 @@ export default function Header() {
   useEffect(() => {
     if (!isCustomer || !token) return;
     const handlePageExit = () => {
-      const rawNames = localStorage.getItem('vehicleAvailabilityAlerts');
-      if (!rawNames) return;
-      let savedNames: string[];
-      try {
-        savedNames = JSON.parse(rawNames) as string[];
-      } catch {
-        localStorage.removeItem('vehicleAvailabilityAlerts');
-        return;
-      }
       void fetch(`${BACKEND_URL}/user/vehicle-availability-alert`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         credentials: 'include',
         keepalive: true,
-        body: JSON.stringify({ vehicleNames: savedNames, notify: true }),
+        body: JSON.stringify({ vehicleNames: [], notify: true }),
       });
     };
     window.addEventListener('pagehide', handlePageExit);
-    return () => window.removeEventListener('pagehide', handlePageExit);
+    return () => {
+      window.removeEventListener('pagehide', handlePageExit);
+      void fetch(`${BACKEND_URL}/user/vehicle-availability-alert`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        keepalive: true,
+        body: JSON.stringify({ vehicleNames: [], notify: true }),
+      });
+    };
   }, [isCustomer, token]);
 
   useEffect(() => {
@@ -239,9 +273,12 @@ export default function Header() {
             </Link>
           )}
           {isCustomer && (
-            <button type="button" className="vehicle-alert-button" onClick={() => { setAlertMessage(''); setIsAlertOpen(true); }}>
-              Thông báo có xe
-            </button>
+            <span className="vehicle-alert-button-wrap">
+              <button type="button" className="vehicle-alert-button" onClick={() => { setAlertMessage(''); setIsAlertOpen(true); }}>
+                Thông báo có xe
+              </button>
+              {hasAvailableAlert && <span className="vehicle-alert-dot" aria-label="Có xe phù hợp đang có hàng" />}
+            </span>
           )}
         </div>
       </div>
@@ -273,8 +310,9 @@ export default function Header() {
             <div className="vehicle-alert-heading"><div><p>KHÁCH HÀNG</p><h2>Thông báo có xe</h2></div><button type="button" onClick={() => setIsAlertOpen(false)} aria-label="Đóng">×</button></div>
             <p className="vehicle-alert-description">Nhập tối đa 3 tên xe. WebXe sẽ kiểm tra tồn kho và gửi email khi xe đang có hàng.</p>
             {alertNames.map((name, index) => {
-              const availableVehicle = alertVehicles.find((vehicle) => vehicle.TenXe.toLowerCase().includes(name.trim().toLowerCase()));
-              return <label key={index}>Tên xe {index + 1}<div className="vehicle-alert-input-row"><input value={name} onChange={(event) => setAlertNames((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} placeholder={`Ví dụ: Toyota ${index === 0 ? 'Vios' : 'Camry'}`} />{availableVehicle && <span className="vehicle-alert-available" title="Xe đang có hàng">✓ Có hàng</span>}</div>{availableVehicle && <Link className="vehicle-alert-view" href={`/ChiTietXe/ChiTietXe?id=${availableVehicle.MaXe}`}>Xem ngay →</Link>}</label>;
+              const normalizedName = name.trim().toLowerCase();
+              const availableVehicles = normalizedName ? alertVehicles.filter((vehicle) => vehicle.TenXe.toLowerCase().includes(normalizedName)) : [];
+              return <label key={index}>Tên xe {index + 1}<div className="vehicle-alert-input-row"><input value={name} onChange={(event) => { alertDraftDirtyRef.current = true; setAlertNames((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item)); }} placeholder={`Ví dụ: Toyota ${index === 0 ? 'Vios' : 'Camry'}`} />{availableVehicles.length > 0 && <span className="vehicle-alert-available" title="Xe đang có hàng">✓ Có hàng</span>}</div>{availableVehicles.map((vehicle) => <Link className="vehicle-alert-view" href={`/ChiTietXe/ChiTietXe?id=${vehicle.MaXe}`} key={vehicle.MaXe}>Xem {vehicle.TenXe} →</Link>)}</label>;
             })}
             {alertMessage && <p className="vehicle-alert-message" role="status">{alertMessage}</p>}
             <button className="vehicle-alert-submit" type="submit" disabled={isAlertSending}>{isAlertSending ? 'Đang kiểm tra...' : 'Lưu'}</button>

@@ -118,6 +118,7 @@ BEGIN
     SET NOCOUNT ON;
     INSERT INTO Xe (MaHang, MaLoai, TenXe, Gia, NamSanXuat, MauSac, MoTa, SoLuong)
     VALUES (@MaHang, @MaLoai, @TenXe, @Gia, @NamSanXuat, @MauSac, @MoTa, @SoLuong);
+    SELECT CAST(SCOPE_IDENTITY() AS INT) AS MaXe;
 END;
 GO
 
@@ -437,6 +438,46 @@ AS
 BEGIN
     SET NOCOUNT ON;
     DELETE FROM TinTuc WHERE MaTinTuc = @MaTinTuc;
+END;
+GO
+
+CREATE PROCEDURE sp_ThemThongBaoCoXe
+    @MaNguoiDung INT,
+    @TenXeTimKiem NVARCHAR(150)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO ThongBaoCoXe (MaNguoiDung, TenXeTimKiem, TrangThai)
+    VALUES (@MaNguoiDung, LTRIM(RTRIM(@TenXeTimKiem)), N'Đang chờ');
+    SELECT CAST(SCOPE_IDENTITY() AS INT) AS MaThongBao;
+END;
+GO
+
+CREATE PROCEDURE sp_SuaThongBaoCoXe
+    @MaThongBao INT,
+    @MaNguoiDung INT,
+    @TenXeTimKiem NVARCHAR(150),
+    @TrangThai NVARCHAR(50) = N'Đang chờ',
+    @NgayThongBao DATETIME = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE ThongBaoCoXe
+    SET TenXeTimKiem = LTRIM(RTRIM(@TenXeTimKiem)),
+        TrangThai = @TrangThai,
+        NgayThongBao = @NgayThongBao
+    WHERE MaThongBao = @MaThongBao AND MaNguoiDung = @MaNguoiDung;
+END;
+GO
+
+CREATE PROCEDURE sp_XoaThongBaoCoXe
+    @MaThongBao INT,
+    @MaNguoiDung INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM ThongBaoCoXe
+    WHERE MaThongBao = @MaThongBao AND MaNguoiDung = @MaNguoiDung;
 END;
 GO
 

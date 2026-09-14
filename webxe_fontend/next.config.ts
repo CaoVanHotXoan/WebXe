@@ -2,6 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  async redirects() {
+    return [
+      {
+        source: '/login',
+        destination: '/Login/Login',
+        permanent: false,
+      },
+    ];
+  },
   async rewrites() {
     const backendUrl = process.env.BACKEND_PROXY_URL
       || (process.env.NODE_ENV === 'production' ? 'https://webxebackend.vercel.app' : 'http://localhost:5000');

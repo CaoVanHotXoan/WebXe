@@ -16,8 +16,8 @@ export async function apiFetch<T = unknown>(url: string, options: RequestInit = 
 
   const data = await response.json().catch(() => null);
   if (response.status === 401) {
-    if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-      window.location.assign('/login');
+    if (typeof window !== 'undefined' && !window.location.pathname.toLowerCase().includes('/login')) {
+      window.location.assign('/Login/Login');
     }
     throw new Error(data?.message || 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
   }
