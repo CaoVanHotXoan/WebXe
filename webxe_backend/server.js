@@ -13,9 +13,18 @@ import chatRoutes from './routes/chatRoutes.js';
 
 const app = express();
 const port = Number(process.env.PORT || 5000);
-const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+const allowedOrigins = String(process.env.CORS_ORIGIN || process.env.CLIENT_URL || 'http://localhost:3000')
+  .split(',')
+  .map((origin) => origin.trim().replace(/\/$/, ''))
+  .filter(Boolean);
 
-app.use(cors({ origin: clientUrl, credentials: true }));
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ''))) return callback(null, true);
+    return callback(new Error('Origin không được phép bởi CORS.'));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '100kb' }));
 app.use(cookieParser());
 

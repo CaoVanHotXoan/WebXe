@@ -15,12 +15,14 @@ const otpStore = new Map();
 const otpLifetimeMs = Number(process.env.OTP_EXPIRE_MINUTES || 10) * 60 * 1000;
 const mailHost = String(process.env.MAIL_HOST || process.env.GMAIL_HOST || 'smtp.gmail.com').trim();
 const mailUser = String(process.env.MAIL_USER || process.env.GMAIL_USER || '').trim();
+const resendApiKey = String(process.env.RESEND_API_KEY || '').trim();
+const mailFrom = String(process.env.MAIL_FROM || mailUser || 'onboarding@resend.dev').trim();
 const mailPassword = String(process.env.MAIL_PASSWORD || process.env.GMAIL_APP_PASSWORD || '')
   .trim()
   .replace(/^['"]|['"]$/g, '')
   .replace(/\s+/g, '');
 
-console.log(`[Mail] SMTP ${mailHost}:${process.env.MAIL_PORT || 587}; user=${mailUser ? 'configured' : 'missing'}; password=${mailPassword ? 'configured' : 'missing'}`);
+console.log(`[Mail] provider=${resendApiKey ? 'resend' : 'smtp'}; from=${mailFrom}`);
 
 function createMailTransport(port) {
   return nodemailer.createTransport({
@@ -45,7 +47,7 @@ function createOtp() {
 }
 
 async function sendOtp(email, purpose) {
-  if (!mailHost || !mailUser || !mailPassword) {
+  if (!resendApiKey && (!mailHost || !mailUser || !mailPassword)) {
     throw new Error('Thiếu cấu hình MAIL_HOST, MAIL_USER hoặc MAIL_PASSWORD trên backend.');
   }
   const otp = createOtp();
@@ -56,6 +58,32 @@ async function sendOtp(email, purpose) {
     ? 'Xác nhận đăng ký tài khoản'
     : isProfileEmail ? 'Xác nhận email hồ sơ' : 'Xác nhận đổi mật khẩu';
   const text = `Mã xác nhận WebXe của bạn là ${otp}. Mã có hiệu lực trong ${expirationMinutes} phút. Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email.`;
+  const subject = isRegistration
+    ? 'Mã OTP đăng ký tài khoản WebXe'
+    : isProfileEmail ? 'Mã OTP xác nhận email WebXe' : 'Mã OTP đổi mật khẩu WebXe';
+  const html = `
+      <div style="margin:0;background:#f4f6f8;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+        <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;box-shadow:0 12px 32px rgba(15,23,42,.08);">
+          <div style="padding:28px 32px;background:#182b28;color:#ffffff;"><div style="font-size:13px;font-weight:700;letter-spacing:2px;color:#f4bd52;">WEBXE</div><div style="margin-top:10px;font-size:24px;font-weight:700;line-height:1.25;">${title}</div></div>
+          <div style="padding:32px;"><p>Xin chào,</p><p>Vui lòng nhập mã bên dưới để tiếp tục.</p><div style="margin:26px 0;padding:20px;text-align:center;border:1px solid #f6dca5;border-radius:14px;background:#fffaf0;"><div style="color:#8a6a28;font-size:11px;font-weight:700;letter-spacing:1.5px;">MÃ XÁC NHẬN</div><div style="color:#d65335;font-size:34px;font-weight:800;letter-spacing:9px;line-height:1;">${otp}</div></div><p>Mã có hiệu lực trong <strong>${expirationMinutes} phút</strong>.</p></div>
+          <div style="padding:18px 32px;border-top:1px solid #eef0f2;color:#9ca3af;font-size:11px;">Email tự động từ WebXe. Vui lòng không trả lời email này.</div>
+        </div>
+      </div>`;
+
+  if (resendApiKey) {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: mailFrom, to: [email], subject, text, html }),
+    });
+    const responseBody = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(`Resend từ chối email: ${responseBody.message || `HTTP ${response.status}`}`);
+    }
+    otpStore.set(`${purpose}:${email}`, { otp, expiresAt: Date.now() + otpLifetimeMs });
+    return;
+  }
+
   let result;
   const configuredPort = Number(process.env.MAIL_PORT || 587);
   const ports = [...new Set([configuredPort, configuredPort === 465 ? 587 : 465])];
@@ -64,34 +92,11 @@ async function sendOtp(email, purpose) {
     for (const port of ports) {
       try {
         result = await createMailTransport(port).sendMail({
-          from: mailUser,
+          from: mailFrom,
           to: email,
-          subject: isRegistration
-            ? 'Mã OTP đăng ký tài khoản WebXe'
-            : isProfileEmail ? 'Mã OTP xác nhận email WebXe' : 'Mã OTP đổi mật khẩu WebXe',
+          subject,
           text,
-          html: `
-      <div style="margin:0;background:#f4f6f8;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
-        <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;box-shadow:0 12px 32px rgba(15,23,42,.08);">
-          <div style="padding:28px 32px;background:#182b28;color:#ffffff;">
-            <div style="font-size:13px;font-weight:700;letter-spacing:2px;color:#f4bd52;">WEBXE</div>
-            <div style="margin-top:10px;font-size:24px;font-weight:700;line-height:1.25;">${title}</div>
-            <div style="margin-top:8px;color:#c9d9d4;font-size:14px;line-height:1.5;">Bảo vệ tài khoản của bạn với mã xác nhận một lần.</div>
-          </div>
-          <div style="padding:32px;">
-            <p style="margin:0;color:#4b5563;font-size:15px;line-height:1.6;">Xin chào,</p>
-            <p style="margin:10px 0 0;color:#4b5563;font-size:15px;line-height:1.6;">Vui lòng nhập mã bên dưới để tiếp tục. Không chia sẻ mã này với bất kỳ ai.</p>
-            <div style="margin:26px 0;padding:20px;text-align:center;border:1px solid #f6dca5;border-radius:14px;background:#fffaf0;">
-              <div style="margin-bottom:8px;color:#8a6a28;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">MÃ XÁC NHẬN</div>
-              <div style="color:#d65335;font-size:34px;font-weight:800;letter-spacing:9px;line-height:1;">${otp}</div>
-            </div>
-            <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">Mã có hiệu lực trong <strong style="color:#374151;">${expirationMinutes} phút</strong>.</p>
-            <div style="margin-top:22px;padding:14px 16px;border-left:3px solid #ef6a45;background:#fff5ef;color:#7c4937;font-size:13px;line-height:1.5;">Nếu bạn không yêu cầu mã này, bạn có thể bỏ qua email. Tài khoản của bạn vẫn được bảo vệ.</div>
-          </div>
-          <div style="padding:18px 32px;border-top:1px solid #eef0f2;color:#9ca3af;font-size:11px;line-height:1.5;">Email tự động từ WebXe. Vui lòng không trả lời email này.</div>
-        </div>
-      </div>
-          `
+          html
         });
         break;
       } catch (error) {
@@ -236,8 +241,7 @@ export async function requestRegisterOtp(req, res, next) {
       console.error('[Mail] Đăng ký OTP thất bại:', error.message);
       void notifyAdminOfRegistrationEmailFailure(email, error);
       return res.status(422).json({
-        message: 'Không thể gửi OTP đến Gmail này.',
-        ...(process.env.NODE_ENV !== 'production' && { detail: error.message }),
+        message: `Không thể gửi OTP: ${error.message}`,
       });
     }
     return res.json({ message: 'Mã OTP đã được gửi đến Gmail của bạn.' });

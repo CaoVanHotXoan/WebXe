@@ -12,8 +12,9 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
-    const backendUrl = process.env.BACKEND_PROXY_URL
-      || (process.env.NODE_ENV === 'production' ? 'https://backend-webxe.onrender.com' : 'http://localhost:5000');
+    const backendUrl = (process.env.BACKEND_PROXY_URL
+      || (process.env.NODE_ENV === 'production' ? 'https://backend-xe.onrender.com' : 'http://localhost:5000'))
+      .replace(/\/$/, '');
 
     return [
       {
