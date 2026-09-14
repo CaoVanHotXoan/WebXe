@@ -57,7 +57,49 @@ CREATE PROCEDURE sp_XoaNguoiDung @MaNguoiDung INT
 AS
 BEGIN
     SET NOCOUNT ON;
-    DELETE FROM NguoiDung WHERE MaNguoiDung = @MaNguoiDung;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        -- Xoa du lieu phu thuoc truoc khi xoa tai khoan.
+        DELETE FROM TinNhan
+        WHERE MaNguoiGui = @MaNguoiDung
+           OR MaCuocHoiThoai IN (
+                SELECT MaCuocHoiThoai
+                FROM CuocHoiThoai
+                WHERE MaKhachHang = @MaNguoiDung
+                   OR MaNhanVien = @MaNguoiDung
+           );
+
+        DELETE FROM CuocHoiThoai
+        WHERE MaKhachHang = @MaNguoiDung
+           OR MaNhanVien = @MaNguoiDung;
+
+        DELETE cth
+        FROM ChiTietGioHang cth
+        INNER JOIN GioHang gh ON gh.MaGioHang = cth.MaGioHang
+        WHERE gh.MaNguoiDung = @MaNguoiDung;
+
+        DELETE FROM GioHang
+        WHERE MaNguoiDung = @MaNguoiDung;
+
+        DELETE ctdh
+        FROM ChiTietDonHang ctdh
+        INNER JOIN DonHang dh ON dh.MaDonHang = ctdh.MaDonHang
+        WHERE dh.MaNguoiDung = @MaNguoiDung;
+
+        DELETE FROM DonHang
+        WHERE MaNguoiDung = @MaNguoiDung;
+
+        DELETE FROM NguoiDung
+        WHERE MaNguoiDung = @MaNguoiDung;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
 END;
 GO
 

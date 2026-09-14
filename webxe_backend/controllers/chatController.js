@@ -203,7 +203,9 @@ async function getMessages(pool, conversationId) {
     .input('conversationId', sql.Int, conversationId)
     .query(`
       SELECT tn.MaTinNhan, tn.MaCuocHoiThoai, tn.MaNguoiGui, nd.HoTen, nd.MaVaiTro,
-             tn.NoiDung, CONVERT(varchar(19), tn.ThoiGian, 120) AS ThoiGian, tn.DaXem
+             tn.NoiDung,
+             CONVERT(varchar(33), tn.ThoiGian AT TIME ZONE 'SE Asia Standard Time', 127) AS ThoiGian,
+             tn.DaXem
       FROM TinNhan tn
       INNER JOIN NguoiDung nd ON nd.MaNguoiDung = tn.MaNguoiGui
       WHERE tn.MaCuocHoiThoai = @conversationId
@@ -262,7 +264,8 @@ export async function getAdminConversations(req, res, next) {
       SELECT c.MaCuocHoiThoai, c.MaKhachHang, c.MaNhanVien, c.TrangThai, c.NgayTao,
              kh.HoTen AS TenKhachHang, kh.Email,
              nv.HoTen AS TenNhanVien,
-             lastMessage.NoiDung AS TinNhanCuoi, CONVERT(varchar(19), lastMessage.ThoiGian, 120) AS ThoiGianTinNhanCuoi,
+             lastMessage.NoiDung AS TinNhanCuoi,
+             CONVERT(varchar(33), lastMessage.ThoiGian AT TIME ZONE 'SE Asia Standard Time', 127) AS ThoiGianTinNhanCuoi,
              (SELECT COUNT(*) FROM TinNhan unread WHERE unread.MaCuocHoiThoai = c.MaCuocHoiThoai
                AND unread.MaNguoiGui = c.MaKhachHang AND unread.DaXem = 0) AS TinChuaXem
       FROM CuocHoiThoai c

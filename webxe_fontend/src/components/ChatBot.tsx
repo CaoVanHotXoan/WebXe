@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Vehicle } from '@/TS/vehicleData';
 import { BACKEND_URL } from '@/services/api';
@@ -48,9 +48,8 @@ function renderMessage(text: string) {
 }
 
 function formatMessageTime(value: string) {
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
-  if (match) return `${match[3]}/${match[2]}/${match[1]}, ${match[4]}:${match[5]}`;
-  const date = new Date(value);
+  const normalizedValue = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value) ? value : value.replace(' ', 'T') + '+07:00';
+  const date = new Date(normalizedValue);
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
 }
 
@@ -67,6 +66,7 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
   const [supportConversationId, setSupportConversationId] = useState<number | null>(null);
   const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
   const [supportError, setSupportError] = useState('');
+  const supportLoadSequence = useRef(0);
 
   const supportHeaders = useMemo<HeadersInit>(() => {
     const headers: Record<string, string> = {};
@@ -79,9 +79,11 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
 
   const loadSupportConversation = useCallback(async (): Promise<number | null> => {
     if (!token || !user || isAdmin) return null;
+    const loadSequence = ++supportLoadSequence.current;
     const response = await fetch(`${BACKEND_URL}/chat/conversation`, { headers: supportHeaders, credentials: 'include' });
     const data = await response.json() as SupportConversationResponse & { message?: string };
     if (!response.ok) throw new Error(data.message || 'Không thể tải cuộc hội thoại.');
+    if (loadSequence !== supportLoadSequence.current) return data.conversation.MaCuocHoiThoai;
     setSupportConversationId(data.conversation.MaCuocHoiThoai);
     setSupportMessages(data.messages);
     return data.conversation.MaCuocHoiThoai;
