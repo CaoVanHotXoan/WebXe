@@ -6,6 +6,7 @@ import styles from '@/pages/TrangChu/trangchu.module.css';
 import { vehicles } from '@/TS/vehicleData';
 import { BACKEND_URL } from '@/services/api';
 import Link from 'next/link';
+import Head from 'next/head';
 const bannerData = {
   video: '/videos/webxe.mp4',
   title: 'CHẤT LƯỢNG VƯỢT TRỘI / ĐẲNG CẤP DẪN ĐẦU',
@@ -64,6 +65,10 @@ const InteractiveHeroBanner: React.FC = () => {
       className={`${styles['hero-banner']} relative w-full overflow-hidden font-sans`}
       onDoubleClick={handleDoubleClick}
     >
+       <Head>
+                    <title>Trang Chủ | WebXe</title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1" />
+                  </Head>
       <video
         ref={videoRef}
         className="absolute inset-0 z-0 h-full w-full object-cover"

@@ -591,3 +591,45 @@
   .description { padding: 1rem; }
   .popularPanel { height: 360px; max-height: 360px; padding: 1rem; }
 }
+
+@media (max-width: 399px) {
+  .main { width: calc(100% - 20px); max-width: none; padding-top: 1rem; }
+  .breadcrumb { margin-bottom: 1rem; font-size: .75rem; }
+  .imagePanel, .detailsPanel { width: 100%; box-sizing: border-box; }
+  .imagePanel { padding: .5rem; }
+  .mainImage { height: 175px; }
+  .galleryArrow { width: 34px; height: 34px; font-size: 1.7rem; }
+  .galleryLeft { left: .5rem; }
+  .galleryRight { right: .5rem; }
+  .imageCounter { right: .5rem; bottom: .5rem; padding: .25rem .5rem; }
+  .thumbnailCarousel { grid-template-columns: 26px minmax(0, 1fr) 26px; }
+  .thumbnail { flex-basis: 68px; height: 48px; }
+  .thumbnailArrow { width: 26px; height: 26px; font-size: 1.1rem; }
+  .detailsPanel { padding: .75rem; }
+  .eyebrow { font-size: .62rem; }
+  .title { margin-top: .35rem; font-size: 1.3rem; line-height: 1.12; overflow-wrap: anywhere; }
+  .price { margin-bottom: .8rem; font-size: 1rem; }
+  .summary { gap: .5rem; padding: .75rem 0; }
+  .summaryRow { align-items: flex-start; gap: .5rem; font-size: .78rem; }
+  .summaryRow strong { max-width: 58%; overflow-wrap: anywhere; }
+  .specs { gap: .55rem; font-size: .78rem; }
+  .actions { gap: .55rem; margin-top: 1.1rem; }
+  .actionPrimary, .actionSecondary { min-width: 0; padding: .7rem .55rem; font-size: .78rem; }
+  .description, .newsSection, .popularPanel { padding: .85rem; }
+  .sectionTitle { font-size: 1.05rem; }
+  .bottom { width: 100%; gap: .8rem; margin-top: 1rem; }
+  .newsSection, .popularPanel { width: 100%; box-sizing: border-box; }
+  .newsSection { padding: .8rem; border-radius: 10px; }
+  .newsSection .sectionTitle { margin-bottom: .7rem; font-size: 1rem; }
+  .slider { width: 100%; box-sizing: border-box; margin-bottom: 1rem; padding: 0 1.35rem; }
+  .sliderArrow { width: 28px; height: 28px; font-size: 1.35rem; }
+  .newsImage { width: 100%; max-width: 100%; height: 105px; object-fit: cover; }
+  .newsLink h3 { padding: .55rem; font-size: .78rem; line-height: 1.25; }
+  .popularPanel { height: 300px; max-height: 300px; padding: .8rem; border-radius: 10px; }
+  .popularPanel .sectionTitle { margin-bottom: .6rem; font-size: 1rem; }
+  .popularList { width: 100%; gap: .55rem; }
+  .popularItem { grid-template-columns: 52px minmax(0, 1fr); gap: .55rem; padding-bottom: .5rem; }
+  .popularItem img { width: 52px; height: 40px; max-width: 100%; object-fit: cover; }
+  .popularItem h3 { font-size: .7rem; line-height: 1.2; }
+  .popularItem p { margin-top: .1rem; font-size: .62rem; }
+}

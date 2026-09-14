@@ -142,7 +142,7 @@ export default function ChamSocKHPage() {
       if (loadSequence !== messageLoadSequence.current) return;
       setConversations((current) => current.map((conversation) => conversation.id === selectedId ? {
         ...conversation,
-        messages: (data.messages ?? []).map((message) => ({ id: message.MaTinNhan, text: message.NoiDung, time: formatMessageTime(message.ThoiGian), mine: message.MaNguoiGui === user?.id })),
+        messages: (data.messages ?? []).map((message) => ({ id: message.MaTinNhan, text: message.NoiDung, time: formatMessageTime(message.ThoiGian), mine: Number(message.MaNguoiGui) === Number(user?.id) })),
       } : conversation));
       if (response.ok) {
         await fetch(`${BACKEND_URL}/chat/conversations/${selectedId}/read`, {
@@ -216,6 +216,7 @@ export default function ChamSocKHPage() {
               <p className={styles.eyebrow}>WEBXE SUPPORT</p>
               <h1>Đoạn chat</h1>
             </div>
+            <Link className={styles.mobileDashboardLink} href="/DatabaseDashboard/DatabaseDashboard">Dashboard</Link>
             <div className={styles.topActions}>
               <button type="button" aria-label="Tùy chọn" title="Tùy chọn">•••</button>
               <button type="button" aria-label="Tạo cuộc trò chuyện" title="Tạo cuộc trò chuyện">↗</button>

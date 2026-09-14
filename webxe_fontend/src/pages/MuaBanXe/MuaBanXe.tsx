@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import { Vehicle } from '@/TS/vehicleData';
 import { BACKEND_URL } from '@/services/api';
 import styles from './muaBanXe.module.css';
+import Head from 'next/head';
 
 type FilterKey = 'type' | 'year' | 'color' | 'brand' | 'price';
 type FilterState = Record<FilterKey, string[]>;
@@ -136,6 +137,10 @@ export default function MuaBanXePage() {
 
   return (
     <div className={`${styles.page} font-sans`}>
+       <Head>
+              <title>Cửa hàng | WebXe</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+            </Head>
       <Header />
       <main className={styles.main}>
         <div className={styles.intro}>

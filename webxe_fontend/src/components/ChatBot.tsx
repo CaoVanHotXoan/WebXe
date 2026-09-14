@@ -257,8 +257,8 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
           <div ref={supportMessagesRef} className={styles.messages} aria-live="polite">
             {token && user && !isAdmin ? (
               supportMessages.map((message) => (
-                <div className={`${styles.messageRow} ${message.MaNguoiGui === user.id ? styles.userRow : ''}`} key={message.MaTinNhan}>
-                  <div className={`${styles.message} ${message.MaNguoiGui === user.id ? styles.userMessage : styles.botMessage}`}>
+                <div className={`${styles.messageRow} ${Number(message.MaNguoiGui) === Number(user.id) ? styles.userRow : ''}`} key={message.MaTinNhan}>
+                  <div className={`${styles.message} ${Number(message.MaNguoiGui) === Number(user.id) ? styles.userMessage : styles.botMessage}`}>
                     <p>{renderMessage(message.NoiDung)}</p>
                     <small>{formatMessageTime(message.ThoiGian)}</small>
                   </div>

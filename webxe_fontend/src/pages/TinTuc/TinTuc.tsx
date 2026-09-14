@@ -5,6 +5,8 @@ import Footer from '@/components/Footer';
 import { NewsItem } from '@/TS/newsData';
 import { BACKEND_URL } from '@/services/api';
 import styles from './tinTuc.module.css';
+import Head from 'next/head';
+
 
 const INITIAL_COUNT = 6;
 const LOAD_STEP = 3;
@@ -70,6 +72,10 @@ export default function TinTucPage() {
 
   return (
     <div className={`${styles.page} min-h-screen bg-black text-white`}>
+       <Head>
+                    <title>Tin tức | WebXe</title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1" />
+                  </Head>
       <Header />
       <main className={styles.main}>
         <section className={styles.hero}>
