@@ -1,4 +1,5 @@
 import express from 'express';
+import dns from 'node:dns';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
@@ -10,6 +11,8 @@ import procedureRoutes from './routes/procedureRoutes.js';
 import { getPool } from './config/db.js';
 import catalogRoutes from './routes/catalogRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+
+dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 const port = Number(process.env.PORT || 5000);
