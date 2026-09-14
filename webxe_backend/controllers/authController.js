@@ -43,7 +43,6 @@ async function sendOtp(email, purpose) {
   const result = await mailTransport.sendMail({
     from: process.env.MAIL_FROM || process.env.MAIL_USER,
     to: email,
-    subject: isRegistration ? 'Mã OTP đăng ký tài khoản WebXe' : 'Mã OTP đổi mật khẩu WebXe',
     subject: isRegistration
       ? 'Mã OTP đăng ký tài khoản WebXe'
       : isProfileEmail ? 'Mã OTP xác nhận email WebXe' : 'Mã OTP đổi mật khẩu WebXe',
