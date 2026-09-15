@@ -43,6 +43,10 @@ async function sendOtp(email, purpose) {
     profile_email_change: {
       title: 'Xác nhận đổi email',
       subject: 'Mã OTP đổi email WebXe'
+    },
+    admin_user_email: {
+      title: 'Xác nhận email người dùng',
+      subject: 'Mã OTP xác nhận email người dùng WebXe'
     }
   };
   const purposeConfig = configMap[purpose] || configMap.forgot_password;
@@ -257,6 +261,34 @@ export async function requestProfileEmailChangeOtp(req, res, next) {
 
     await sendOtp(email, 'profile_email_change');
     return res.json({ message: 'Mã OTP đổi email đã được gửi đến Gmail mới của bạn.' });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function requestAdminUserEmailOtp(req, res, next) {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    const userId = Number(req.body?.userId || 0);
+    if (!/^\S+@gmail\.com$/i.test(email)) {
+      return res.status(400).json({ message: 'Vui lòng nhập địa chỉ Gmail hợp lệ.' });
+    }
+
+    const pool = await getPool();
+    const existing = await pool.request()
+      .input('email', sql.VarChar(100), email)
+      .input('userId', sql.Int, userId)
+      .query(`
+        SELECT TOP 1 MaNguoiDung
+        FROM NguoiDung
+        WHERE Email = @email AND (@userId = 0 OR MaNguoiDung <> @userId)
+      `);
+    if (existing.recordset[0]) {
+      return res.status(409).json({ message: 'Email này đã được sử dụng bởi tài khoản khác.' });
+    }
+
+    await sendOtp(email, 'admin_user_email');
+    return res.json({ message: 'Mã OTP đã được gửi đến Gmail mới.' });
   } catch (error) {
     return next(error);
   }

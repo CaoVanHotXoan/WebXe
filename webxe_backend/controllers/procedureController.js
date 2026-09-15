@@ -1,6 +1,7 @@
 import { getPool, sql } from '../config/db.js';
 import { deleteCloudinaryImage } from './mediaController.js';
 import nodemailer from 'nodemailer';
+import { takeOtp } from './authController.js';
 
 const mailTransport = nodemailer.createTransport({
   host: process.env.MAIL_HOST,
@@ -52,6 +53,18 @@ export async function executeProcedure(req, res, next) {
     if (!definition) return res.status(404).json({ message: 'Stored Procedure không nằm trong whitelist.' });
 
     const body = req.body ?? {};
+    if (['sp_ThemNguoiDung', 'sp_SuaNguoiDung'].includes(req.params.procedureName)) {
+      const email = String(body.Email || '').trim().toLowerCase();
+      const currentEmail = req.params.procedureName === 'sp_SuaNguoiDung'
+        ? String((await (await getPool()).request()
+          .input('userId', sql.Int, Number(body.MaNguoiDung))
+          .query('SELECT TOP 1 Email FROM NguoiDung WHERE MaNguoiDung = @userId')).recordset[0]?.Email || '').trim().toLowerCase()
+        : '';
+      const emailChanged = req.params.procedureName === 'sp_ThemNguoiDung' || email !== currentEmail;
+      if (emailChanged && !takeOtp(email, 'admin_user_email', body.otp)) {
+        return res.status(400).json({ message: 'Mã OTP Gmail không đúng hoặc đã hết hạn.' });
+      }
+    }
     for (const [name, { required }] of Object.entries(definition)) {
       if (required && (body[name] === undefined || body[name] === null)) return res.status(400).json({ message: `Thiếu tham số ${name}.` });
     }
