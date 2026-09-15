@@ -1,5 +1,6 @@
 import { getPool, sql } from '../config/db.js';
 import nodemailer from 'nodemailer';
+import { takeOtp } from './authController.js';
 
 const mailTransport = nodemailer.createTransport({
   host: process.env.MAIL_HOST,
@@ -36,6 +37,7 @@ export async function updateProfile(req, res, next) {
     const phone = String(req.body?.phone || '').trim();
     const address = String(req.body?.address || '').trim();
     const image = String(req.body?.image || '').trim();
+    const userId = Number(req.user?.sub);
 
     if (!name || !email) {
       return res.status(400).json({ message: 'Họ tên và email là bắt buộc.' });
@@ -45,16 +47,27 @@ export async function updateProfile(req, res, next) {
     }
 
     const pool = await getPool();
+    const currentUser = await pool.request()
+      .input('id', sql.Int, userId)
+      .query('SELECT TOP 1 Email FROM NguoiDung WHERE MaNguoiDung = @id');
+
+    const currentEmail = String(currentUser.recordset[0]?.Email || '').trim().toLowerCase();
+    const emailChanged = email !== currentEmail;
+
+    if (emailChanged && !takeOtp(email, 'profile_email_change', req.body?.otp)) {
+      return res.status(400).json({ message: 'Mã OTP đổi email không đúng hoặc đã hết hạn.' });
+    }
+
     const existing = await pool.request()
       .input('email', sql.VarChar(100), email)
-      .input('id', sql.Int, Number(req.user.sub))
+      .input('id', sql.Int, userId)
       .query('SELECT TOP 1 MaNguoiDung FROM NguoiDung WHERE Email = @email AND MaNguoiDung <> @id');
     if (existing.recordset[0]) {
       return res.status(409).json({ message: 'Email đã được sử dụng bởi tài khoản khác.' });
     }
 
     const result = await pool.request()
-      .input('id', sql.Int, Number(req.user.sub))
+      .input('id', sql.Int, userId)
       .input('name', sql.NVarChar(100), name)
       .input('email', sql.VarChar(100), email)
       .input('phone', sql.VarChar(20), phone || null)

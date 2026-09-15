@@ -31,20 +31,33 @@ function createOtp() {
 async function sendOtp(email, purpose) {
   const otp = createOtp();
   const expirationMinutes = process.env.OTP_EXPIRE_MINUTES || 10;
-  const isRegistration = purpose === 'register';
-  const title = isRegistration ? 'Xác nhận đăng ký tài khoản' : 'Xác nhận đổi mật khẩu';
+  const configMap = {
+    register: {
+      title: 'Xác nhận đăng ký tài khoản',
+      subject: 'Mã OTP đăng ký tài khoản WebXe'
+    },
+    forgot_password: {
+      title: 'Xác nhận đổi mật khẩu',
+      subject: 'Mã OTP đổi mật khẩu WebXe'
+    },
+    profile_email_change: {
+      title: 'Xác nhận đổi email',
+      subject: 'Mã OTP đổi email WebXe'
+    }
+  };
+  const purposeConfig = configMap[purpose] || configMap.forgot_password;
   const text = `Mã xác nhận WebXe của bạn là ${otp}. Mã có hiệu lực trong ${expirationMinutes} phút. Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email.`;
   const result = await mailTransport.sendMail({
     from: process.env.MAIL_FROM || process.env.MAIL_USER,
     to: email,
-    subject: isRegistration ? 'Mã OTP đăng ký tài khoản WebXe' : 'Mã OTP đổi mật khẩu WebXe',
+    subject: purposeConfig.subject,
     text,
     html: `
       <div style="margin:0;background:#f4f6f8;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
         <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;box-shadow:0 12px 32px rgba(15,23,42,.08);">
           <div style="padding:28px 32px;background:#182b28;color:#ffffff;">
             <div style="font-size:13px;font-weight:700;letter-spacing:2px;color:#f4bd52;">WEBXE</div>
-            <div style="margin-top:10px;font-size:24px;font-weight:700;line-height:1.25;">${title}</div>
+            <div style="margin-top:10px;font-size:24px;font-weight:700;line-height:1.25;">${purposeConfig.title}</div>
             <div style="margin-top:8px;color:#c9d9d4;font-size:14px;line-height:1.5;">Bảo vệ tài khoản của bạn với mã xác nhận một lần.</div>
           </div>
           <div style="padding:32px;">
@@ -83,7 +96,7 @@ async function notifyAdminOfRegistrationEmailFailure(email, error) {
   }
 }
 
-function takeOtp(email, purpose, inputOtp) {
+export function takeOtp(email, purpose, inputOtp) {
   const key = `${purpose}:${email}`;
   const saved = otpStore.get(key);
   if (!saved || saved.expiresAt < Date.now() || saved.otp !== String(inputOtp || '').trim()) {
@@ -217,6 +230,33 @@ export async function requestForgotPasswordOtp(req, res, next) {
     if (!result.recordset[0]) return res.status(404).json({ message: 'Email chưa được đăng ký.' });
     await sendOtp(email, 'forgot_password');
     return res.json({ message: 'Mã OTP đổi mật khẩu đã được gửi đến Gmail của bạn.' });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function requestProfileEmailChangeOtp(req, res, next) {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    const userId = Number(req.user?.sub);
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized: user info is required.' });
+    }
+    if (!/^\S+@gmail\.com$/i.test(email)) {
+      return res.status(400).json({ message: 'Vui lòng nhập địa chỉ Gmail mới hợp lệ.' });
+    }
+
+    const pool = await getPool();
+    const existing = await pool.request()
+      .input('email', sql.VarChar(100), email)
+      .input('id', sql.Int, userId)
+      .query('SELECT TOP 1 MaNguoiDung FROM NguoiDung WHERE Email = @email AND MaNguoiDung <> @id');
+    if (existing.recordset[0]) {
+      return res.status(409).json({ message: 'Email này đã được sử dụng bởi tài khoản khác.' });
+    }
+
+    await sendOtp(email, 'profile_email_change');
+    return res.json({ message: 'Mã OTP đổi email đã được gửi đến Gmail mới của bạn.' });
   } catch (error) {
     return next(error);
   }

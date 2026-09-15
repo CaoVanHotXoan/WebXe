@@ -5,8 +5,11 @@ import {
 	requestRegisterOtp,
 	verifyRegister,
 	requestForgotPasswordOtp,
-	resetPassword
+	resetPassword,
+	requestProfileEmailChangeOtp
 } from '../controllers/authController.js';
+
+import { verifyToken } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
@@ -36,6 +39,7 @@ router.post('/register/request-otp', requestRegisterOtp);
 router.post('/register/verify', verifyRegister);
 router.post('/password/forgot/request-otp', requestForgotPasswordOtp);
 router.post('/password/forgot/reset', resetPassword);
+router.post('/profile/email/request-otp', verifyToken, requestProfileEmailChangeOtp);
 
 /**
  * @swagger
