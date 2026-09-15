@@ -55,13 +55,17 @@ export async function executeProcedure(req, res, next) {
     const body = req.body ?? {};
     if (['sp_ThemNguoiDung', 'sp_SuaNguoiDung'].includes(req.params.procedureName)) {
       const email = String(body.Email || '').trim().toLowerCase();
-      const currentEmail = req.params.procedureName === 'sp_SuaNguoiDung'
-        ? String((await (await getPool()).request()
+      const currentUser = req.params.procedureName === 'sp_SuaNguoiDung'
+        ? (await (await getPool()).request()
           .input('userId', sql.Int, Number(body.MaNguoiDung))
-          .query('SELECT TOP 1 Email FROM NguoiDung WHERE MaNguoiDung = @userId')).recordset[0]?.Email || '').trim().toLowerCase()
-        : '';
+          .query('SELECT TOP 1 Email, MatKhau FROM NguoiDung WHERE MaNguoiDung = @userId')).recordset[0]
+        : null;
+      const currentEmail = String(currentUser?.Email || '').trim().toLowerCase();
       const emailChanged = req.params.procedureName === 'sp_ThemNguoiDung' || email !== currentEmail;
-      if (emailChanged && !takeOtp(email, 'admin_user_email', body.otp)) {
+      const passwordChanged = req.params.procedureName === 'sp_ThemNguoiDung'
+        || String(body.MatKhau || '') !== String(currentUser?.MatKhau || '');
+      const otpEmail = emailChanged ? email : currentEmail;
+      if ((emailChanged || passwordChanged) && !takeOtp(otpEmail, 'admin_user_email', body.otp)) {
         return res.status(400).json({ message: 'Mã OTP Gmail không đúng hoặc đã hết hạn.' });
       }
     }
