@@ -5,8 +5,8 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { BACKEND_URL } from '@/services/api';
 import styles from './chiTietXe.module.css';
+import Head from "next/head";
 
-type SliderItem = { title: string; image: string; href: string };
 type ApiVehicle = {
   MaXe: number;
   MaHang?: number | null;
@@ -25,7 +25,6 @@ type ApiVehicleImage = { MaXe: number; DuongDanAnh?: string | null; LaAnhChinh?:
 type ApiBrand = { MaHang: number; TenHang?: string | null };
 type ApiType = { MaLoai: number; TenLoai?: string | null };
 type VehicleDataResponse = { Xe?: ApiVehicle[]; HinhAnhXe?: ApiVehicleImage[]; HangXe?: ApiBrand[]; LoaiXe?: ApiType[] };
-type NewsDataResponse = { TinTuc?: Array<{ MaTinTuc: number; TieuDe?: string | null; HinhAnh?: string | null }> };
 type DetailedVehicle = {
   id: number;
   title: string;
@@ -77,24 +76,6 @@ function mapApiVehicles(data: VehicleDataResponse): DetailedVehicle[] {
   });
 }
 
-function ContentSlider({ items }: { items: SliderItem[] }) {
-  const [startIndex, setStartIndex] = useState(0);
-  const visibleItems = 2;
-  const maxIndex = Math.max(0, items.length - visibleItems);
-
-  return (
-    <div className={styles.slider}>
-      <button type="button" className={`${styles.sliderArrow} ${styles.sliderLeft}`} onClick={() => setStartIndex((index) => (index > 0 ? index - 1 : maxIndex))} aria-label="Tin trước">‹</button>
-      <div className={styles.sliderViewport}>
-        <div className={styles.sliderTrack} style={{ transform: `translateX(-${startIndex * (100 / visibleItems)}%)` }}>
-          {items.map((item) => <Link href={item.href} className={styles.newsLink} key={item.title}><img className={styles.newsImage} src={item.image} alt={item.title} /><h3>{item.title}</h3></Link>)}
-        </div>
-      </div>
-      <button type="button" className={`${styles.sliderArrow} ${styles.sliderRight}`} onClick={() => setStartIndex((index) => (index < maxIndex ? index + 1 : 0))} aria-label="Tin tiếp theo">›</button>
-    </div>
-  );
-}
-
 export default function ChiTietXePage() {
   const router = useRouter();
   const [vehicles, setVehicles] = useState<DetailedVehicle[]>([]);
@@ -103,7 +84,6 @@ export default function ChiTietXePage() {
   const [imageIndex, setImageIndex] = useState(0);
   const [showPhone, setShowPhone] = useState(false);
   const [showZaloQr, setShowZaloQr] = useState(false);
-  const [newsSlides, setNewsSlides] = useState<SliderItem[]>([]);
   const thumbnailsRef = useRef<HTMLDivElement>(null);
   const vehicleId = Number(router.query.id);
   const vehicle = vehicles.find((item) => item.id === vehicleId);
@@ -117,7 +97,6 @@ export default function ChiTietXePage() {
     ['Màu sắc', vehicle.color],
     ['Số lượng', vehicle.quantity],
   ].filter((item): item is [string, string] => Boolean(item[1])) : [];
-  const popularVehicles = [...vehicles].sort((a, b) => b.price - a.price).slice(0, 10);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -145,6 +124,8 @@ export default function ChiTietXePage() {
     };
   }, [router.isReady]);
         // Code chuyển ảnh
+<<<<<<< HEAD
+=======
   useEffect(() => {
     setImageIndex(0);
     if (vehicleImages.length < 2) return;
@@ -156,26 +137,28 @@ export default function ChiTietXePage() {
     return () => window.clearInterval(imageRotation);
   }, [vehicle?.id, vehicleImages.length]);
 
+>>>>>>> b6f5fb49fb1296c9cf374402fdbc3b6214ea3393
   useEffect(() => {
-    fetch(`${BACKEND_URL}/data/news`)
-      .then(async (response) => {
-        if (!response.ok) throw new Error('Không thể tải tin tức');
-        return response.json() as Promise<NewsDataResponse>;
-      })
-      .then((data) => setNewsSlides((data.TinTuc ?? []).flatMap((item) => item.TieuDe?.trim() ? [{
-        title: item.TieuDe.trim(),
-        image: item.HinhAnh?.trim() || '',
-        href: `/TinTuc/ChiTietTin?id=${item.MaTinTuc}`,
-      }] : []).slice(0, 10)))
-      .catch(() => setNewsSlides([]));
-  }, []);
+    setImageIndex(0);
+    if (vehicleImages.length < 2) return;
+
+    const imageRotation = window.setInterval(() => {
+      setImageIndex((index) => (index + 1) % vehicleImages.length);
+    }, 6000);
+
+    return () => window.clearInterval(imageRotation);
+  }, [vehicle?.id, vehicleImages.length]);
 
   if (!router.isReady || loading) return <div className={`${styles.page} font-sans`}><Header /><main className={styles.main}><p>Đang tải thông tin xe...</p></main><Footer /></div>;
   if (error || !vehicle) return <div className={`${styles.page} font-sans`}><Header /><main className={styles.main}><p>{error || 'Không tìm thấy xe.'}</p></main><Footer /></div>;
 
   return (
     <div className={`${styles.page} font-sans`}>
-      <Header />
+      <Head>
+        <title>Chi tiết xe | WebXe</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
+       <Header />
       <main className={styles.main}>
         <p className={styles.breadcrumb}><Link href="/MuaBanXe/MuaBanXe" className={styles.backLink}>Mua bán xe</Link> / Chi tiết xe</p>
         <section className={styles.hero}>
@@ -232,9 +215,6 @@ export default function ChiTietXePage() {
           </div>
         </section>
         {vehicle.description && <section className={styles.description}><h2 className={styles.sectionTitle}>Mô tả xe</h2><p>{vehicle.description}</p></section>}
-        <div className={styles.bottom}><section className={styles.newsSection}><h2 className={styles.sectionTitle}>TIN TỨC NỔI BẬT</h2><ContentSlider items={newsSlides} /><h2 className={styles.sectionTitle}>TIN BÁN XE</h2><ContentSlider items={popularVehicles.map((item) => ({ title: item.title, image: item.image, href: `/ChiTietXe/ChiTietXe?id=${item.id}` }))} /></section>
-          <aside className={styles.popularPanel}><h2 className={styles.sectionTitle}>TOP 10 XE BÁN CHẠY</h2><div className={styles.popularList}>{popularVehicles.map((item) => <Link href={`/ChiTietXe/ChiTietXe?id=${item.id}`} className={styles.popularItem} key={item.id}>{item.image && <img src={item.image} alt={item.title} />}<div><h3>{item.title}</h3><p>{item.priceLabel}</p></div></Link>)}</div></aside>
-        </div>
       </main>
       {showZaloQr && (
         <div className={styles.qrBackdrop} role="dialog" aria-modal="true" aria-labelledby="zalo-qr-title" onClick={() => setShowZaloQr(false)}>

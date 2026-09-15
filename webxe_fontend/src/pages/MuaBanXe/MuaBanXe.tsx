@@ -6,13 +6,14 @@ import Footer from '@/components/Footer';
 import { Vehicle } from '@/TS/vehicleData';
 import { BACKEND_URL } from '@/services/api';
 import styles from './muaBanXe.module.css';
+import Head from 'next/head';
 
-type FilterKey = 'type' | 'fuel' | 'brand' | 'price';
+type FilterKey = 'type' | 'year' | 'color' | 'brand' | 'price';
 type FilterState = Record<FilterKey, string[]>;
 
 const priceOptions = ['15 triệu – <30 triệu VNĐ', '>30 triệu – <60 triệu VNĐ', '>60 triệu – <180 triệu VNĐ', '>180 triệu – <350 triệu VNĐ', '>350 triệu – <500 triệu VNĐ', '>500 triệu – <750 triệu VNĐ', '>750 triệu – <950 triệu VNĐ', '>950 triệu VNĐ'];
 
-const filterLabels: Record<FilterKey, string> = { type: 'LOẠI XE', fuel: 'LOẠI NHIÊN LIỆU', brand: 'HÃNG', price: 'GIÁ TIỀN' };
+const filterLabels: Record<FilterKey, string> = { type: 'LOẠI XE', year: 'NĂM SẢN XUẤT', color: 'MÀU SẮC', brand: 'HÃNG', price: 'GIÁ TIỀN' };
 const priceRanges = [[15000000, 30000000], [30000000, 60000000], [60000000, 180000000], [180000000, 350000000], [350000000, 500000000], [500000000, 750000000], [750000000, 950000000], [950000000, Infinity]];
 
 function matchesPrice(price: number, option: string) {
@@ -20,7 +21,7 @@ function matchesPrice(price: number, option: string) {
   return range ? price >= range[0] && price < range[1] : false;
 }
 
-type ApiVehicle = { MaXe: number; MaHang: number; MaLoai: number; TenXe?: string | null; Gia?: number | string | null; LoaiNhienLieu?: string | null; NhienLieu?: string | null; Fuel?: string | null };
+type ApiVehicle = { MaXe: number; MaHang: number; MaLoai: number; TenXe?: string | null; Gia?: number | string | null; NamSanXuat?: number | string | null; MauSac?: string | null };
 type ApiVehicleImage = { MaXe: number; DuongDanAnh?: string | null; LaAnhChinh?: boolean | number | null };
 type ApiBrand = { MaHang: number; TenHang: string };
 type ApiType = { MaLoai: number; TenLoai: string };
@@ -31,16 +32,6 @@ function normalizeVehicleType(value: string): Vehicle['type'] {
   if (type.includes('côn') || type.includes('moto') || type.includes('mô tô')) return 'Xe moto';
   if (type.includes('ga') || type.includes('máy')) return 'Xe máy';
   if (type.includes('hơi') || type.includes('ô tô')) return 'Ô tô';
-  return undefined;
-}
-
-function normalizeFuel(value?: string | null): NonNullable<Vehicle['fuel']> | undefined {
-  const fuel = value?.toLowerCase() ?? '';
-  if (!fuel) return undefined;
-  if (fuel.includes('điện') || fuel.includes('electric')) return 'Điện';
-  if (fuel.includes('hybrid')) return 'Hybrid';
-  if (fuel.includes('diesel') || fuel.includes('dầu')) return 'Dầu diesel';
-  if (fuel.includes('xăng') || fuel.includes('gasoline')) return 'Xăng';
   return undefined;
 }
 
@@ -57,9 +48,9 @@ function mapApiVehicles(data: VehicleResponse): Vehicle[] {
     const title = vehicle.TenXe?.trim();
     const price = Number(vehicle.Gia);
     if (!title || !Number.isFinite(price) || price <= 0) return [];
-    const fuel = vehicle.LoaiNhienLieu ?? vehicle.NhienLieu ?? vehicle.Fuel;
     const vehicleImages = images.get(vehicle.MaXe) ?? [];
     const mainImage = vehicleImages.find((image) => image.LaAnhChinh === true || image.LaAnhChinh === 1)?.DuongDanAnh ?? vehicleImages[0]?.DuongDanAnh;
+    const year = vehicle.NamSanXuat == null ? undefined : String(vehicle.NamSanXuat).trim();
     return [{
       id: vehicle.MaXe,
       title,
@@ -67,23 +58,28 @@ function mapApiVehicles(data: VehicleResponse): Vehicle[] {
       priceLabel: `${price.toLocaleString('vi-VN')} VNĐ`,
       image: mainImage || '',
       type: normalizeVehicleType(types.get(vehicle.MaLoai) ?? ''),
-      fuel: normalizeFuel(fuel),
       brand: brands.get(vehicle.MaHang),
+      year: year || undefined,
+      color: vehicle.MauSac?.trim() || undefined,
     }];
   });
 }
 
+const emptyFilters: FilterState = { type: [], year: [], color: [], brand: [], price: [] };
+
 function matchesFilters(vehicle: Vehicle, filters: FilterState) {
-  return (!filters.type.length || (vehicle.type ? filters.type.includes(vehicle.type) : false))
-    && (!filters.fuel.length || (vehicle.fuel ? filters.fuel.includes(vehicle.fuel) : false))
-    && (!filters.brand.length || (vehicle.brand ? filters.brand.includes(vehicle.brand) : false))
-    && (!filters.price.length || filters.price.some((range) => matchesPrice(vehicle.price, range)));
+  const active = { ...emptyFilters, ...filters };
+  return (!active.type.length || (vehicle.type ? active.type.includes(vehicle.type) : false))
+    && (!active.year.length || (vehicle.year ? active.year.includes(vehicle.year) : false))
+    && (!active.color.length || (vehicle.color ? active.color.includes(vehicle.color) : false))
+    && (!active.brand.length || (vehicle.brand ? active.brand.includes(vehicle.brand) : false))
+    && (!active.price.length || active.price.some((range) => matchesPrice(vehicle.price, range)));
 }
 
 export default function MuaBanXePage() {
   const router = useRouter();
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
-  const [filters, setFilters] = useState<FilterState>({ type: [], fuel: [], brand: [], price: [] });
+  const [filters, setFilters] = useState<FilterState>(emptyFilters);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -100,7 +96,7 @@ export default function MuaBanXePage() {
       ? [selectedType as NonNullable<Vehicle['type']>]
       : [];
 
-    setFilters((current) => ({ ...current, type: typeFilter }));
+    setFilters((current) => ({ ...emptyFilters, ...current, type: typeFilter }));
     setOpenFilter(typeFilter.length ? 'type' : null);
   }, [router.isReady, router.query.type]);
 
@@ -121,7 +117,8 @@ export default function MuaBanXePage() {
 
   const filterOptions = useMemo<Record<FilterKey, string[]>>(() => ({
     type: [...new Set(vehicles.map((vehicle) => vehicle.type).filter((type): type is NonNullable<Vehicle['type']> => Boolean(type)))],
-    fuel: [...new Set(vehicles.map((vehicle) => vehicle.fuel).filter((fuel): fuel is NonNullable<Vehicle['fuel']> => Boolean(fuel)))],
+    year: [...new Set(vehicles.map((vehicle) => vehicle.year).filter((year): year is string => Boolean(year)))].sort((a, b) => Number(b) - Number(a)),
+    color: [...new Set(vehicles.map((vehicle) => vehicle.color).filter((color): color is string => Boolean(color)))],
     brand: [...new Set(vehicles.map((vehicle) => vehicle.brand).filter((brand): brand is string => Boolean(brand)))],
     price: priceOptions.filter((option) => vehicles.some((vehicle) => matchesPrice(vehicle.price, option))),
   }), [vehicles]);
@@ -129,14 +126,21 @@ export default function MuaBanXePage() {
   const popularVehicles = [...vehicles].sort((a, b) => b.price - a.price);
 
   const toggleOption = (key: FilterKey, option: string) => {
-    setFilters((current) => ({
-      ...current,
-      [key]: current[key].includes(option) ? current[key].filter((value) => value !== option) : [...current[key], option],
-    }));
+    setFilters((current) => {
+      const next = { ...emptyFilters, ...current };
+      return {
+        ...next,
+        [key]: next[key].includes(option) ? next[key].filter((value) => value !== option) : [...next[key], option],
+      };
+    });
   };
 
   return (
     <div className={`${styles.page} font-sans`}>
+       <Head>
+              <title>Cửa hàng | WebXe</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+            </Head>
       <Header />
       <main className={styles.main}>
         <div className={styles.intro}>
@@ -157,7 +161,7 @@ export default function MuaBanXePage() {
                     <div className={styles.filterOptions}>
                       {filterOptions[key].map((option) => (
                         <label className={styles.option} key={option}>
-                          <input type="checkbox" checked={filters[key].includes(option)} onChange={() => toggleOption(key, option)} />
+                          <input type="checkbox" checked={(filters[key] ?? []).includes(option)} onChange={() => toggleOption(key, option)} />
                           {option}
                         </label>
                       ))}
@@ -202,7 +206,7 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
       {vehicle.image && <img className={styles.image} src={vehicle.image} alt={vehicle.title} />}
       <div className={styles.cardBody}>
         <h3 className={styles.cardTitle}>{vehicle.title}</h3>
-        <div className={styles.meta}>{vehicle.type && <span>{vehicle.type}</span>}{vehicle.fuel && <span>{vehicle.fuel}</span>}{vehicle.brand && <span>{vehicle.brand}</span>}</div>
+        <div className={styles.meta}>{vehicle.type && <span>{vehicle.type}</span>}{vehicle.year && <span>{vehicle.year}</span>}{vehicle.color && <span>{vehicle.color}</span>}{vehicle.brand && <span>{vehicle.brand}</span>}</div>
         <p className={styles.price}>{vehicle.priceLabel}</p>
       </div>
     </Link>

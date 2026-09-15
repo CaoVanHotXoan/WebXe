@@ -7,6 +7,8 @@ import Footer from '@/components/Footer';
 import { NewsItem } from '@/TS/newsData';
 import { BACKEND_URL } from '@/services/api';
 import styles from './chiTietTin.module.css';
+import Head from 'next/head';
+
 
 type ApiNews = { MaTinTuc: number; MaDanhMuc: number; TieuDe?: string | null; TomTat?: string | null; NoiDung?: string | null; HinhAnh?: string | null };
 type ApiCategory = { MaDanhMuc: number; TenDanhMuc?: string | null };
@@ -62,6 +64,10 @@ export default function ChiTietTinPage() {
 
   return (
     <div className={`${styles.page} min-h-screen bg-black text-white`}>
+      <Head>
+                          <title>Chi Tiết Tin | WebXe</title>
+                          <meta name="viewport" content="width=device-width, initial-scale=1" />
+                        </Head>
       <Header />
       <main className={styles.main}>
         <div className={styles.layout}>

@@ -73,6 +73,7 @@
 .infoItem strong { color: #eee; font-size: .95rem; overflow-wrap: anywhere; }
 .actions { display: flex; gap: 12px; }
 .primaryButton, .secondaryButton { border-radius: 5px; padding: 12px 18px; cursor: pointer; font-weight: 700; transition: all .2s; }
+.logoutModalActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 .primaryButton { border: 1px solid #ef4444; background: #ef4444; color: #fff; }
 .primaryButton:hover { background: #b91c1c; border-color: #b91c1c; }
 .secondaryButton { border: 1px solid #444; background: transparent; color: #ddd; }
@@ -85,6 +86,22 @@
 .field input { width: 100%; border: 1px solid #343434; border-radius: 5px; background: #0b0b0b; color: #fff; padding: 13px 14px; outline: 0; transition: border-color .2s, box-shadow .2s; }
 .field input:focus { border-color: #ef4444; box-shadow: 0 0 0 3px #ef444422; }
 .toast { position: absolute; right: 20px; top: 20px; z-index: 2; background: #1b1b1b; border-left: 3px solid #ef4444; color: #eee; padding: 13px 16px; box-shadow: 0 8px 28px #0008; }
+<<<<<<< HEAD
+.modalBackdrop { position: fixed; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(3, 5, 8, .78); backdrop-filter: blur(8px); z-index: 10; animation: modalBackdropIn .2s ease-out both; }
+.modal { width: min(100%, 420px); max-height: calc(100vh - 40px); overflow-y: auto; display: grid; gap: 14px; background: linear-gradient(145deg, #1b1d22, #101114); border: 1px solid rgba(255, 255, 255, .14); border-radius: 16px; padding: 26px; box-shadow: 0 24px 80px rgba(0, 0, 0, .65), 0 0 0 1px rgba(239, 68, 68, .08); animation: modalIn .24s cubic-bezier(.2, .8, .2, 1) both; }
+.modal h2 { font-size: 1.4rem; letter-spacing: -.025em; }
+.logoutModalIcon { display: grid; place-items: center; width: 42px; height: 42px; margin-bottom: 12px; border: 1px solid rgba(239, 68, 68, .3); border-radius: 12px; background: rgba(239, 68, 68, .12); color: #f87171; font-size: 1.35rem; font-weight: 800; }
+.modal .field { gap: 5px; font-size: .78rem; }
+.modal .field input { padding: 10px 11px; }
+.modal .primaryButton { width: 100%; padding: 10px 14px; font-size: .82rem; }
+.closeButton { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid rgba(255, 255, 255, .12); border-radius: 50%; background: rgba(255, 255, 255, .04); font-size: 1.35rem; line-height: 1; }
+.logoutModalActions { padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, .1); }
+.logoutModalActions .secondaryButton, .logoutModalActions .primaryButton { min-width: 112px; }
+.logoutModalActions .primaryButton { background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 8px 20px rgba(239, 68, 68, .2); }
+.logoutModalActions .primaryButton:hover { transform: translateY(-1px); box-shadow: 0 11px 24px rgba(239, 68, 68, .3); }
+@keyframes modalBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalIn { from { opacity: 0; transform: translateY(12px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+=======
 .modalBackdrop { position: fixed; inset: 0; display: grid; place-items: center; padding: 20px; background: #000b; z-index: 10; }
 .modal { width: min(100%, 420px); max-height: calc(100vh - 40px); overflow-y: auto; display: grid; gap: 12px; background: #151515; border: 1px solid #343434; border-radius: 10px; padding: 20px; box-shadow: 0 20px 70px #000; }
 .modal h2 { font-size: 1.35rem; }
@@ -92,6 +109,7 @@
 .modal .field input { padding: 10px 11px; }
 .modal .primaryButton { width: 100%; padding: 10px 14px; font-size: .82rem; }
 .closeButton { font-size: 1.6rem; line-height: 1; }
+>>>>>>> b6f5fb49fb1296c9cf374402fdbc3b6214ea3393
 .profileImagePreview { width: 82px; height: 82px; border-radius: 50%; object-fit: cover; border: 2px solid #ef4444; }
 
 @media (max-width: 760px) {

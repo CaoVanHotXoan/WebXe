@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Vehicle } from '@/TS/vehicleData';
 import { BACKEND_URL } from '@/services/api';
@@ -35,6 +35,17 @@ type SupportConversationResponse = {
   messages: SupportMessage[];
 };
 
+async function readApiResponse<T>(response: Response): Promise<T & { message?: string; detail?: string }> {
+  const body = await response.text();
+  try {
+    return (body ? JSON.parse(body) : {}) as T & { message?: string; detail?: string };
+  } catch {
+    throw new Error(response.ok
+      ? 'Máy chủ trả về dữ liệu không hợp lệ.'
+      : `Máy chủ hỗ trợ đang lỗi (HTTP ${response.status}).`);
+  }
+}
+
 function renderMessage(text: string) {
   return text.split('\n').map((line, index) => {
     const imageMatch = line.trim().match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
@@ -48,10 +59,9 @@ function renderMessage(text: string) {
 }
 
 function formatMessageTime(value: string) {
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
-  if (match) return `${match[3]}/${match[2]}/${match[1]}, ${match[4]}:${match[5]}`;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+  const normalizedValue = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value) ? value : value.replace(' ', 'T') + '+07:00';
+  const date = new Date(normalizedValue);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('vi-VN');
 }
 
 export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
@@ -67,6 +77,14 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
   const [supportConversationId, setSupportConversationId] = useState<number | null>(null);
   const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
   const [supportError, setSupportError] = useState('');
+  const supportLoadSequence = useRef(0);
+  const supportMessagesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const messagesElement = supportMessagesRef.current;
+    if (!messagesElement) return;
+    messagesElement.scrollTo({ top: messagesElement.scrollHeight, behavior: 'auto' });
+  }, [supportMessages]);
 
   const supportHeaders = useMemo<HeadersInit>(() => {
     const headers: Record<string, string> = {};
@@ -79,9 +97,11 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
 
   const loadSupportConversation = useCallback(async (): Promise<number | null> => {
     if (!token || !user || isAdmin) return null;
+    const loadSequence = ++supportLoadSequence.current;
     const response = await fetch(`${BACKEND_URL}/chat/conversation`, { headers: supportHeaders, credentials: 'include' });
-    const data = await response.json() as SupportConversationResponse & { message?: string };
-    if (!response.ok) throw new Error(data.message || 'Không thể tải cuộc hội thoại.');
+    const data = await readApiResponse<SupportConversationResponse>(response);
+    if (!response.ok) throw new Error(data.detail || data.message || 'Không thể tải cuộc hội thoại.');
+    if (loadSequence !== supportLoadSequence.current) return data.conversation.MaCuocHoiThoai;
     setSupportConversationId(data.conversation.MaCuocHoiThoai);
     setSupportMessages(data.messages);
     return data.conversation.MaCuocHoiThoai;
@@ -136,6 +156,12 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
     { id: 1, sender: 'bot', text: 'Xin chào! Mình là trợ lý WebXe. Mình có thể giúp bạn tìm mẫu xe và thông tin giá bán.' },
   ]);
 
+  useEffect(() => {
+    const messagesElement = supportMessagesRef.current;
+    if (!messagesElement) return;
+    messagesElement.scrollTo({ top: messagesElement.scrollHeight, behavior: 'auto' });
+  }, [messages]);
+
   const sendMessage = async (value: string) => {
     const trimmedQuestion = value.trim();
     if (!trimmedQuestion || isLoading) return;
@@ -181,7 +207,7 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
           })),
         }),
       });
-      const data = await response.json() as { message?: string; vehicleId?: number | null; vehicleIds?: number[]; vehicleNames?: string[]; vehicleCards?: ChatMessage['vehicleCards'] };
+      const data = await readApiResponse<{ message?: string; vehicleId?: number | null; vehicleIds?: number[]; vehicleNames?: string[]; vehicleCards?: ChatMessage['vehicleCards'] }>(response);
       if (!response.ok) throw new Error(data.message || 'Không thể kết nối trợ lý AI.');
       setMessages((current) => [...current, { id: nextId + 1, sender: 'bot', text: data.message || 'Trợ lý chưa có câu trả lời.', vehicleId: data.vehicleId, vehicleIds: data.vehicleIds, vehicleNames: data.vehicleNames, vehicleCards: data.vehicleCards }]);
     } catch (error) {
@@ -232,14 +258,13 @@ export default function ChatBot({ vehicles }: { vehicles: Vehicle[] }) {
               <h2>{token && user && !isAdmin ? 'Chăm sóc khách hàng' : 'Trợ lý WebXe'}</h2>
               <p>{token && user && !isAdmin ? 'Nhắn tin trực tiếp với nhân viên' : 'Đang sẵn sàng tư vấn'}</p>
             </div>
-            <button type="button" className={styles.closeButton} onClick={() => setIsOpen(false)} aria-label="Đóng chatbot">×</button>
           </header>
 
-          <div className={styles.messages} aria-live="polite">
+          <div ref={supportMessagesRef} className={styles.messages} aria-live="polite">
             {token && user && !isAdmin ? (
               supportMessages.map((message) => (
-                <div className={`${styles.messageRow} ${message.MaNguoiGui === user.id ? styles.userRow : ''}`} key={message.MaTinNhan}>
-                  <div className={`${styles.message} ${message.MaNguoiGui === user.id ? styles.userMessage : styles.botMessage}`}>
+                <div className={`${styles.messageRow} ${Number(message.MaNguoiGui) === Number(user.id) ? styles.userRow : ''}`} key={message.MaTinNhan}>
+                  <div className={`${styles.message} ${Number(message.MaNguoiGui) === Number(user.id) ? styles.userMessage : styles.botMessage}`}>
                     <p>{renderMessage(message.NoiDung)}</p>
                     <small>{formatMessageTime(message.ThoiGian)}</small>
                   </div>

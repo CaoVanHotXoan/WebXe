@@ -1,6 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { BACKEND_URL } from "@/services/api";
 import styles from "./chamSocKH.module.css";
@@ -32,10 +32,9 @@ type ApiConversation = {
 type ApiMessage = { MaTinNhan: number; MaNguoiGui: number; NoiDung: string; ThoiGian: string };
 
 function formatMessageTime(value: string) {
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
-  if (match) return `${match[3]}/${match[2]}/${match[1]}, ${match[4]}:${match[5]}`;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+  const normalizedValue = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value) ? value : value.replace(" ", "T") + "+07:00";
+  const date = new Date(normalizedValue);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('vi-VN');
 }
 
 const initialConversations: Conversation[] = [];
@@ -99,13 +98,18 @@ export default function ChamSocKHPage() {
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
   const [activeTab, setActiveTab] = useState("Tất cả");
+  const conversationLoadSequence = useRef(0);
+  const messageLoadSequence = useRef(0);
+  const chatBodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (status === "loading" || !token || !isAdmin) return;
     const loadConversations = async () => {
+      const loadSequence = ++conversationLoadSequence.current;
       const response = await fetch(`${BACKEND_URL}/chat/conversations`, { headers: { Authorization: `Bearer ${token}` }, credentials: "include" });
       const data = await response.json() as { conversations?: ApiConversation[]; message?: string };
       if (!response.ok) throw new Error(data.message || "Không thể tải cuộc hội thoại.");
+      if (loadSequence !== conversationLoadSequence.current) return;
       const liveConversations = (data.conversations ?? []).map((conversation, index) => ({
         id: conversation.MaCuocHoiThoai,
         name: conversation.TenKhachHang,
@@ -131,12 +135,14 @@ export default function ChamSocKHPage() {
   useEffect(() => {
     if (status === "loading" || !token || !isAdmin || !selectedId) return;
     const loadMessages = async () => {
+      const loadSequence = ++messageLoadSequence.current;
       const response = await fetch(`${BACKEND_URL}/chat/conversations/${selectedId}`, { headers: { Authorization: `Bearer ${token}` }, credentials: "include" });
       const data = await response.json() as { messages?: ApiMessage[] };
       if (!response.ok) return;
+      if (loadSequence !== messageLoadSequence.current) return;
       setConversations((current) => current.map((conversation) => conversation.id === selectedId ? {
         ...conversation,
-        messages: (data.messages ?? []).map((message) => ({ id: message.MaTinNhan, text: message.NoiDung, time: formatMessageTime(message.ThoiGian), mine: message.MaNguoiGui === user?.id })),
+        messages: (data.messages ?? []).map((message) => ({ id: message.MaTinNhan, text: message.NoiDung, time: formatMessageTime(message.ThoiGian), mine: Number(message.MaNguoiGui) === Number(user?.id) })),
       } : conversation));
       if (response.ok) {
         await fetch(`${BACKEND_URL}/chat/conversations/${selectedId}/read`, {
@@ -153,6 +159,13 @@ export default function ChamSocKHPage() {
   }, [isAdmin, selectedId, status, token, user?.id]);
 
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId) ?? null;
+
+  useEffect(() => {
+    const chatBody = chatBodyRef.current;
+    if (!chatBody || !selectedConversation?.messages.length) return;
+    chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: "auto" });
+  }, [selectedConversation?.messages]);
+
   const filteredConversations = useMemo(() => {
     const keyword = search.trim().toLowerCase();
     return conversations.filter((conversation) => {
@@ -203,6 +216,7 @@ export default function ChamSocKHPage() {
               <p className={styles.eyebrow}>WEBXE SUPPORT</p>
               <h1>Đoạn chat</h1>
             </div>
+            <Link className={styles.mobileDashboardLink} href="/DatabaseDashboard/DatabaseDashboard">Dashboard</Link>
             <div className={styles.topActions}>
               <button type="button" aria-label="Tùy chọn" title="Tùy chọn">•••</button>
               <button type="button" aria-label="Tạo cuộc trò chuyện" title="Tạo cuộc trò chuyện">↗</button>
@@ -256,7 +270,7 @@ export default function ChamSocKHPage() {
             </div>
           </header>
 
-          <div className={styles.chatBody}>
+          <div ref={chatBodyRef} className={styles.chatBody}>
             <div className={styles.dateDivider}><span>Hôm nay</span></div>
             <div className={styles.messageList}>
               {selectedConversation.messages.map((item) => (

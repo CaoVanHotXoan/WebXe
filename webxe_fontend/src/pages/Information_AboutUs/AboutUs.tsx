@@ -5,6 +5,10 @@ import Footer from '@/components/Footer';
 import { teamMembers, TeamMember } from '@/TS/aboutUsData';
 import styles from './aboutUs.module.css';
 
+const fallbackMemberImage = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=900&q=85';
+
+const getMemberImage = (image: string) => image.includes('fbcdn.net') ? fallbackMemberImage : image;
+
 export default function AboutUs() {
   // Lưu thành viên đang được mở; null nghĩa là đang ở danh sách tổng quan.
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
@@ -38,7 +42,7 @@ export default function AboutUs() {
               <button type="button" className={styles.backButton} onClick={closeDetail}>
                 <span aria-hidden="true">←</span> Quay lại đội ngũ
               </button>
-              <img className={styles.detailAvatar} src={selectedMember.image} alt={selectedMember.name} />
+              <img className={styles.detailAvatar} src={getMemberImage(selectedMember.image)} alt={selectedMember.name} />
               <div className={styles.detailContent}>
                 <div className={styles.detailText}>
                   <h2 className={styles.detailName}>{selectedMember.name}</h2>
@@ -58,7 +62,7 @@ export default function AboutUs() {
                   onClick={() => setSelectedMember(member)}
                   aria-label={`Xem thông tin ${member.name}`}
                 >
-                  <img className={styles.memberImage} src={member.image} alt={member.name} />
+                  <img className={styles.memberImage} src={getMemberImage(member.image)} alt={member.name} />
                   <span className={styles.memberSummary}>{member.name}</span>
                 </button>
               ))}

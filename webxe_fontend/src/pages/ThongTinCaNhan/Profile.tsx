@@ -57,6 +57,10 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData>(defaultProfile);
   const [draftProfile, setDraftProfile] = useState<ProfileData>(defaultProfile);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [profileOtp, setProfileOtp] = useState('');
+  const [isProfileOtpRequired, setIsProfileOtpRequired] = useState(false);
+  const [isProfileOtpSending, setIsProfileOtpSending] = useState(false);
   const [message, setMessage] = useState('');
   const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
   const [passwordStep, setPasswordStep] = useState<'form' | 'otp'>('form');
@@ -135,11 +139,37 @@ export default function ProfilePage() {
       return;
     }
 
+<<<<<<< HEAD
+    const emailChanged = draftProfile.email.trim().toLowerCase() !== (profile.email || '').trim().toLowerCase();
+    if (emailChanged && !isProfileOtpRequired) {
+      setIsProfileOtpSending(true);
+      try {
+        const data = await apiFetch<{ message?: string }>('/auth/profile/email/request-otp', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ email: draftProfile.email }),
+        });
+        setIsProfileOtpRequired(true);
+        showMessage(data.message || 'Mã OTP đã được gửi đến Gmail mới.');
+      } catch (requestError) {
+        showMessage(requestError instanceof Error ? requestError.message : 'Không thể gửi OTP.');
+      } finally {
+        setIsProfileOtpSending(false);
+      }
+      return;
+    }
+
+=======
+>>>>>>> b6f5fb49fb1296c9cf374402fdbc3b6214ea3393
     try {
       const data = await apiFetch<{ message?: string; user?: ApiProfileUser }>('/user/profile', {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
+<<<<<<< HEAD
+        body: JSON.stringify({ ...draftProfile, otp: emailChanged ? profileOtp : undefined }),
+=======
         body: JSON.stringify(draftProfile),
+>>>>>>> b6f5fb49fb1296c9cf374402fdbc3b6214ea3393
       });
       if (!data.user) throw new Error('Máy chủ không trả về thông tin tài khoản.');
       updateProfileState({
@@ -154,9 +184,21 @@ export default function ProfilePage() {
         image: data.user.HinhAnh ?? data.user.image,
       });
       setIsEditOpen(false);
+<<<<<<< HEAD
+      setProfileOtp('');
+      setIsProfileOtpRequired(false);
+      showMessage(data.message || 'Thông tin tài khoản đã được cập nhật.');
+    } catch (requestError) {
+      if (emailChanged && isProfileOtpRequired) {
+        showMessage('Cập nhật thông tin thất bại: OTP không đúng hoặc đã hết hạn.');
+      } else {
+        showMessage(requestError instanceof Error ? requestError.message : 'Không thể cập nhật thông tin.');
+      }
+=======
       showMessage(data.message || 'Thông tin tài khoản đã được cập nhật.');
     } catch (requestError) {
       showMessage(requestError instanceof Error ? requestError.message : 'Không thể cập nhật thông tin.');
+>>>>>>> b6f5fb49fb1296c9cf374402fdbc3b6214ea3393
     }
   };
 
@@ -284,7 +326,7 @@ export default function ProfilePage() {
                   <button className={styles.primaryButton} onClick={() => { setDraftProfile(profile); setIsEditOpen(true); }}>
                     Cập nhật thông tin
                   </button>
-                  <button className={styles.secondaryButton} onClick={handleLogout}>Đăng xuất</button>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setIsLogoutModalOpen(true)}>Đăng xuất</button>
                 </div>
               </div>
             )}
@@ -327,13 +369,38 @@ export default function ProfilePage() {
           <form className={styles.modal} onSubmit={handleProfileSubmit}>
             <div className={styles.modalHeading}><div><p className={styles.eyebrow}>HỒ SƠ</p><h2>Cập nhật thông tin</h2></div><button type="button" className={styles.closeButton} onClick={() => setIsEditOpen(false)}>×</button></div>
             <label className={styles.field}>Tên<input value={draftProfile.name} onChange={(event) => setDraftProfile({ ...draftProfile, name: event.target.value })} /></label>
-            <label className={styles.field}>Email<input type="email" value={draftProfile.email} onChange={(event) => setDraftProfile({ ...draftProfile, email: event.target.value })} /></label>
+            <label className={styles.field}>Email<input type="email" value={draftProfile.email} onChange={(event) => { setIsProfileOtpRequired(false); setProfileOtp(''); setDraftProfile({ ...draftProfile, email: event.target.value }); }} /></label>
+            {isProfileOtpRequired && <label className={styles.field}>Mã OTP Gmail mới<input inputMode="numeric" autoComplete="one-time-code" value={profileOtp} onChange={(event) => setProfileOtp(event.target.value)} placeholder="Nhập mã 6 số" required /></label>}
             <label className={styles.field}>Số điện thoại<input value={draftProfile.phone} onChange={(event) => setDraftProfile({ ...draftProfile, phone: event.target.value })} /></label>
             <label className={styles.field}>Địa chỉ<input value={draftProfile.address} onChange={(event) => setDraftProfile({ ...draftProfile, address: event.target.value })} /></label>
             <label className={styles.field}>Ảnh đại diện (URL)<input type="url" value={draftProfile.image} onChange={(event) => setDraftProfile({ ...draftProfile, image: event.target.value })} placeholder="https://..." /></label>
             {draftProfile.image && <img className={styles.profileImagePreview} src={draftProfile.image} alt="Xem trước ảnh đại diện" />}
+<<<<<<< HEAD
+            <button className={styles.primaryButton} type="submit" disabled={isProfileOtpSending}>{isProfileOtpSending ? 'ĐANG GỬI OTP...' : isProfileOtpRequired ? 'XÁC NHẬN VÀ LƯU' : 'LƯU THÔNG TIN'}</button>
+=======
             <button className={styles.primaryButton} type="submit">LƯU THÔNG TIN</button>
+>>>>>>> b6f5fb49fb1296c9cf374402fdbc3b6214ea3393
           </form>
+        </div>
+      )}
+
+      {isLogoutModalOpen && (
+        <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setIsLogoutModalOpen(false); }}>
+          <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="logout-modal-title">
+            <div className={styles.modalHeading}>
+              <div>
+                <div className={styles.logoutModalIcon} aria-hidden="true">↪</div>
+                <p className={styles.eyebrow}>PHIÊN ĐĂNG NHẬP</p>
+                <h2 id="logout-modal-title">Đăng xuất tài khoản?</h2>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={() => setIsLogoutModalOpen(false)} aria-label="Đóng">×</button>
+            </div>
+            <p className={styles.description}>Bạn có chắc muốn kết thúc phiên hiện tại? Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng WebXe.</p>
+            <div className={styles.logoutModalActions}>
+              <button type="button" className={styles.secondaryButton} onClick={() => setIsLogoutModalOpen(false)}>Hủy</button>
+              <button type="button" className={styles.primaryButton} onClick={handleLogout}>Đăng xuất</button>
+            </div>
+          </div>
         </div>
       )}
     </main>

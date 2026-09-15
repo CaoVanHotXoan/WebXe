@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function RouteLoading() {
   const router = useRouter();
@@ -20,12 +21,5 @@ export default function RouteLoading() {
     };
   }, [router.events]);
 
-  if (!isLoading) return null;
-
-  return (
-    <div className="route-loading" role="status" aria-live="polite" aria-label="Đang tải trang">
-      <div className="route-loading-spinner" aria-hidden="true" />
-      <span className="route-loading-text">Đang tải...</span>
-    </div>
-  );
+  return <LoadingSpinner isLoading={isLoading} label="Đang tải trang" />;
 }
