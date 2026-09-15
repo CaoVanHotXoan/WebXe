@@ -15,7 +15,6 @@ import chatRoutes from './routes/chatRoutes.js';
 dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
-const port = Number(process.env.PORT || 5000);
 const allowedOrigins = String(process.env.CORS_ORIGIN || process.env.CLIENT_URL || 'http://localhost:3000')
   .split(',')
   .map((origin) => origin.trim().replace(/\/$/, ''))
@@ -56,4 +55,10 @@ app.use((error, req, res, next) => {
   });
 });
 
-app.listen(port, () => console.log(`WebXe backend đang chạy tại http://localhost:${port}`));
+// Vercel imports the Express app as a serverless function; local development still binds port 5000.
+if (!process.env.VERCEL) {
+  const port = Number(process.env.PORT || 5000);
+  app.listen(port, () => console.log(`WebXe backend đang chạy tại http://localhost:${port}`));
+}
+
+export default app;

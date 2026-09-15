@@ -57,6 +57,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData>(defaultProfile);
   const [draftProfile, setDraftProfile] = useState<ProfileData>(defaultProfile);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [profileOtp, setProfileOtp] = useState('');
   const [isProfileOtpRequired, setIsProfileOtpRequired] = useState(false);
   const [isProfileOtpSending, setIsProfileOtpSending] = useState(false);
@@ -312,7 +313,7 @@ export default function ProfilePage() {
                   <button className={styles.primaryButton} onClick={() => { setDraftProfile(profile); setIsEditOpen(true); }}>
                     Cập nhật thông tin
                   </button>
-                  <button className={styles.secondaryButton} onClick={handleLogout}>Đăng xuất</button>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setIsLogoutModalOpen(true)}>Đăng xuất</button>
                 </div>
               </div>
             )}
@@ -363,6 +364,26 @@ export default function ProfilePage() {
             {draftProfile.image && <img className={styles.profileImagePreview} src={draftProfile.image} alt="Xem trước ảnh đại diện" />}
             <button className={styles.primaryButton} type="submit" disabled={isProfileOtpSending}>{isProfileOtpSending ? 'ĐANG GỬI OTP...' : isProfileOtpRequired ? 'XÁC NHẬN VÀ LƯU' : 'LƯU THÔNG TIN'}</button>
           </form>
+        </div>
+      )}
+
+      {isLogoutModalOpen && (
+        <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setIsLogoutModalOpen(false); }}>
+          <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="logout-modal-title">
+            <div className={styles.modalHeading}>
+              <div>
+                <div className={styles.logoutModalIcon} aria-hidden="true">↪</div>
+                <p className={styles.eyebrow}>PHIÊN ĐĂNG NHẬP</p>
+                <h2 id="logout-modal-title">Đăng xuất tài khoản?</h2>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={() => setIsLogoutModalOpen(false)} aria-label="Đóng">×</button>
+            </div>
+            <p className={styles.description}>Bạn có chắc muốn kết thúc phiên hiện tại? Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng WebXe.</p>
+            <div className={styles.logoutModalActions}>
+              <button type="button" className={styles.secondaryButton} onClick={() => setIsLogoutModalOpen(false)}>Hủy</button>
+              <button type="button" className={styles.primaryButton} onClick={handleLogout}>Đăng xuất</button>
+            </div>
+          </div>
         </div>
       )}
     </main>

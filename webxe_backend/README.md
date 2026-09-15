@@ -24,6 +24,12 @@ npm run dev
 
 Swagger UI: `http://localhost:5000/api-docs`
 
+## Deploy trên Vercel
+
+Trong Vercel, tạo project với **Root Directory** là `webxe_backend`. Vercel sẽ dùng `api/index.js` làm serverless entrypoint. Khai báo toàn bộ biến môi trường cần thiết trong Vercel Project Settings, đặc biệt `DB_SERVER`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `CORS_ORIGIN`, `MAIL_USER`, `MAIL_PASSWORD` và các biến Cloudinary nếu đang sử dụng.
+
+Sau khi deploy, kiểm tra `https://<domain-vercel>/api/health`. Cập nhật `CORS_ORIGIN` bằng domain frontend thật, không thêm dấu `/` cuối URL. Không đưa file `.env` lên Git hoặc Vercel.
+
 ## Endpoint chính
 
 - `POST /api/auth/login`: nhận `tenDangNhap` hoặc `email` và `password`, đặt cookie `token`.

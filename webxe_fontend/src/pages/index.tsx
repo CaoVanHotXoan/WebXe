@@ -72,7 +72,7 @@ const InteractiveHeroBanner: React.FC = () => {
       <video
         ref={videoRef}
         className="absolute inset-0 z-0 h-full w-full object-cover"
-        src={bannerData.video}
+        src="https://res.cloudinary.com/hpa8esqe/video/upload/v1789422154/webxe.mp4"
         autoPlay
         loop
         muted={isMuted}

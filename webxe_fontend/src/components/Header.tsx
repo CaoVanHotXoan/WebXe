@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { BACKEND_URL } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 type SearchVehicle = {
   id: number;
@@ -41,7 +42,7 @@ export default function Header() {
   const [hasAvailableAlert, setHasAvailableAlert] = useState(false);
   const alertDraftDirtyRef = useRef(false);
   const [searchVehicles, setSearchVehicles] = useState<SearchVehicle[]>([]);
-  const isHomePage = router.pathname === '/';
+  const [isCatalogLoading, setIsCatalogLoading] = useState(true);
   const isCustomer = isAuthenticated && !isAdmin && Boolean(user);
 
   useEffect(() => {
@@ -169,9 +170,11 @@ export default function Header() {
 
   useEffect(() => {
     let active = true;
-    fetch(`${BACKEND_URL}/data/json`)
-      .then((response) => response.ok ? response.json() as Promise<CatalogResponse> : Promise.reject(new Error('Không tải được catalog')))
-      .then((data) => {
+    const loadCatalog = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/data/json`);
+        if (!response.ok) throw new Error('Không tải được catalog');
+        const data = await response.json() as CatalogResponse;
         if (!active) return;
         const brands = new Map((data.HangXe ?? []).map((brand) => [brand.MaHang, brand.TenHang]));
         const types = new Map((data.LoaiXe ?? []).map((type) => [type.MaLoai, type.TenLoai]));
@@ -190,13 +193,16 @@ export default function Header() {
           brand: vehicle.MaHang ? brands.get(vehicle.MaHang) : undefined,
           type: vehicle.MaLoai ? types.get(vehicle.MaLoai) : undefined,
         })));
-      })
-      .catch(() => {
+      } catch {
         if (active) setSearchVehicles([]);
-      });
+      } finally {
+        if (active) setIsCatalogLoading(false);
+      }
+    };
+    void loadCatalog();
     return () => { active = false; };
   }, []);
-  
+
   const suggestions = useMemo(() => {
     const normalizedTerm = searchTerm.trim().toLowerCase();
     if (!normalizedTerm) return [];
@@ -204,7 +210,9 @@ export default function Header() {
   }, [searchTerm, searchVehicles]);
 
   return (
-    <header className="header-container">
+    <>
+      <LoadingSpinner isLoading={isCatalogLoading} label="Đang tải dữ liệu xe" />
+      <header className="header-container">
       {/* Header Top: Logo, Search, Icons, Profile */}
       <div className="header-top">
         {/* Nút hamburger chỉ hiển thị trên mobile để mở menu dọc. */}
@@ -224,17 +232,6 @@ export default function Header() {
         <Link href="/" className="logo-text" style={{ textDecoration: 'none' }}>
           TEAM BẤT ỔN
         </Link>
-
-        {isHomePage && isAuthenticated && !isAdmin && user?.name && (
-          <div className="customer-welcome" aria-live="polite">
-            <div className="welcome-track" aria-hidden="true">
-              <div className="welcome-runner">
-                <span className="welcome-car">🚗</span>
-                <span className="welcome-text">Chào mừng, {user.name}!</span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Khung giữa: Thanh tìm kiếm & Icons xe */}
         <div className="header-middle">
@@ -369,6 +366,7 @@ export default function Header() {
           </form>
         </div>
       )}
-    </header>
+      </header>
+    </>
   );
 }
