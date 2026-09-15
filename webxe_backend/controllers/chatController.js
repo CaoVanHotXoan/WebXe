@@ -3,6 +3,8 @@ import nodemailer from 'nodemailer';
 import 'dotenv/config';
 
 let groqKeyIndex = 0;
+const customerPresence = new Map();
+const onlineWindowMs = 20000;
 const mailTransport = nodemailer.createTransport({
   host: process.env.MAIL_HOST,
   port: Number(process.env.MAIL_PORT || 587),
@@ -210,6 +212,17 @@ async function getMessages(pool, conversationId) {
   return result.recordset;
 }
 
+function isCustomerOnline(customerId) {
+  return Date.now() - (customerPresence.get(customerId) || 0) < onlineWindowMs;
+}
+
+export function updateCustomerPresence(req, res) {
+  const customerId = Number(req.user.sub);
+  if (req.body?.online === false) customerPresence.delete(customerId);
+  else customerPresence.set(customerId, Date.now());
+  return res.json({ online: req.body?.online !== false });
+}
+
 export async function getCustomerConversation(req, res, next) {
   try {
     const userId = Number(req.user.sub);
@@ -249,7 +262,9 @@ export async function getAdminConversations(req, res, next) {
       SELECT c.MaCuocHoiThoai, c.MaKhachHang, c.MaNhanVien, c.TrangThai, c.NgayTao,
              kh.HoTen AS TenKhachHang, kh.Email,
              nv.HoTen AS TenNhanVien,
-             lastMessage.NoiDung AS TinNhanCuoi, CONVERT(varchar(19), lastMessage.ThoiGian, 120) AS ThoiGianTinNhanCuoi
+             lastMessage.NoiDung AS TinNhanCuoi, CONVERT(varchar(19), lastMessage.ThoiGian, 120) AS ThoiGianTinNhanCuoi,
+             (SELECT COUNT(*) FROM TinNhan unread WHERE unread.MaCuocHoiThoai = c.MaCuocHoiThoai
+               AND unread.MaNguoiGui = c.MaKhachHang AND unread.DaXem = 0) AS TinChuaXem
       FROM CuocHoiThoai c
       INNER JOIN NguoiDung kh ON kh.MaNguoiDung = c.MaKhachHang
       LEFT JOIN NguoiDung nv ON nv.MaNguoiDung = c.MaNhanVien
@@ -261,7 +276,10 @@ export async function getAdminConversations(req, res, next) {
       ) lastMessage
       ORDER BY COALESCE(lastMessage.ThoiGian, c.NgayTao) DESC
     `);
-    return res.json({ conversations: result.recordset });
+    return res.json({ conversations: result.recordset.map((conversation) => ({
+      ...conversation,
+      DangHoatDong: isCustomerOnline(conversation.MaKhachHang),
+    })) });
   } catch (error) {
     return next(error);
   }

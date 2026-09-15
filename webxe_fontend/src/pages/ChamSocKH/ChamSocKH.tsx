@@ -14,6 +14,7 @@ type Conversation = {
   preview: string;
   time: string;
   unread?: number;
+  online?: boolean;
   messages: Message[];
 };
 
@@ -24,6 +25,8 @@ type ApiConversation = {
   TenKhachHang: string;
   TinNhanCuoi?: string | null;
   ThoiGianTinNhanCuoi?: string | null;
+  TinChuaXem?: number;
+  DangHoatDong?: boolean;
 };
 
 type ApiMessage = { MaTinNhan: number; MaNguoiGui: number; NoiDung: string; ThoiGian: string };
@@ -110,12 +113,19 @@ export default function ChamSocKHPage() {
         color: ["#f59e0b", "#0ea5e9", "#8b5cf6", "#10b981"][index % 4],
         preview: conversation.TinNhanCuoi || "Chưa có tin nhắn",
         time: conversation.ThoiGianTinNhanCuoi ? formatMessageTime(conversation.ThoiGianTinNhanCuoi) : "Mới",
+        unread: Number(conversation.TinChuaXem) || 0,
+        online: Boolean(conversation.DangHoatDong),
         messages: [],
       }));
-      setConversations(liveConversations);
+      setConversations((currentConversations) => liveConversations.map((conversation) => ({
+        ...conversation,
+        messages: currentConversations.find((current) => current.id === conversation.id)?.messages ?? [],
+      })));
       if (liveConversations[0]) setSelectedId((current) => liveConversations.some((item) => item.id === current) ? current : liveConversations[0].id);
     };
     void loadConversations().catch(() => undefined);
+    const interval = window.setInterval(() => void loadConversations().catch(() => undefined), 5000);
+    return () => window.clearInterval(interval);
   }, [isAdmin, status, token]);
 
   useEffect(() => {
@@ -128,6 +138,14 @@ export default function ChamSocKHPage() {
         ...conversation,
         messages: (data.messages ?? []).map((message) => ({ id: message.MaTinNhan, text: message.NoiDung, time: formatMessageTime(message.ThoiGian), mine: message.MaNguoiGui === user?.id })),
       } : conversation));
+      if (response.ok) {
+        await fetch(`${BACKEND_URL}/chat/conversations/${selectedId}/read`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
+        });
+        setConversations((current) => current.map((conversation) => conversation.id === selectedId ? { ...conversation, unread: 0 } : conversation));
+      }
     };
     void loadMessages();
     const interval = window.setInterval(() => void loadMessages(), 5000);
@@ -137,8 +155,12 @@ export default function ChamSocKHPage() {
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId) ?? null;
   const filteredConversations = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    return conversations.filter((conversation) => !keyword || `${conversation.name} ${conversation.preview}`.toLowerCase().includes(keyword));
-  }, [conversations, search]);
+    return conversations.filter((conversation) => {
+      const matchesSearch = !keyword || `${conversation.name} ${conversation.preview}`.toLowerCase().includes(keyword);
+      const matchesTab = activeTab === "Tất cả" || (activeTab === "Chưa đọc" ? Boolean(conversation.unread) : !conversation.unread);
+      return matchesSearch && matchesTab;
+    });
+  }, [activeTab, conversations, search]);
 
   const selectConversation = (id: number) => {
     setSelectedId(id);
@@ -202,7 +224,7 @@ export default function ChamSocKHPage() {
             {filteredConversations.map((conversation) => (
               <button key={conversation.id} type="button" className={`${styles.conversation} ${selectedConversation?.id === conversation.id ? styles.selectedConversation : ""}`} onClick={() => selectConversation(conversation.id)}>
                 <span className={styles.avatar} style={{ backgroundColor: conversation.color }}>{conversation.initials}</span>
-                <span className={styles.conversationCopy}>
+                <span className={`${styles.conversationCopy} ${conversation.unread ? styles.unreadConversation : ""}`}>
                   <span className={styles.conversationName}>{conversation.name}</span>
                   <span className={styles.conversationPreview}>{conversation.preview}</span>
                 </span>
@@ -225,7 +247,7 @@ export default function ChamSocKHPage() {
               <span className={styles.avatar} style={{ backgroundColor: selectedConversation.color }}>{selectedConversation.initials}</span>
               <div>
                 <h2>{selectedConversation.name}</h2>
-                <p><span className={styles.onlineDot} /> Đang hoạt động</p>
+                <p><span className={`${styles.onlineDot} ${selectedConversation.online ? "" : styles.offlineDot}`} /> {selectedConversation.online ? "Đang hoạt động" : "Đang offline"}</p>
               </div>
             </div>
             <div className={styles.chatActions}>

@@ -408,6 +408,16 @@
   margin: 18px 0;
 }
 
+.formSectionTitle {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+  color: #0f766e;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .formField {
   display: flex;
   flex-direction: column;
@@ -665,6 +675,10 @@
   justify-content: center;
   padding: 20px;
   background: rgba(15, 23, 42, 0.58);
+}
+
+.formModalBackdrop {
+  z-index: 20;
 }
 
 .modal {

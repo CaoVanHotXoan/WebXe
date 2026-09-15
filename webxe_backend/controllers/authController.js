@@ -30,11 +30,37 @@ function createOtp() {
 
 async function sendOtp(email, purpose) {
   const otp = createOtp();
+  const expirationMinutes = process.env.OTP_EXPIRE_MINUTES || 10;
+  const isRegistration = purpose === 'register';
+  const title = isRegistration ? 'Xác nhận đăng ký tài khoản' : 'Xác nhận đổi mật khẩu';
+  const text = `Mã xác nhận WebXe của bạn là ${otp}. Mã có hiệu lực trong ${expirationMinutes} phút. Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email.`;
   const result = await mailTransport.sendMail({
     from: process.env.MAIL_FROM || process.env.MAIL_USER,
     to: email,
-    subject: purpose === 'register' ? 'Mã OTP đăng ký tài khoản WebXe' : 'Mã OTP đổi mật khẩu WebXe',
-    text: `Mã xác nhận của bạn là ${otp}. Mã có hiệu lực trong ${process.env.OTP_EXPIRE_MINUTES || 10} phút.`
+    subject: isRegistration ? 'Mã OTP đăng ký tài khoản WebXe' : 'Mã OTP đổi mật khẩu WebXe',
+    text,
+    html: `
+      <div style="margin:0;background:#f4f6f8;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+        <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;box-shadow:0 12px 32px rgba(15,23,42,.08);">
+          <div style="padding:28px 32px;background:#182b28;color:#ffffff;">
+            <div style="font-size:13px;font-weight:700;letter-spacing:2px;color:#f4bd52;">WEBXE</div>
+            <div style="margin-top:10px;font-size:24px;font-weight:700;line-height:1.25;">${title}</div>
+            <div style="margin-top:8px;color:#c9d9d4;font-size:14px;line-height:1.5;">Bảo vệ tài khoản của bạn với mã xác nhận một lần.</div>
+          </div>
+          <div style="padding:32px;">
+            <p style="margin:0;color:#4b5563;font-size:15px;line-height:1.6;">Xin chào,</p>
+            <p style="margin:10px 0 0;color:#4b5563;font-size:15px;line-height:1.6;">Vui lòng nhập mã bên dưới để tiếp tục. Không chia sẻ mã này với bất kỳ ai.</p>
+            <div style="margin:26px 0;padding:20px;text-align:center;border:1px solid #f6dca5;border-radius:14px;background:#fffaf0;">
+              <div style="margin-bottom:8px;color:#8a6a28;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">MÃ XÁC NHẬN</div>
+              <div style="color:#d65335;font-size:34px;font-weight:800;letter-spacing:9px;line-height:1;">${otp}</div>
+            </div>
+            <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">Mã có hiệu lực trong <strong style="color:#374151;">${expirationMinutes} phút</strong>.</p>
+            <div style="margin-top:22px;padding:14px 16px;border-left:3px solid #ef6a45;background:#fff5ef;color:#7c4937;font-size:13px;line-height:1.5;">Nếu bạn không yêu cầu mã này, bạn có thể bỏ qua email. Tài khoản của bạn vẫn được bảo vệ.</div>
+          </div>
+          <div style="padding:18px 32px;border-top:1px solid #eef0f2;color:#9ca3af;font-size:11px;line-height:1.5;">Email tự động từ WebXe. Vui lòng không trả lời email này.</div>
+        </div>
+      </div>
+    `
   });
   if (result.rejected?.includes(email)) {
     throw new Error(`Gmail từ chối người nhận ${email}.`);
@@ -117,7 +143,7 @@ export async function login(req, res, next) {
     return res.json({
       message: 'Đăng nhập thành công.',
       token,
-      user: { id: user.MaNguoiDung, roleId: user.MaVaiTro, username: user.TenDangNhap, name: user.HoTen, email: user.Email, role }
+      user: { id: user.MaNguoiDung, roleId: user.MaVaiTro, username: user.TenDangNhap, name: user.HoTen, email: user.Email, phone: user.SoDienThoai, image: user.HinhAnh, role }
     });
   } catch (error) {
     return next(error);
