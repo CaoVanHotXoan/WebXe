@@ -5,11 +5,18 @@ Bảng:
 3. HangXe
 4. LoaiXe
 5. Xe
-1
 6. GioHang
 7. ChiTietGioHang
 8. DonHang
 9. ChiTietDonHang
+10. HinhAnhXe
+11. MaXacNhan
+12. DanhMucTinTuc
+13. TinTuc
+14. CuocHoiThoai
+15. TinNhan
+16. ThongBaoCoXe
+*/
 /* =========================================================
    1. VAI TRÒ
    ========================================================= */
@@ -331,4 +338,27 @@ GO
 -- Index giúp tăng tốc độ load lịch sử tin nhắn
 CREATE INDEX IX_TinNhan_MaCuocHoiThoai 
 ON TinNhan(MaCuocHoiThoai);
+GO
+
+-- ============================================
+/* =========================================================
+   13. THÔNG BÁO CÓ XE (Tối giản: Chỉ nhập tên xe)
+   ========================================================= */
+CREATE TABLE ThongBaoCoXe
+(
+    MaThongBao INT IDENTITY(1,1) PRIMARY KEY,
+
+    MaNguoiDung INT NOT NULL,              -- Người dùng đăng ký nhận email
+
+    TenXeTimKiem NVARCHAR(150) NOT NULL,    -- Tên xe người dùng gõ vào (VD: "Camry", "Civic")
+
+    TrangThai NVARCHAR(50) NOT NULL
+        DEFAULT N'Đang chờ',                -- 'Đang chờ', 'Đã thông báo', 'Đã hủy'
+
+    NgayDangKy DATETIME DEFAULT GETDATE(),  -- Ngày bấm nhận thông báo
+    NgayThongBao DATETIME NULL,             -- Ngày gửi Email thành công
+
+    -- Khóa ngoại tham chiếu đến bảng NguoiDung
+    FOREIGN KEY (MaNguoiDung) REFERENCES NguoiDung(MaNguoiDung) ON DELETE CASCADE
+);
 GO

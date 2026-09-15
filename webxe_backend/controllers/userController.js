@@ -92,6 +92,26 @@ export async function updateProfile(req, res, next) {
   }
 }
 
+export async function getVehicleAvailabilityAlert(req, res, next) {
+  try {
+    const pool = await getPool();
+    const userId = Number(req.user.sub);
+    const result = await pool.request()
+      .input('userId', sql.Int, userId)
+      .query(`
+        SELECT MaThongBao, TenXeTimKiem, TrangThai, NgayDangKy, NgayThongBao
+        FROM dbo.ThongBaoCoXe
+        WHERE MaNguoiDung = @userId AND TrangThai = N'Đang chờ'
+        ORDER BY MaThongBao
+      `);
+    const alerts = result.recordset;
+    const vehicles = await findAvailableVehicles(pool, alerts.map((alert) => alert.TenXeTimKiem));
+    return res.json({ alerts, vehicles, hasAvailable: vehicles.length > 0 });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 export async function sendVehicleAvailabilityAlert(req, res, next) {
   try {
     if (req.user.role === 'admin') return res.status(403).json({ message: 'Chỉ khách hàng mới được dùng chức năng này.' });
@@ -107,11 +127,11 @@ export async function sendVehicleAvailabilityAlert(req, res, next) {
     const customer = userResult.recordset[0];
     if (!customer?.Email) return res.status(400).json({ message: 'Tài khoản chưa có email để nhận thông báo.' });
 
-    const request = pool.request();
-    names.forEach((name, index) => request.input(`name${index}`, sql.NVarChar(150), name));
-    const conditions = names.map((_, index) => `LOWER(LTRIM(RTRIM(TenXe))) LIKE '%' + LOWER(LTRIM(RTRIM(@name${index}))) + '%'`).join(' OR ');
-    const result = await request.query(`SELECT MaXe, TenXe, Gia, SoLuong FROM Xe WHERE SoLuong > 0 AND (${conditions}) ORDER BY TenXe`);
-    const vehicles = result.recordset;
+    if (req.body?.notify !== true) {
+      await syncVehicleAlerts(pool, Number(req.user.sub), names);
+    }
+
+    const vehicles = await findAvailableVehicles(pool, names);
     if (!vehicles.length) return res.json({ message: 'Hiện chưa có mẫu xe nào trong danh sách bạn nhập.', vehicles: [] });
     if (req.body?.notify !== true) return res.json({ message: 'Đã lưu danh sách xe quan tâm.', vehicles });
 
@@ -127,4 +147,43 @@ export async function sendVehicleAvailabilityAlert(req, res, next) {
   } catch (error) {
     return next(error);
   }
+}
+
+async function syncVehicleAlerts(pool, userId, names) {
+  const transaction = new sql.Transaction(pool);
+  await transaction.begin();
+  try {
+    await transaction.request()
+      .input('userId', sql.Int, userId)
+      .query('DELETE FROM dbo.ThongBaoCoXe WHERE MaNguoiDung = @userId');
+    for (const name of names) {
+      await transaction.request()
+        .input('userId', sql.Int, userId)
+        .input('vehicleName', sql.NVarChar(150), name)
+        .query(`
+          INSERT INTO dbo.ThongBaoCoXe (MaNguoiDung, TenXeTimKiem, TrangThai)
+          VALUES (@userId, LTRIM(RTRIM(@vehicleName)), N'Đang chờ')
+        `);
+    }
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+}
+
+async function findAvailableVehicles(pool, names) {
+  if (!names.length) return [];
+  const request = pool.request();
+  names.forEach((name, index) => request.input(`name${index}`, sql.NVarChar(150), name));
+  const conditions = names
+    .map((_, index) => `LOWER(LTRIM(RTRIM(TenXe))) LIKE '%' + LOWER(LTRIM(RTRIM(@name${index}))) + '%'`)
+    .join(' OR ');
+  const result = await request.query(`
+    SELECT MaXe, TenXe, Gia, SoLuong
+    FROM dbo.Xe
+    WHERE SoLuong > 0 AND (${conditions})
+    ORDER BY TenXe
+  `);
+  return result.recordset;
 }

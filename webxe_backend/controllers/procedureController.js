@@ -1,5 +1,14 @@
 import { getPool, sql } from '../config/db.js';
 import { deleteCloudinaryImage } from './mediaController.js';
+import nodemailer from 'nodemailer';
+
+const mailTransport = nodemailer.createTransport({
+  host: process.env.MAIL_HOST,
+  port: Number(process.env.MAIL_PORT || 587),
+  secure: Number(process.env.MAIL_PORT) === 465,
+  auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASSWORD },
+});
+const clientUrl = 'https://fontend-webxe.vercel.app/';
 
 const imageDeleteTargets = {
   sp_XoaNguoiDung: { table: 'NguoiDung', id: 'MaNguoiDung', columns: ['HinhAnh'] },
@@ -58,6 +67,9 @@ export async function executeProcedure(req, res, next) {
     }
 
     const result = await request.execute(req.params.procedureName);
+    const vehicleNotification = ['sp_ThemXe', 'sp_SuaXe'].includes(req.params.procedureName)
+      ? await notifyCustomersAboutVehicle(pool, body)
+      : null;
     if (['sp_ThemChiTietDonHang', 'sp_SuaChiTietDonHang', 'sp_XoaChiTietDonHang'].includes(req.params.procedureName)) {
       await syncOrderTotal(pool, body.MaDonHang);
     }
@@ -66,10 +78,114 @@ export async function executeProcedure(req, res, next) {
     return res.json({
       message: `${req.params.procedureName} thực thi thành công.`,
       record: result.recordset?.[0] ?? null,
+      vehicleNotification,
     });
   } catch (error) {
     return next(error);
   }
+}
+
+async function notifyCustomersAboutVehicle(pool, vehicle) {
+  const vehicleName = String(vehicle.TenXe || '').trim();
+  if (!vehicleName || Number(vehicle.SoLuong) <= 0) {
+    return { sent: 0, skipped: true };
+  }
+
+  const vehicleResult = await pool.request()
+    .input('vehicleName', sql.NVarChar(150), vehicleName)
+    .query(`
+      SELECT TOP 1 MaXe, TenXe, Gia, SoLuong
+      FROM dbo.Xe
+      WHERE TenXe = @vehicleName
+      ORDER BY MaXe DESC
+    `);
+  const savedVehicle = vehicleResult.recordset[0];
+  if (!savedVehicle || Number(savedVehicle.SoLuong) <= 0) {
+    return { sent: 0, skipped: true };
+  }
+
+  const result = await pool.request()
+    .input('vehicleName', sql.NVarChar(150), savedVehicle.TenXe)
+    .query(`
+      SELECT tb.MaThongBao, tb.MaNguoiDung, tb.TenXeTimKiem,
+             nd.Email, nd.HoTen
+      FROM dbo.ThongBaoCoXe tb
+      INNER JOIN dbo.NguoiDung nd ON nd.MaNguoiDung = tb.MaNguoiDung
+      WHERE tb.TrangThai = N'Đang chờ'
+        AND NULLIF(LTRIM(RTRIM(nd.Email)), '') IS NOT NULL
+        AND CHARINDEX(
+          LOWER(LTRIM(RTRIM(tb.TenXeTimKiem))),
+          LOWER(LTRIM(RTRIM(@vehicleName)))
+        ) > 0
+    `);
+
+  const recipients = new Map();
+  for (const row of result.recordset) {
+    const email = String(row.Email).trim().toLowerCase();
+    const recipient = recipients.get(email) ?? {
+      email,
+      name: row.HoTen || 'khách hàng',
+      alertIds: [],
+    };
+    recipient.alertIds.push(row.MaThongBao);
+    recipients.set(email, recipient);
+  }
+
+  const deliveries = await Promise.allSettled([...recipients.values()].map(async (recipient) => {
+    await mailTransport.sendMail({
+      from: process.env.MAIL_FROM || process.env.MAIL_USER,
+      to: recipient.email,
+      subject: `WebXe: ${savedVehicle.TenXe} đã có hàng`,
+      text: `Xin chào ${recipient.name}, xe ${savedVehicle.TenXe} đã có hàng.
+Giá: ${formatPrice(savedVehicle.Gia)}
+Xem chi tiết: ${clientUrl}ChiTietXe/ChiTietXe?id=${savedVehicle.MaXe}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.6;">
+          <h2>WebXe báo xe có hàng</h2>
+          <p>Xin chào ${escapeHtml(recipient.name)},</p>
+          <p>Mẫu xe <strong>${escapeHtml(savedVehicle.TenXe)}</strong> bạn quan tâm hiện đã có hàng.</p>
+          <p>Giá: <strong>${escapeHtml(formatPrice(savedVehicle.Gia))}</strong></p>
+          <p><a href="${clientUrl}ChiTietXe/ChiTietXe?id=${savedVehicle.MaXe}">Xem chi tiết xe trên WebXe</a></p>
+        </div>
+      `,
+    });
+
+    await Promise.all(recipient.alertIds.map((alertId) => pool.request()
+      .input('alertId', sql.Int, alertId)
+      .query(`
+        UPDATE dbo.ThongBaoCoXe
+        SET TrangThai = N'Đã thông báo', NgayThongBao = GETDATE()
+        WHERE MaThongBao = @alertId AND TrangThai = N'Đang chờ'
+      `)));
+  }));
+
+  const sent = deliveries.filter((delivery) => delivery.status === 'fulfilled').length;
+  deliveries
+    .filter((delivery) => delivery.status === 'rejected')
+    .forEach((delivery) => console.error('[Mail] Không gửi được thông báo có xe:', delivery.reason?.message || delivery.reason));
+
+  return {
+    sent,
+    failed: deliveries.length - sent,
+    matched: recipients.size,
+    message: deliveries.length - sent > 0
+      ? 'Có email gửi thất bại. Kiểm tra MAIL_HOST, MAIL_USER, MAIL_PASSWORD và log backend.'
+      : sent > 0 ? `Đã gửi email thông báo đến ${sent} khách hàng.` : 'Không có khách hàng đăng ký tên xe này.',
+  };
+}
+
+function formatPrice(value) {
+  return `${Number(value || 0).toLocaleString('vi-VN')} VNĐ`;
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character]);
 }
 
 async function syncOrderTotal(pool, orderId) {
