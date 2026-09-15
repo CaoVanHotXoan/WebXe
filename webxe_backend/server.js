@@ -28,6 +28,7 @@ app.get('/api/health/db', async (req, res, next) => {
     return next(error);
   }
 });
+app.get('/api/openapi.json', (req, res) => res.json(swaggerSpec));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
