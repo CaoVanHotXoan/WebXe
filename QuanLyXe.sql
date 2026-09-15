@@ -5,6 +5,7 @@ Bảng:
 3. HangXe
 4. LoaiXe
 5. Xe
+1
 6. GioHang
 7. ChiTietGioHang
 8. DonHang
