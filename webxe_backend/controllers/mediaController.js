@@ -12,25 +12,29 @@ export async function uploadImageFromUrl(req, res, next) {
     const imageUrl = String(req.body?.url || '').trim();
     if (!imageUrl) return res.status(400).json({ message: 'URL hình ảnh là bắt buộc.' });
 
-    let parsedUrl;
-    try {
-      parsedUrl = new URL(imageUrl);
-    } catch {
-      return res.status(400).json({ message: 'URL hình ảnh không hợp lệ.' });
-    }
-    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      return res.status(400).json({ message: 'Chỉ hỗ trợ URL http hoặc https.' });
-    }
-
-    const result = await cloudinary.uploader.upload(imageUrl, {
-      folder: 'webxe',
-      resource_type: 'image',
-      type: 'upload',
-    });
+    const result = await uploadImageUrl(imageUrl);
     return res.json({ url: result.secure_url, publicId: result.public_id });
   } catch (error) {
     return next(error);
   }
+}
+
+export async function uploadImageUrl(imageUrl) {
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(String(imageUrl).trim());
+  } catch {
+    throw new Error('URL hình ảnh không hợp lệ.');
+  }
+  if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+    throw new Error('Chỉ hỗ trợ URL http hoặc https.');
+  }
+
+  return cloudinary.uploader.upload(parsedUrl.toString(), {
+    folder: 'webxe',
+    resource_type: 'image',
+    type: 'upload',
+  });
 }
 
 export function getCloudinaryPublicId(imageUrl) {

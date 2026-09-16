@@ -1,6 +1,7 @@
 import { getPool, sql } from '../config/db.js';
 import nodemailer from 'nodemailer';
 import { takeOtp } from './authController.js';
+import { deleteCloudinaryImage, getCloudinaryPublicId, uploadImageUrl } from './mediaController.js';
 
 const mailTransport = nodemailer.createTransport({
   host: process.env.MAIL_HOST,
@@ -31,6 +32,7 @@ export async function getProfile(req, res, next) {
 }
 
 export async function updateProfile(req, res, next) {
+  let uploadedImageUrl = null;
   try {
     const name = String(req.body?.name || '').trim();
     const email = String(req.body?.email || '').trim().toLowerCase();
@@ -49,9 +51,10 @@ export async function updateProfile(req, res, next) {
     const pool = await getPool();
     const currentUser = await pool.request()
       .input('id', sql.Int, userId)
-      .query('SELECT TOP 1 Email FROM NguoiDung WHERE MaNguoiDung = @id');
+      .query('SELECT TOP 1 Email, HinhAnh FROM NguoiDung WHERE MaNguoiDung = @id');
 
     const currentEmail = String(currentUser.recordset[0]?.Email || '').trim().toLowerCase();
+    const currentImage = String(currentUser.recordset[0]?.HinhAnh || '').trim();
     const emailChanged = email !== currentEmail;
 
     if (emailChanged && !takeOtp(email, 'profile_email_change', req.body?.otp)) {
@@ -66,13 +69,20 @@ export async function updateProfile(req, res, next) {
       return res.status(409).json({ message: 'Email đã được sử dụng bởi tài khoản khác.' });
     }
 
+    let storedImage = image || null;
+    if (storedImage && !getCloudinaryPublicId(storedImage)) {
+      const uploadResult = await uploadImageUrl(storedImage);
+      storedImage = uploadResult.secure_url;
+      uploadedImageUrl = storedImage;
+    }
+
     const result = await pool.request()
       .input('id', sql.Int, userId)
       .input('name', sql.NVarChar(100), name)
       .input('email', sql.VarChar(100), email)
       .input('phone', sql.VarChar(20), phone || null)
       .input('address', sql.NVarChar(300), address || null)
-      .input('image', sql.NVarChar(500), image || null)
+      .input('image', sql.NVarChar(500), storedImage)
       .query(`
         UPDATE NguoiDung
         SET HoTen = @name, Email = @email, SoDienThoai = @phone, DiaChi = @address, HinhAnh = @image
@@ -85,9 +95,27 @@ export async function updateProfile(req, res, next) {
       `);
 
     const user = result.recordset[0];
-    if (!user) return res.status(404).json({ message: 'Không tìm thấy tài khoản.' });
+      if (!user) {
+        if (uploadedImageUrl) {
+          await deleteCloudinaryImage(uploadedImageUrl).catch((cleanupError) => {
+            console.error('Không thể xóa ảnh Cloudinary khi tài khoản không tồn tại:', cleanupError);
+          });
+        }
+        return res.status(404).json({ message: 'Không tìm thấy tài khoản.' });
+      }
+
+    if (currentImage && currentImage !== storedImage) {
+      await deleteCloudinaryImage(currentImage).catch((cleanupError) => {
+        console.error('Không thể xóa ảnh profile cũ trên Cloudinary:', cleanupError);
+      });
+    }
     return res.json({ message: 'Cập nhật thông tin thành công.', user });
   } catch (error) {
+    if (uploadedImageUrl) {
+      await deleteCloudinaryImage(uploadedImageUrl).catch((cleanupError) => {
+        console.error('Không thể xóa ảnh Cloudinary sau khi cập nhật profile thất bại:', cleanupError);
+      });
+    }
     return next(error);
   }
 }
