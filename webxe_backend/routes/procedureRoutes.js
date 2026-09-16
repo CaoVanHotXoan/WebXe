@@ -71,6 +71,9 @@ router.get('/tables/:tableName', verifyToken, verifyAdmin, listTableRows);
  *       401: { description: Unauthorized }
  *       403: { description: Forbidden }
  */
-router.post('/procedures/:procedureName', verifyToken, verifyAdmin, executeProcedure);
+router.route('/procedures/:procedureName')
+	.post(verifyToken, verifyAdmin, executeProcedure)
+	.put(verifyToken, verifyAdmin, executeProcedure)
+	.delete(verifyToken, verifyAdmin, executeProcedure);
 
 export default router;
