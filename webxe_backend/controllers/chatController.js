@@ -260,7 +260,7 @@ export async function getAdminConversations(req, res, next) {
     const pool = await getPool();
     const result = await pool.request().query(`
       SELECT c.MaCuocHoiThoai, c.MaKhachHang, c.MaNhanVien, c.TrangThai, c.NgayTao,
-             kh.HoTen AS TenKhachHang, kh.Email,
+             kh.HoTen AS TenKhachHang, kh.Email, kh.HinhAnh AS HinhAnhKhachHang,
              nv.HoTen AS TenNhanVien,
              lastMessage.NoiDung AS TinNhanCuoi, CONVERT(varchar(19), lastMessage.ThoiGian, 120) AS ThoiGianTinNhanCuoi,
              (SELECT COUNT(*) FROM TinNhan unread WHERE unread.MaCuocHoiThoai = c.MaCuocHoiThoai
