@@ -74,6 +74,14 @@ export async function executeProcedure(req, res, next) {
     }
 
     const pool = await getPool();
+    if (req.params.procedureName === 'sp_XoaDonHang') {
+      const detailCount = await pool.request()
+        .input('orderId', sql.Int, Number(body.MaDonHang))
+        .query('SELECT COUNT(*) AS Total FROM dbo.ChiTietDonHang WHERE MaDonHang = @orderId');
+      if (Number(detailCount.recordset[0]?.Total) > 0) {
+        return res.status(400).json({ message: 'Cần xóa chi tiết đơn hàng trước.' });
+      }
+    }
     const imageUrls = await getImageUrlsBeforeDelete(pool, req.params.procedureName, body);
     const oldImageUrls = await getImageUrlsBeforeUpdate(pool, req.params.procedureName, body);
     const request = pool.request();

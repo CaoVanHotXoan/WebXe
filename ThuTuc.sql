@@ -319,6 +319,10 @@ CREATE PROCEDURE sp_XoaDonHang @MaDonHang INT
 AS
 BEGIN
     SET NOCOUNT ON;
+    IF EXISTS (SELECT 1 FROM ChiTietDonHang WHERE MaDonHang = @MaDonHang)
+    BEGIN
+        THROW 50005, N'Cần xóa chi tiết đơn hàng trước.', 1;
+    END;
     DELETE FROM DonHang WHERE MaDonHang = @MaDonHang;
 END;
 GO
