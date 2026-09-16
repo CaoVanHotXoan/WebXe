@@ -6,6 +6,8 @@ import {
 	verifyRegister,
 	requestForgotPasswordOtp,
 	resetPassword,
+	requestPasswordChangeOtp,
+	changePassword,
 	requestProfileEmailChangeOtp,
 	requestAdminUserEmailOtp
 } from '../controllers/authController.js';
@@ -40,6 +42,8 @@ router.post('/register/request-otp', requestRegisterOtp);
 router.post('/register/verify', verifyRegister);
 router.post('/password/forgot/request-otp', requestForgotPasswordOtp);
 router.post('/password/forgot/reset', resetPassword);
+router.post('/password/change/request-otp', verifyToken, requestPasswordChangeOtp);
+router.post('/password/change', verifyToken, changePassword);
 router.post('/profile/email/request-otp', verifyToken, requestProfileEmailChangeOtp);
 router.post('/admin/user-email/request-otp', verifyToken, verifyAdmin, requestAdminUserEmailOtp);
 

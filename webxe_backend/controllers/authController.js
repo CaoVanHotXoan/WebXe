@@ -40,6 +40,10 @@ async function sendOtp(email, purpose) {
       title: 'Xác nhận đổi mật khẩu',
       subject: 'Mã OTP đổi mật khẩu WebXe'
     },
+    password_change: {
+      title: 'Xác nhận đổi mật khẩu tài khoản',
+      subject: 'Mã OTP đổi mật khẩu tài khoản WebXe'
+    },
     profile_email_change: {
       title: 'Xác nhận đổi email',
       subject: 'Mã OTP đổi email WebXe'
@@ -234,6 +238,60 @@ export async function requestForgotPasswordOtp(req, res, next) {
     if (!result.recordset[0]) return res.status(404).json({ message: 'Email chưa được đăng ký.' });
     await sendOtp(email, 'forgot_password');
     return res.json({ message: 'Mã OTP đổi mật khẩu đã được gửi đến Gmail của bạn.' });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function getAuthenticatedUserWithPassword(userId) {
+  const pool = await getPool();
+  const result = await pool.request()
+    .input('id', sql.Int, userId)
+    .query('SELECT TOP 1 Email, MatKhau FROM NguoiDung WHERE MaNguoiDung = @id');
+  return result.recordset[0];
+}
+
+async function passwordMatches(inputPassword, storedPassword) {
+  if (typeof inputPassword !== 'string' || typeof storedPassword !== 'string') return false;
+  const isBcryptHash = /^\$2[aby]\$\d{2}\$/.test(storedPassword);
+  return isBcryptHash ? bcrypt.compare(inputPassword, storedPassword) : inputPassword === storedPassword;
+}
+
+export async function requestPasswordChangeOtp(req, res, next) {
+  try {
+    const user = await getAuthenticatedUserWithPassword(Number(req.user?.sub));
+    if (!user?.Email) return res.status(404).json({ message: 'Tài khoản chưa có email để nhận OTP.' });
+    if (!(await passwordMatches(req.body?.currentPassword, user.MatKhau))) {
+      return res.status(400).json({ message: 'Mật khẩu hiện tại không đúng.' });
+    }
+    await sendOtp(normalizeEmail(user.Email), 'password_change');
+    return res.json({ message: 'Mã xác nhận đã được gửi đến Gmail của bạn.' });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function changePassword(req, res, next) {
+  try {
+    const userId = Number(req.user?.sub);
+    const user = await getAuthenticatedUserWithPassword(userId);
+    const newPassword = req.body?.newPassword;
+    if (!user?.Email) return res.status(404).json({ message: 'Tài khoản chưa có email để nhận OTP.' });
+    if (!(await passwordMatches(req.body?.currentPassword, user.MatKhau))) {
+      return res.status(400).json({ message: 'Mật khẩu hiện tại không đúng.' });
+    }
+    if (!takeOtp(normalizeEmail(user.Email), 'password_change', req.body?.otp)) {
+      return res.status(400).json({ message: 'Mã OTP không đúng hoặc đã hết hạn.' });
+    }
+    if (typeof newPassword !== 'string' || newPassword.length < 6) {
+      return res.status(400).json({ message: 'Mật khẩu mới phải có ít nhất 6 ký tự.' });
+    }
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await (await getPool()).request()
+      .input('id', sql.Int, userId)
+      .input('password', sql.VarChar(255), passwordHash)
+      .query('UPDATE NguoiDung SET MatKhau = @password WHERE MaNguoiDung = @id');
+    return res.json({ message: 'Đổi mật khẩu thành công.' });
   } catch (error) {
     return next(error);
   }
