@@ -119,10 +119,16 @@ async function notifyCustomersAboutVehicle(pool, vehicle) {
   const vehicleResult = await pool.request()
     .input('vehicleName', sql.NVarChar(150), vehicleName)
     .query(`
-      SELECT TOP 1 MaXe, TenXe, Gia, SoLuong
-      FROM dbo.Xe
-      WHERE TenXe = @vehicleName
-      ORDER BY MaXe DESC
+      SELECT TOP 1 x.MaXe, x.TenXe, x.Gia, x.SoLuong,
+             x.NamSanXuat, x.MauSac, h.TenHang,
+             (SELECT TOP 1 ha.DuongDanAnh
+              FROM dbo.HinhAnhXe ha
+              WHERE ha.MaXe = x.MaXe
+              ORDER BY ha.LaAnhChinh DESC, ha.MaHinhAnh ASC) AS AnhChinh
+      FROM dbo.Xe x
+      LEFT JOIN dbo.HangXe h ON h.MaHang = x.MaHang
+      WHERE x.TenXe = @vehicleName
+      ORDER BY x.MaXe DESC
     `);
   const savedVehicle = vehicleResult.recordset[0];
   if (!savedVehicle || Number(savedVehicle.SoLuong) <= 0) {
@@ -157,22 +163,23 @@ async function notifyCustomersAboutVehicle(pool, vehicle) {
   }
 
   const deliveries = await Promise.allSettled([...recipients.values()].map(async (recipient) => {
+    const vehicleUrl = `${clientUrl}ChiTietXe/ChiTietXe?id=${savedVehicle.MaXe}`;
+    const vehicleDetails = [savedVehicle.TenHang, savedVehicle.NamSanXuat, savedVehicle.MauSac]
+      .filter(Boolean)
+      .join(' | ');
     await mailTransport.sendMail({
       from: process.env.MAIL_FROM || process.env.MAIL_USER,
       to: recipient.email,
       subject: `WebXe: ${savedVehicle.TenXe} đã có hàng`,
-      text: `Xin chào ${recipient.name}, xe ${savedVehicle.TenXe} đã có hàng.
-Giá: ${formatPrice(savedVehicle.Gia)}
-Xem chi tiết: ${clientUrl}ChiTietXe/ChiTietXe?id=${savedVehicle.MaXe}`,
-      html: `
-        <div style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.6;">
-          <h2>WebXe báo xe có hàng</h2>
-          <p>Xin chào ${escapeHtml(recipient.name)},</p>
-          <p>Mẫu xe <strong>${escapeHtml(savedVehicle.TenXe)}</strong> bạn quan tâm hiện đã có hàng.</p>
-          <p>Giá: <strong>${escapeHtml(formatPrice(savedVehicle.Gia))}</strong></p>
-          <p><a href="${clientUrl}ChiTietXe/ChiTietXe?id=${savedVehicle.MaXe}">Xem chi tiết xe trên WebXe</a></p>
-        </div>
-      `,
+      text: `Xin chào ${recipient.name},
+
+Tin vui từ WebXe: ${savedVehicle.TenXe} bạn quan tâm hiện đã có hàng.
+${vehicleDetails ? `Thông tin: ${vehicleDetails}\n` : ''}Giá tham khảo: ${formatPrice(savedVehicle.Gia)}
+
+Xem chi tiết và tư vấn: ${vehicleUrl}
+
+Email tự động từ WebXe. Vui lòng không trả lời email này.`,
+      html: renderVehicleAvailableEmail({ recipient, vehicle: savedVehicle, vehicleUrl, vehicleDetails }),
     });
 
     await Promise.all(recipient.alertIds.map((alertId) => pool.request()
@@ -197,6 +204,44 @@ Xem chi tiết: ${clientUrl}ChiTietXe/ChiTietXe?id=${savedVehicle.MaXe}`,
       ? 'Có email gửi thất bại. Kiểm tra MAIL_HOST, MAIL_USER, MAIL_PASSWORD và log backend.'
       : sent > 0 ? `Đã gửi email thông báo đến ${sent} khách hàng.` : 'Không có khách hàng đăng ký tên xe này.',
   };
+}
+
+function renderVehicleAvailableEmail({ recipient, vehicle, vehicleUrl, vehicleDetails }) {
+  const image = vehicle.AnhChinh
+    ? `<img src="${escapeHtml(vehicle.AnhChinh)}" alt="${escapeHtml(vehicle.TenXe)}" width="190" style="display:block;width:190px;max-width:100%;height:130px;object-fit:cover;border-radius:10px;border:0;">`
+    : '<div style="width:190px;height:130px;background:#e8eeeb;border-radius:10px;text-align:center;color:#6b7d77;font-size:13px;line-height:130px;">WEBXE</div>';
+
+  return `
+    <div style="margin:0;background:#f3f6f4;padding:32px 12px;font-family:Arial,Helvetica,sans-serif;color:#26332f;">
+      <div style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #dfe8e3;border-radius:16px;overflow:hidden;">
+        <div style="padding:24px 30px;background:#173b35;color:#ffffff;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:2px;color:#f4bd52;">WEBXE</div>
+          <div style="margin-top:12px;font-size:25px;font-weight:700;line-height:1.25;">Mẫu xe bạn chờ đã có hàng</div>
+          <div style="margin-top:8px;color:#c8dad3;font-size:14px;line-height:1.5;">Thông tin mới từ đội ngũ WebXe dành riêng cho bạn.</div>
+        </div>
+        <div style="padding:30px;">
+          <p style="margin:0;color:#52635d;font-size:15px;line-height:1.6;">Xin chào ${escapeHtml(recipient.name)},</p>
+          <p style="margin:10px 0 24px;color:#52635d;font-size:15px;line-height:1.6;">Tin vui! Mẫu xe bạn quan tâm đã sẵn sàng để tham khảo và tư vấn.</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2eae6;border-radius:12px;background:#f8faf9;">
+            <tr>
+              <td style="padding:14px;width:190px;vertical-align:middle;">${image}</td>
+              <td style="padding:18px 18px 18px 4px;vertical-align:middle;">
+                <div style="color:#8b6a27;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">ĐANG CÓ SẴN</div>
+                <div style="margin-top:7px;color:#173b35;font-size:20px;font-weight:700;line-height:1.3;">${escapeHtml(vehicle.TenXe)}</div>
+                ${vehicleDetails ? `<div style="margin-top:8px;color:#65746f;font-size:13px;line-height:1.5;">${escapeHtml(vehicleDetails)}</div>` : ''}
+                <div style="margin-top:12px;color:#d45b3f;font-size:18px;font-weight:700;">${escapeHtml(formatPrice(vehicle.Gia))}</div>
+              </td>
+            </tr>
+          </table>
+          <div style="padding-top:26px;text-align:center;">
+            <a href="${escapeHtml(vehicleUrl)}" style="display:inline-block;padding:13px 24px;background:#d45b3f;border-radius:8px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Xem chi tiết xe</a>
+          </div>
+          <p style="margin:24px 0 0;color:#77857f;font-size:12px;line-height:1.6;text-align:center;">Số lượng có thể thay đổi theo thời điểm. Hãy liên hệ WebXe để được tư vấn và giữ xe.</p>
+        </div>
+        <div style="padding:18px 30px;border-top:1px solid #edf1ef;color:#8a9691;font-size:11px;line-height:1.6;">Email tự động từ WebXe. Vui lòng không trả lời email này.</div>
+      </div>
+    </div>
+  `;
 }
 
 function formatPrice(value) {
